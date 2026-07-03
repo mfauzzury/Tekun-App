@@ -1,0 +1,906 @@
+﻿{
+  "menuEntries": [
+    {
+      "id": "dashboard",
+      "label": ""
+    },
+    {
+      "id": "main-dashboard",
+      "label": "Dashboard"
+    },
+    {
+      "id": "pengurusan-pembiayaan",
+      "label": "PENGURUSAN PEMBIAYAAN"
+    },
+    {
+      "id": "laman-utama",
+      "label": "Laman Utama"
+    },
+    {
+      "id": "permohonan",
+      "label": "Permohonan"
+    },
+    {
+      "id": "permohonan-daftar",
+      "label": "Pendaftaran Permohonan"
+    },
+    {
+      "id": "permohonan-usahawan",
+      "label": "Rekod Usahawan"
+    },
+    {
+      "id": "pembiayaan",
+      "label": "Pembiayaan"
+    },
+    {
+      "id": "pembiayaan-penilaian",
+      "label": "Penilaian & Kelulusan"
+    },
+    {
+      "id": "pembiayaan-pengeluaran",
+      "label": "Pengeluaran Dana"
+    },
+    {
+      "id": "pembiayaan-akaun",
+      "label": "Pengurusan Akaun"
+    },
+    {
+      "id": "pembayaran",
+      "label": "Pembayaran"
+    },
+    {
+      "id": "pembayaran-hub",
+      "label": "Bayaran Pembiayaan"
+    },
+    {
+      "id": "pembayaran-terima",
+      "label": "Terima Bayaran"
+    },
+    {
+      "id": "pembayaran-pemadanan",
+      "label": "Pemadanan Resit"
+    },
+    {
+      "id": "pembayaran-rekon",
+      "label": "Rekonsiliasi Bank"
+    },
+    {
+      "id": "pembayaran-lebihan",
+      "label": "Lebihan & Kekurangan"
+    },
+    {
+      "id": "pembayaran-penyata",
+      "label": "Penyata Bayaran"
+    },
+    {
+      "id": "pembayaran-early",
+      "label": "Early Settlement"
+    },
+    {
+      "id": "pembayaran-selesai",
+      "label": "Akaun Selesai Bayar"
+    },
+    {
+      "id": "pembayaran-ai",
+      "label": "AI Bayaran"
+    },
+    {
+      "id": "pembayaran-tunggakan",
+      "label": "Pemantauan Tunggakan"
+    },
+    {
+      "id": "pemantauan",
+      "label": "Pemantauan"
+    },
+    {
+      "id": "pemantauan-usahawan",
+      "label": "Pemantauan Usahawan"
+    },
+    {
+      "id": "pemantauan-kutipan",
+      "label": "Kutipan"
+    },
+    {
+      "id": "undang-undang",
+      "label": "Undang-Undang"
+    },
+    {
+      "id": "uu-litigasi",
+      "label": "Litigasi"
+    },
+    {
+      "id": "uu-panel-peguam",
+      "label": "Panel Peguam"
+    },
+    {
+      "id": "uu-akaun-npf",
+      "label": "Akaun NPF"
+    },
+    {
+      "id": "uu-nod",
+      "label": "NOD"
+    },
+    {
+      "id": "uu-saman",
+      "label": "Saman"
+    },
+    {
+      "id": "uu-penghakiman",
+      "label": "Penghakiman"
+    },
+    {
+      "id": "uu-execution",
+      "label": "Execution"
+    },
+    {
+      "id": "uu-wss",
+      "label": "WSS"
+    },
+    {
+      "id": "uu-garnishee",
+      "label": "Garnishee"
+    },
+    {
+      "id": "uu-jds",
+      "label": "JDS"
+    },
+    {
+      "id": "uu-kebankrapan",
+      "label": "Kebankrapan"
+    },
+    {
+      "id": "uu-winding-up",
+      "label": "Winding-Up"
+    },
+    {
+      "id": "uu-audit",
+      "label": "Audit"
+    },
+    {
+      "id": "uu-laporan",
+      "label": "Laporan"
+    },
+    {
+      "id": "uu-insolvensi",
+      "label": "Integrasi Insolvensi"
+    },
+    {
+      "id": "jaminan",
+      "label": "Jaminan"
+    },
+    {
+      "id": "jaminan-pengurusan",
+      "label": "Pengurusan Jaminan"
+    },
+    {
+      "id": "laporan",
+      "label": "Laporan"
+    },
+    {
+      "id": "laporan-analitik",
+      "label": "Laporan & Analitik"
+    },
+    {
+      "id": "laporan-audit",
+      "label": "Audit & Kawalan"
+    },
+    {
+      "id": "integrasi",
+      "label": "Integrasi"
+    },
+    {
+      "id": "portal",
+      "label": "Webfront"
+    },
+    {
+      "id": "dashboard",
+      "label": "Dashboard"
+    },
+    {
+      "id": "posts",
+      "label": "Posts"
+    },
+    {
+      "id": "posts-all",
+      "label": "All Posts"
+    },
+    {
+      "id": "posts-new",
+      "label": "Add New"
+    },
+    {
+      "id": "posts-categories",
+      "label": "Categories"
+    },
+    {
+      "id": "pages",
+      "label": "Pages"
+    },
+    {
+      "id": "pages-all",
+      "label": "All Pages"
+    },
+    {
+      "id": "pages-new",
+      "label": "Add New"
+    },
+    {
+      "id": "media",
+      "label": "Media"
+    },
+    {
+      "id": "media-library",
+      "label": "Library"
+    },
+    {
+      "id": "storefront-menu",
+      "label": "Menus"
+    },
+    {
+      "id": "webfront-settings",
+      "label": "Settings"
+    },
+    {
+      "id": "core-platform",
+      "label": "Core Platform"
+    },
+    {
+      "id": "identity-access",
+      "label": "Identity & Access"
+    },
+    {
+      "id": "platform-auth",
+      "label": "Authentication"
+    },
+    {
+      "id": "platform-users-all",
+      "label": "All Users"
+    },
+    {
+      "id": "platform-users-new",
+      "label": "Add User"
+    },
+    {
+      "id": "platform-rbac",
+      "label": "RBAC"
+    },
+    {
+      "id": "platform-tokens",
+      "label": "Token Management"
+    },
+    {
+      "id": "observability",
+      "label": "Observability"
+    },
+    {
+      "id": "platform-audit-trail",
+      "label": "Audit Trail"
+    },
+    {
+      "id": "platform-activity-log",
+      "label": "Activity Log"
+    },
+    {
+      "id": "platform-logging",
+      "label": "Logging"
+    },
+    {
+      "id": "platform-error-tracking",
+      "label": "Error Tracking"
+    },
+    {
+      "id": "platform-monitoring",
+      "label": "Monitoring"
+    },
+    {
+      "id": "queue",
+      "label": "Queue"
+    },
+    {
+      "id": "platform-queue-dashboard",
+      "label": "Dashboard"
+    },
+    {
+      "id": "platform-queue-failed",
+      "label": "Failed Jobs"
+    },
+    {
+      "id": "platform-queue-scheduled",
+      "label": "Scheduled Jobs"
+    },
+    {
+      "id": "messaging",
+      "label": "Messaging"
+    },
+    {
+      "id": "platform-event-bus",
+      "label": "Event Bus"
+    },
+    {
+      "id": "platform-notifications",
+      "label": "Notifications"
+    },
+    {
+      "id": "system-management",
+      "label": "System Management"
+    },
+    {
+      "id": "platform-scheduler",
+      "label": "Scheduler"
+    },
+    {
+      "id": "platform-config",
+      "label": "Configuration"
+    },
+    {
+      "id": "platform-feature-flags",
+      "label": "Feature Flags"
+    },
+    {
+      "id": "platform-file-media",
+      "label": "File / Media"
+    },
+    {
+      "id": "api-gateway",
+      "label": "API Gateway"
+    },
+    {
+      "id": "platform-gateway-routes",
+      "label": "Routes"
+    },
+    {
+      "id": "platform-gateway-upstreams",
+      "label": "Upstreams"
+    },
+    {
+      "id": "platform-gateway-consumers",
+      "label": "Consumers"
+    },
+    {
+      "id": "platform-gateway-plugins",
+      "label": "Plugins"
+    },
+    {
+      "id": "platform-gateway-ssl",
+      "label": "SSL Certificates"
+    },
+    {
+      "id": "platform-webhooks",
+      "label": "Webhooks"
+    },
+    {
+      "id": "ai-integration",
+      "label": "AI Integration"
+    },
+    {
+      "id": "platform-ai-providers",
+      "label": "AI Providers"
+    },
+    {
+      "id": "platform-ai-models",
+      "label": "AI Models"
+    },
+    {
+      "id": "platform-ai-prompts",
+      "label": "Prompt Templates"
+    },
+    {
+      "id": "platform-ai-usage",
+      "label": "AI Usage & Billing"
+    },
+    {
+      "id": "administration",
+      "label": "Administration"
+    },
+    {
+      "id": "menus",
+      "label": "Menus"
+    },
+    {
+      "id": "settings",
+      "label": "Settings"
+    },
+    {
+      "id": "settings-general",
+      "label": "General"
+    },
+    {
+      "id": "settings-system",
+      "label": "System"
+    },
+    {
+      "id": "development",
+      "label": "Development"
+    },
+    {
+      "id": "developers-guide",
+      "label": "Developers Guide"
+    },
+    {
+      "id": "database-schema",
+      "label": "Database Schema"
+    },
+    {
+      "id": "api-explorer",
+      "label": "API Explorer"
+    },
+    {
+      "id": "kitchen-sink",
+      "label": "Kitchen Sink"
+    },
+    {
+      "id": "kitchen-components",
+      "label": "Components"
+    },
+    {
+      "id": "kitchen-forms",
+      "label": "Forms"
+    },
+    {
+      "id": "kitchen-charts",
+      "label": "Charts"
+    }
+  ],
+  "routeEntries": [
+    {
+      "name": "login",
+      "title": "Login"
+    },
+    {
+      "name": "main-dashboard",
+      "title": "Main Dashboard"
+    },
+    {
+      "name": "dashboard",
+      "title": "Dashboard"
+    },
+    {
+      "name": "posts",
+      "title": "Posts"
+    },
+    {
+      "name": "post-create",
+      "title": "New Post"
+    },
+    {
+      "name": "post-edit",
+      "title": "Edit Post"
+    },
+    {
+      "name": "categories",
+      "title": "Categories"
+    },
+    {
+      "name": "category-create",
+      "title": "New Category"
+    },
+    {
+      "name": "category-edit",
+      "title": "Edit Category"
+    },
+    {
+      "name": "pages",
+      "title": "Pages"
+    },
+    {
+      "name": "page-create",
+      "title": "New Page"
+    },
+    {
+      "name": "page-edit",
+      "title": "Edit Page"
+    },
+    {
+      "name": "media",
+      "title": "Media"
+    },
+    {
+      "name": "storefront-menu",
+      "title": "Menus"
+    },
+    {
+      "name": "webfront-settings",
+      "title": "Settings"
+    },
+    {
+      "name": "menus",
+      "title": "Menus"
+    },
+    {
+      "name": "kitchen-sink",
+      "title": "Kitchen Sink"
+    },
+    {
+      "name": "kitchen-forms",
+      "title": "Forms"
+    },
+    {
+      "name": "kitchen-charts",
+      "title": "Charts"
+    },
+    {
+      "name": "developers-guide",
+      "title": "Developers Guide"
+    },
+    {
+      "name": "database-schema",
+      "title": "Database Schema"
+    },
+    {
+      "name": "api-explorer",
+      "title": "API Explorer"
+    },
+    {
+      "name": "settings",
+      "title": "Settings"
+    },
+    {
+      "name": "settings-system",
+      "title": "System Info"
+    },
+    {
+      "name": "settings-integrasi",
+      "title": "Integrasi"
+    },
+    {
+      "name": "permohonan",
+      "title": "Pendaftaran Permohonan"
+    },
+    {
+      "name": "permohonan-baru",
+      "title": "Daftar Permohonan Baru"
+    },
+    {
+      "name": "daftar-usahawan",
+      "title": "Daftar Usahawan Baru"
+    },
+    {
+      "name": "rekod-usahawan",
+      "title": "Rekod Usahawan"
+    },
+    {
+      "name": "permohonan-detail",
+      "title": "Butiran Permohonan"
+    },
+    {
+      "name": "penilaian-kelulusan",
+      "title": "Penilaian & Kelulusan"
+    },
+    {
+      "name": "penilaian-baru",
+      "title": "Penilaian Baru"
+    },
+    {
+      "name": "pengeluaran-dana",
+      "title": "Pengeluaran Dana"
+    },
+    {
+      "name": "proses-pengeluaran",
+      "title": "Proses Pengeluaran"
+    },
+    {
+      "name": "pengurusan-akaun",
+      "title": "Pengurusan Akaun"
+    },
+    {
+      "name": "kemaskini-akaun",
+      "title": "Kemaskini Akaun"
+    },
+    {
+      "name": "bayaran-pembiayaan",
+      "title": "Bayaran Pembiayaan"
+    },
+    {
+      "name": "terima-bayaran",
+      "title": "Terima Bayaran"
+    },
+    {
+      "name": "pemadanan-resit",
+      "title": "Pemadanan Resit"
+    },
+    {
+      "name": "rekonsiliasi-bank",
+      "title": "Rekonsiliasi Bank"
+    },
+    {
+      "name": "lebihan-kekurangan",
+      "title": "Lebihan & Kekurangan"
+    },
+    {
+      "name": "penyata-bayaran",
+      "title": "Penyata Bayaran"
+    },
+    {
+      "name": "early-settlement",
+      "title": "Early Settlement"
+    },
+    {
+      "name": "akaun-selesai-bayar",
+      "title": "Akaun Selesai Bayar"
+    },
+    {
+      "name": "ai-bayaran",
+      "title": "AI Bayaran"
+    },
+    {
+      "name": "pemantauan-tunggakan",
+      "title": "Pemantauan Tunggakan"
+    },
+    {
+      "name": "pemantauan-usahawan",
+      "title": "Pemantauan Usahawan"
+    },
+    {
+      "name": "prestasi-usahawan",
+      "title": "Prestasi Usahawan"
+    },
+    {
+      "name": "kutipan",
+      "title": "Kutipan"
+    },
+    {
+      "name": "rekod-kutipan",
+      "title": "Rekod Kutipan"
+    },
+    {
+      "name": "litigasi",
+      "title": "Litigasi"
+    },
+    {
+      "name": "rekod-litigasi",
+      "title": "Rekod Kes"
+    },
+    {
+      "name": "kes-detail",
+      "title": "Detail Kes"
+    },
+    {
+      "name": "panel-peguam",
+      "title": "Panel Peguam"
+    },
+    {
+      "name": "panel-peguam-baru",
+      "title": "Pelantikan Panel Baru"
+    },
+    {
+      "name": "akaun-npf",
+      "title": "Akaun NPF"
+    },
+    {
+      "name": "akaun-npf-submit",
+      "title": "Submit NPF"
+    },
+    {
+      "name": "nod",
+      "title": "NOD"
+    },
+    {
+      "name": "nod-mohon",
+      "title": "Mohon NOD"
+    },
+    {
+      "name": "saman",
+      "title": "Saman"
+    },
+    {
+      "name": "saman-permohonan",
+      "title": "Permohonan Saman"
+    },
+    {
+      "name": "penghakiman",
+      "title": "Penghakiman"
+    },
+    {
+      "name": "execution",
+      "title": "Execution"
+    },
+    {
+      "name": "execution-permohonan",
+      "title": "Permohonan Execution"
+    },
+    {
+      "name": "wss",
+      "title": "WSS"
+    },
+    {
+      "name": "wss-permohonan",
+      "title": "Permohonan WSS"
+    },
+    {
+      "name": "garnishee",
+      "title": "Garnishee"
+    },
+    {
+      "name": "garnishee-permohonan",
+      "title": "Permohonan Garnishee"
+    },
+    {
+      "name": "jds",
+      "title": "JDS"
+    },
+    {
+      "name": "jds-permohonan",
+      "title": "Permohonan JDS"
+    },
+    {
+      "name": "kebankrapan",
+      "title": "Kebankrapan"
+    },
+    {
+      "name": "kebankrapan-rekod",
+      "title": "Rekod Kebankrapan"
+    },
+    {
+      "name": "winding-up",
+      "title": "Winding-Up"
+    },
+    {
+      "name": "winding-up-petisyen",
+      "title": "Petisyen Winding-Up"
+    },
+    {
+      "name": "litigasi-audit",
+      "title": "Audit Litigasi"
+    },
+    {
+      "name": "litigasi-laporan",
+      "title": "Laporan Litigasi"
+    },
+    {
+      "name": "insolvensi-integrasi",
+      "title": "Integrasi Insolvensi"
+    },
+    {
+      "name": "pengurusan-jaminan",
+      "title": "Pengurusan Jaminan"
+    },
+    {
+      "name": "kemaskini-jaminan",
+      "title": "Kemaskini Jaminan"
+    },
+    {
+      "name": "laporan-analitik",
+      "title": "Laporan & Analitik"
+    },
+    {
+      "name": "laporan-kewangan",
+      "title": "Laporan Kewangan"
+    },
+    {
+      "name": "laporan-prestasi",
+      "title": "Laporan Prestasi"
+    },
+    {
+      "name": "audit-kawalan",
+      "title": "Audit & Kawalan"
+    },
+    {
+      "name": "kawalan-dalaman",
+      "title": "Kawalan Dalaman"
+    },
+    {
+      "name": "platform-users",
+      "title": "Users"
+    },
+    {
+      "name": "platform-user-create",
+      "title": "New User"
+    },
+    {
+      "name": "platform-user-edit",
+      "title": "Edit User"
+    },
+    {
+      "name": "platform-rbac",
+      "title": "RBAC"
+    },
+    {
+      "name": "platform-tokens",
+      "title": "Token Management"
+    },
+    {
+      "name": "platform-audit-trail",
+      "title": "Audit Trail"
+    },
+    {
+      "name": "platform-activity-log",
+      "title": "Activity Log"
+    },
+    {
+      "name": "platform-logging",
+      "title": "Logging"
+    },
+    {
+      "name": "platform-error-tracking",
+      "title": "Error Tracking"
+    },
+    {
+      "name": "platform-monitoring",
+      "title": "Monitoring"
+    },
+    {
+      "name": "platform-queue",
+      "title": "Queue"
+    },
+    {
+      "name": "platform-queue-failed",
+      "title": "Failed Jobs"
+    },
+    {
+      "name": "platform-queue-scheduled",
+      "title": "Scheduled Jobs"
+    },
+    {
+      "name": "platform-event-bus",
+      "title": "Event Bus"
+    },
+    {
+      "name": "platform-notifications",
+      "title": "Notifications"
+    },
+    {
+      "name": "platform-config",
+      "title": "Configuration"
+    },
+    {
+      "name": "platform-feature-flags",
+      "title": "Feature Flags"
+    },
+    {
+      "name": "platform-scheduler",
+      "title": "Scheduler"
+    },
+    {
+      "name": "platform-file-media",
+      "title": "File / Media Management"
+    },
+    {
+      "name": "platform-gateway-routes",
+      "title": "Routes"
+    },
+    {
+      "name": "platform-gateway-upstreams",
+      "title": "Upstreams"
+    },
+    {
+      "name": "platform-gateway-consumers",
+      "title": "Consumers"
+    },
+    {
+      "name": "platform-gateway-plugins",
+      "title": "Plugins"
+    },
+    {
+      "name": "platform-gateway-ssl",
+      "title": "SSL Certificates"
+    },
+    {
+      "name": "platform-webhooks",
+      "title": "Webhooks"
+    },
+    {
+      "name": "platform-ai-providers",
+      "title": "AI Providers"
+    },
+    {
+      "name": "platform-ai-models",
+      "title": "AI Models"
+    },
+    {
+      "name": "platform-ai-prompts",
+      "title": "Prompt Templates"
+    },
+    {
+      "name": "platform-ai-usage",
+      "title": "AI Usage & Billing"
+    },
+    {
+      "name": "storefront-home",
+      "title": "Webfront"
+    },
+    {
+      "name": "storefront-page",
+      "title": "Webfront"
+    }
+  ]
+}

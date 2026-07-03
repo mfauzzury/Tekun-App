@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import type { RouteLocationGeneric, RouteRecordRaw } from "vue-router";
+import type { RouteLocationGeneric, RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router";
 
 import DashboardView from "@/views/DashboardView.vue";
 import MainDashboardView from "@/views/MainDashboardView.vue";
@@ -23,6 +23,51 @@ import WebfrontSettingsView from "@/views/WebfrontSettingsView.vue";
 import AuditLogsView from "@/views/AuditLogsView.vue";
 import QueueMonitorView from "@/views/QueueMonitorView.vue";
 import ComingSoonView from "@/views/ComingSoonView.vue";
+import PlaceholderView from "@/views/PlaceholderView.vue";
+import PermohonanListView from "@/views/sppt/PermohonanListView.vue";
+import PermohonanBaruView from "@/views/sppt/PermohonanBaruView.vue";
+import PermohonanDetailView from "@/views/sppt/PermohonanDetailView.vue";
+import RekodUsahawanView from "@/views/sppt/RekodUsahawanView.vue";
+import DaftarUsahawanBaruView from "@/views/sppt/DaftarUsahawanBaruView.vue";
+import PenilaianKelulusanView from "@/views/sppt/PenilaianKelulusanView.vue";
+import PenilaianBaruView from "@/views/sppt/PenilaianBaruView.vue";
+import PengeluaranDanaView from "@/views/sppt/PengeluaranDanaView.vue";
+import PengurusanAkaunView from "@/views/sppt/PengurusanAkaunView.vue";
+import BayaranPembiayaanView from "@/views/sppt/BayaranPembiayaanView.vue";
+import TerimaBayaranView from "@/views/sppt/TerimaBayaranView.vue";
+import PemadananResitView from "@/views/sppt/PemadananResitView.vue";
+import RekonsiliasiBankView from "@/views/sppt/RekonsiliasiBankView.vue";
+import LebihanKekuranganView from "@/views/sppt/LebihanKekuranganView.vue";
+import PenyataBayaranView from "@/views/sppt/PenyataBayaranView.vue";
+import EarlySettlementView from "@/views/sppt/EarlySettlementView.vue";
+import AkaunSelesaiBayarView from "@/views/sppt/AkaunSelesaiBayarView.vue";
+import AIBayaranView from "@/views/sppt/AIBayaranView.vue";
+import PemantauanTunggakanView from "@/views/sppt/PemantauanTunggakanView.vue";
+import PemantauanUsahawanView from "@/views/sppt/PemantauanUsahawanView.vue";
+import KutipanView from "@/views/sppt/KutipanView.vue";
+import RekodKutipanView from "@/views/sppt/RekodKutipanView.vue";
+import LitigasiView from "@/views/sppt/LitigasiView.vue";
+import PanelPeguamView from "@/views/sppt/litigasi/PanelPeguamView.vue";
+import AkaunNpfView from "@/views/sppt/litigasi/AkaunNpfView.vue";
+import NodView from "@/views/sppt/litigasi/NodView.vue";
+import SamanView from "@/views/sppt/litigasi/SamanView.vue";
+import PenghakimanView from "@/views/sppt/litigasi/PenghakimanView.vue";
+import ExecutionView from "@/views/sppt/litigasi/ExecutionView.vue";
+import WssView from "@/views/sppt/litigasi/WssView.vue";
+import GarnisheeView from "@/views/sppt/litigasi/GarnisheeView.vue";
+import JdsView from "@/views/sppt/litigasi/JdsView.vue";
+import KebankrapanView from "@/views/sppt/litigasi/KebankrapanView.vue";
+import WindingUpView from "@/views/sppt/litigasi/WindingUpView.vue";
+import LitigasiAuditView from "@/views/sppt/litigasi/LitigasiAuditView.vue";
+import LitigasiLaporanView from "@/views/sppt/litigasi/LitigasiLaporanView.vue";
+import KesDetailView from "@/views/sppt/litigasi/KesDetailView.vue";
+import InsolvensiIntegrasiView from "@/views/sppt/litigasi/InsolvensiIntegrasiView.vue";
+import PengurusanJaminanView from "@/views/sppt/PengurusanJaminanView.vue";
+import KemaskiniJaminanView from "@/views/sppt/KemaskiniJaminanView.vue";
+import LaporanAnalitikView from "@/views/sppt/LaporanAnalitikView.vue";
+import AuditKawalanView from "@/views/sppt/AuditKawalanView.vue";
+import IntegrasiView from "@/views/sppt/IntegrasiView.vue";
+import TetapanView from "@/views/sppt/TetapanView.vue";
 import RolesView from "@/views/RolesView.vue";
 import SettingsView from "@/views/SettingsView.vue";
 import SystemInfoView from "@/views/SystemInfoView.vue";
@@ -32,6 +77,8 @@ import StorefrontHomeView from "@/views/StorefrontHomeView.vue";
 import StorefrontPageView from "@/views/StorefrontPageView.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteStore } from "@/stores/site";
+import { translateRouteTitle } from "@/i18n";
+import { useUiLocaleStore } from "@/stores/uiLocale";
 
 const legacyAdminPaths = [
   "/login",
@@ -119,6 +166,69 @@ const router = createRouter({
     // ── Administration ──
     { path: "/admin/settings", name: "settings", component: SettingsView, meta: { requiresAuth: true, title: "Settings" } },
     { path: "/admin/settings/system", name: "settings-system", component: SystemInfoView, meta: { requiresAuth: true, title: "System Info" } },
+    { path: "/admin/settings/integrasi", name: "settings-integrasi", component: IntegrasiView, meta: { requiresAuth: true, title: "Integrasi" } },
+
+    // ── SPPT: PENGURUSAN PEMBIAYAAN ──
+    { path: "/admin/permohonan", name: "permohonan", component: PermohonanListView, meta: { requiresAuth: true, title: "Pendaftaran Permohonan" } },
+    { path: "/admin/permohonan/baru", name: "permohonan-baru", component: PermohonanBaruView, meta: { requiresAuth: true, title: "Daftar Permohonan Baru" } },
+    { path: "/admin/permohonan/usahawan/daftar", name: "daftar-usahawan", component: DaftarUsahawanBaruView, meta: { requiresAuth: true, title: "Daftar Usahawan Baru" } },
+    { path: "/admin/permohonan/usahawan", name: "rekod-usahawan", component: RekodUsahawanView, meta: { requiresAuth: true, title: "Rekod Usahawan" } },
+    { path: "/admin/permohonan/:id", name: "permohonan-detail", component: PermohonanDetailView, meta: { requiresAuth: true, title: "Butiran Permohonan" } },
+    { path: "/admin/pembiayaan/penilaian", name: "penilaian-kelulusan", component: PenilaianKelulusanView, meta: { requiresAuth: true, title: "Penilaian & Kelulusan" } },
+    { path: "/admin/pembiayaan/penilaian/baru", name: "penilaian-baru", component: PenilaianBaruView, meta: { requiresAuth: true, title: "Penilaian Baru" } },
+    { path: "/admin/pembiayaan/pengeluaran", name: "pengeluaran-dana", component: PengeluaranDanaView, meta: { requiresAuth: true, title: "Pengeluaran Dana" } },
+    { path: "/admin/pembiayaan/pengeluaran/proses", name: "proses-pengeluaran", component: PlaceholderView, meta: { requiresAuth: true, title: "Proses Pengeluaran" } },
+    { path: "/admin/pembiayaan/akaun", name: "pengurusan-akaun", component: PengurusanAkaunView, meta: { requiresAuth: true, title: "Pengurusan Akaun" } },
+    { path: "/admin/pembiayaan/akaun/kemaskini", name: "kemaskini-akaun", component: PlaceholderView, meta: { requiresAuth: true, title: "Kemaskini Akaun" } },
+    { path: "/admin/pembayaran", name: "bayaran-pembiayaan", component: BayaranPembiayaanView, meta: { requiresAuth: true, title: "Bayaran Pembiayaan" } },
+    { path: "/admin/pembayaran/terima", name: "terima-bayaran", component: TerimaBayaranView, meta: { requiresAuth: true, title: "Terima Bayaran" } },
+    { path: "/admin/pembayaran/pemadanan", name: "pemadanan-resit", component: PemadananResitView, meta: { requiresAuth: true, title: "Pemadanan Resit" } },
+    { path: "/admin/pembayaran/rekon", name: "rekonsiliasi-bank", component: RekonsiliasiBankView, meta: { requiresAuth: true, title: "Rekonsiliasi Bank" } },
+    { path: "/admin/pembayaran/lebihan-kekurangan", name: "lebihan-kekurangan", component: LebihanKekuranganView, meta: { requiresAuth: true, title: "Lebihan & Kekurangan" } },
+    { path: "/admin/pembayaran/penyata", name: "penyata-bayaran", component: PenyataBayaranView, meta: { requiresAuth: true, title: "Penyata Bayaran" } },
+    { path: "/admin/pembayaran/early-settlement", name: "early-settlement", component: EarlySettlementView, meta: { requiresAuth: true, title: "Early Settlement" } },
+    { path: "/admin/pembayaran/selesai-bayar", name: "akaun-selesai-bayar", component: AkaunSelesaiBayarView, meta: { requiresAuth: true, title: "Akaun Selesai Bayar" } },
+    { path: "/admin/pembayaran/ai", name: "ai-bayaran", component: AIBayaranView, meta: { requiresAuth: true, title: "AI Bayaran" } },
+    { path: "/admin/pembayaran/tunggakan", name: "pemantauan-tunggakan", component: PemantauanTunggakanView, meta: { requiresAuth: true, title: "Pemantauan Tunggakan" } },
+    { path: "/admin/pemantauan/usahawan", name: "pemantauan-usahawan", component: PemantauanUsahawanView, meta: { requiresAuth: true, title: "Pemantauan Usahawan" } },
+    { path: "/admin/pemantauan/usahawan/prestasi", name: "prestasi-usahawan", component: PlaceholderView, meta: { requiresAuth: true, title: "Prestasi Usahawan" } },
+    { path: "/admin/pemantauan/kutipan", name: "kutipan", component: KutipanView, meta: { requiresAuth: true, title: "Kutipan" } },
+    { path: "/admin/pemantauan/kutipan/rekod", name: "rekod-kutipan", component: RekodKutipanView, meta: { requiresAuth: true, title: "Rekod Kutipan" } },
+    { path: "/admin/undang-undang/litigasi", name: "litigasi", component: LitigasiView, meta: { requiresAuth: true, title: "Litigasi" } },
+    { path: "/admin/undang-undang/litigasi/rekod", name: "rekod-litigasi", component: PlaceholderView, meta: { requiresAuth: true, title: "Rekod Kes" } },
+    { path: "/admin/undang-undang/kes/:id", name: "kes-detail", component: KesDetailView, meta: { requiresAuth: true, title: "Detail Kes" } },
+    { path: "/admin/undang-undang/panel-peguam", name: "panel-peguam", component: PanelPeguamView, meta: { requiresAuth: true, title: "Panel Peguam" } },
+    { path: "/admin/undang-undang/panel-peguam/baru", name: "panel-peguam-baru", component: PlaceholderView, meta: { requiresAuth: true, title: "Pelantikan Panel Baru" } },
+    { path: "/admin/undang-undang/akaun-npf", name: "akaun-npf", component: AkaunNpfView, meta: { requiresAuth: true, title: "Akaun NPF" } },
+    { path: "/admin/undang-undang/akaun-npf/submit", name: "akaun-npf-submit", component: PlaceholderView, meta: { requiresAuth: true, title: "Submit NPF" } },
+    { path: "/admin/undang-undang/nod", name: "nod", component: NodView, meta: { requiresAuth: true, title: "NOD" } },
+    { path: "/admin/undang-undang/nod/mohon", name: "nod-mohon", component: PlaceholderView, meta: { requiresAuth: true, title: "Mohon NOD" } },
+    { path: "/admin/undang-undang/saman", name: "saman", component: SamanView, meta: { requiresAuth: true, title: "Saman" } },
+    { path: "/admin/undang-undang/saman/permohonan", name: "saman-permohonan", component: PlaceholderView, meta: { requiresAuth: true, title: "Permohonan Saman" } },
+    { path: "/admin/undang-undang/penghakiman", name: "penghakiman", component: PenghakimanView, meta: { requiresAuth: true, title: "Penghakiman" } },
+    { path: "/admin/undang-undang/execution", name: "execution", component: ExecutionView, meta: { requiresAuth: true, title: "Execution" } },
+    { path: "/admin/undang-undang/execution/permohonan", name: "execution-permohonan", component: PlaceholderView, meta: { requiresAuth: true, title: "Permohonan Execution" } },
+    { path: "/admin/undang-undang/wss", name: "wss", component: WssView, meta: { requiresAuth: true, title: "WSS" } },
+    { path: "/admin/undang-undang/wss/permohonan", name: "wss-permohonan", component: PlaceholderView, meta: { requiresAuth: true, title: "Permohonan WSS" } },
+    { path: "/admin/undang-undang/garnishee", name: "garnishee", component: GarnisheeView, meta: { requiresAuth: true, title: "Garnishee" } },
+    { path: "/admin/undang-undang/garnishee/permohonan", name: "garnishee-permohonan", component: PlaceholderView, meta: { requiresAuth: true, title: "Permohonan Garnishee" } },
+    { path: "/admin/undang-undang/jds", name: "jds", component: JdsView, meta: { requiresAuth: true, title: "JDS" } },
+    { path: "/admin/undang-undang/jds/permohonan", name: "jds-permohonan", component: PlaceholderView, meta: { requiresAuth: true, title: "Permohonan JDS" } },
+    { path: "/admin/undang-undang/kebankrapan", name: "kebankrapan", component: KebankrapanView, meta: { requiresAuth: true, title: "Kebankrapan" } },
+    { path: "/admin/undang-undang/kebankrapan/rekod", name: "kebankrapan-rekod", component: PlaceholderView, meta: { requiresAuth: true, title: "Rekod Kebankrapan" } },
+    { path: "/admin/undang-undang/winding-up", name: "winding-up", component: WindingUpView, meta: { requiresAuth: true, title: "Winding-Up" } },
+    { path: "/admin/undang-undang/winding-up/petisyen", name: "winding-up-petisyen", component: PlaceholderView, meta: { requiresAuth: true, title: "Petisyen Winding-Up" } },
+    { path: "/admin/undang-undang/audit", name: "litigasi-audit", component: LitigasiAuditView, meta: { requiresAuth: true, title: "Audit Litigasi" } },
+    { path: "/admin/undang-undang/laporan", name: "litigasi-laporan", component: LitigasiLaporanView, meta: { requiresAuth: true, title: "Laporan Litigasi" } },
+    { path: "/admin/undang-undang/insolvensi", name: "insolvensi-integrasi", component: InsolvensiIntegrasiView, meta: { requiresAuth: true, title: "Integrasi Insolvensi" } },
+    { path: "/admin/jaminan", name: "pengurusan-jaminan", component: PengurusanJaminanView, meta: { requiresAuth: true, title: "Pengurusan Jaminan" } },
+    { path: "/admin/jaminan/kemaskini", name: "kemaskini-jaminan", component: KemaskiniJaminanView, meta: { requiresAuth: true, title: "Kemaskini Jaminan" } },
+    { path: "/admin/laporan", name: "laporan-analitik", component: LaporanAnalitikView, meta: { requiresAuth: true, title: "Laporan & Analitik" } },
+    { path: "/admin/laporan/kewangan", name: "laporan-kewangan", component: PlaceholderView, meta: { requiresAuth: true, title: "Laporan Kewangan" } },
+    { path: "/admin/laporan/prestasi", name: "laporan-prestasi", component: PlaceholderView, meta: { requiresAuth: true, title: "Laporan Prestasi" } },
+    { path: "/admin/laporan/audit", name: "audit-kawalan", component: AuditKawalanView, meta: { requiresAuth: true, title: "Audit & Kawalan" } },
+    { path: "/admin/laporan/audit/kawalan", name: "kawalan-dalaman", component: PlaceholderView, meta: { requiresAuth: true, title: "Kawalan Dalaman" } },
+    { path: "/admin/pembiayaan/tetapan", name: "tetapan", component: TetapanView, meta: { requiresAuth: true, title: "Tetapan (Setup)" } },
 
     // ── Core Platform: Identity & Access ──
     { path: "/admin/platform/identity", redirect: "/admin/platform/identity/users" },
@@ -215,10 +325,17 @@ router.beforeEach(async (to) => {
   return true;
 });
 
-router.afterEach((to) => {
+export function applyDocumentTitle(to: RouteLocationNormalizedLoaded) {
   const site = useSiteStore();
-  const pageTitle = (to.meta.title as string) || "Admin";
+  const locale = useUiLocaleStore().language;
+  const fallback = (to.meta.title as string) || "Admin";
+  const routeName = typeof to.name === "string" ? to.name : "";
+  const pageTitle = routeName ? translateRouteTitle(locale, routeName, fallback) : fallback;
   site.setDocumentTitle(pageTitle);
+}
+
+router.afterEach((to) => {
+  applyDocumentTitle(to);
 });
 
 export default router;

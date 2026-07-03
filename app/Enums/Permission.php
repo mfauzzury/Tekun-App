@@ -60,6 +60,15 @@ class Permission
     // Audit
     const AUDIT_READ = 'audit.read';
 
+    // SPPT / Pengurusan Pembiayaan
+    const SPPT_VIEW = 'sppt.view';
+
+    const SPPT_CREATE = 'sppt.create';
+
+    const SPPT_EDIT = 'sppt.edit';
+
+    const SPPT_DELETE = 'sppt.delete';
+
     public static function all(): array
     {
         return [
@@ -71,6 +80,7 @@ class Permission
             self::SETTINGS_VIEW, self::SETTINGS_EDIT,
             self::MENUS_VIEW, self::MENUS_EDIT,
             self::AUDIT_READ,
+            self::SPPT_VIEW, self::SPPT_CREATE, self::SPPT_EDIT, self::SPPT_DELETE,
         ];
     }
 }

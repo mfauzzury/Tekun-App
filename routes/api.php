@@ -11,6 +11,16 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\Sppt\AkaunController;
+use App\Http\Controllers\Api\Sppt\JaminanController;
+use App\Http\Controllers\Api\Sppt\KutipanController;
+use App\Http\Controllers\Api\Sppt\PengeluaranDanaController;
+use App\Http\Controllers\Api\Sppt\PermohonanController;
+use App\Http\Controllers\Api\Sppt\SpptDashboardController;
+use App\Http\Controllers\Api\Sppt\SpptDatasetController;
+use App\Http\Controllers\Api\Sppt\SpptReferenceDataController;
+use App\Http\Controllers\Api\Sppt\SpptSetupController;
+use App\Http\Controllers\Api\Sppt\UsahawanController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,4 +73,37 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/developers-guide', [DevelopersGuideController::class, 'show']);
     Route::put('/developers-guide', [DevelopersGuideController::class, 'update']);
+
+    // SPPT — Pengurusan Pembiayaan
+    Route::prefix('sppt')->middleware('permission:sppt.view')->group(function () {
+        Route::get('/dashboard/summary', [SpptDashboardController::class, 'summary']);
+        Route::get('/reference-data', [SpptReferenceDataController::class, 'index']);
+        Route::get('/setup', [SpptSetupController::class, 'index']);
+        Route::get('/setup/{key}', [SpptSetupController::class, 'show']);
+        Route::put('/setup/{key}', [SpptSetupController::class, 'update'])->middleware('permission:sppt.edit');
+        Route::get('/datasets/{module}/{key}', [SpptDatasetController::class, 'show']);
+        Route::get('/datasets/{module}', [SpptDatasetController::class, 'module']);
+
+        Route::get('/permohonan/summary', [PermohonanController::class, 'summary']);
+        Route::apiResource('permohonan', PermohonanController::class)->middleware([
+            'store' => 'permission:sppt.create',
+            'update' => 'permission:sppt.edit',
+            'destroy' => 'permission:sppt.delete',
+        ]);
+
+        Route::get('/usahawan/summary', [UsahawanController::class, 'summary']);
+        Route::apiResource('usahawan', UsahawanController::class)->middleware([
+            'store' => 'permission:sppt.create',
+            'update' => 'permission:sppt.edit',
+            'destroy' => 'permission:sppt.delete',
+        ]);
+
+        Route::get('/akaun/summary', [AkaunController::class, 'summary']);
+        Route::get('/akaun', [AkaunController::class, 'index']);
+        Route::get('/akaun/{id}', [AkaunController::class, 'show']);
+
+        Route::get('/pengeluaran-dana', [PengeluaranDanaController::class, 'index']);
+        Route::get('/jaminan', [JaminanController::class, 'index']);
+        Route::get('/kutipan', [KutipanController::class, 'index']);
+    });
 });

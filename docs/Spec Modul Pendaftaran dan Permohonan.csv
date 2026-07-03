@@ -1,0 +1,115 @@
+PEMBANGUNAN SISTEM PENGURUSAN PEMBIAYAAN TEKUN NASIONAL (SPPT),,
+JADUAL PEMATUHAN SPESIFIKASI TEKNIKAL,,
+NO. TENDER : TEKUN/JP/TENDER2026/SPPT (1),,
+Mohon isi Maklum Balas YA / TIDAK (Wajib Dilengkapkan) dan Cadangan/Catatan (Sekiranya Ada) di Kotak Berwarna Biru,,
+BIL.,SPESIFIKASI PERKHIDMATAN,PEMATUHAN
+1,MODUL PENDAFTARAN & PERMOHONAN,
+1,Akses Portal SPPT (Pendaftaran ID & Login),
+1.0.1,"Petender hendaklah membangunkan fungsi pendaftaran ID baharu bagi pengguna pertama kali, yang membolehkan pemohon mendaftar akaun dengan memasukkan maklumat asas (Nama, No. MyKad, Email, No. Telefon).",Mandatori
+1.0.2,Sistem hendaklah menghantar OTP (One Time Password) melalui SMS/Email bagi tujuan pengesahan akaun. ,Mandatori
+1.0.3,Sistem hendaklah membenarkan pengguna log masuk ke portal SPPT menggunakan ID & kata laluan selepas akaun disahkan.,Mandatori
+1.0.4,Petender perlu memastikan sistem menyokong 2-Factor Authentication (2FA) seperti OTP / aplikasi authenticator bagi setiap kali log masuk.,Mandatori
+1.0.5,"Sistem hendaklah dilengkapi fungsi Fraud Detection untuk memantau cubaan log masuk luar biasa (lokasi asing, percubaan gagal berulang, penggunaan peranti baharu) dan menguatkuasakan kawalan keselamatan yang bersesuaian.",Mandatori
+1.0.6,"Sistem hendaklah merekod semua aktiviti pendaftaran dan log masuk dalam audit trail (ID pengguna, tarikh/masa, alamat IP/peranti). Laporan log hendaklah boleh dieksport (PDF/Excel).",Mandatori
+1.0.7,Sistem hendaklah dilengkapi dengan integrasi JPN semasa kemasukan No MyKad.,Mandatori
+1.0.8,Sistem hendaklah dilengkapi eKYC (electronic Know Your Customer) yang standard.,Mandatori
+1.0.9,"Sistem hendaklah dilengkapi Agensi Pelaporan Kredit untuk semakan kredit (Contoh EXPERIAN, CTOS, CCRIS).",Mandatori
+1.0.10,Sistem hendaklah menyokong pendaftaran syarikat dengan lebih daripada seorang pemilik/pengarah sebagaimana direkodkan dalam pangkalan data SSM.,Mandatori
+1.0.11,"Pemohon hendaklah ditetapkan sebagai Primary Account Holder, iaitu pemegang akaun utama untuk log masuk SPPT dan bertanggungjawab terhadap semua urusan rasmi syarikat.",Mandatori
+1.0.12,"Sistem tidak membenarkan penambahan 2–3 pengarah/pemilik lain sebagai pengguna berdaftar tambahan di bawah profil syarikat dengan Role-Based Access Control (RBAC) – contohnya: (i) akses penuh, (ii) akses kewangan/dokumen, (iii) akses semakan sahaja.",Mandatori
+1.0.13,"Pemohon yang didaftarkan perlu disahkan identitinya menggunakan No. MyKad melalui integrasi JPN / MyGDX, serta dipadankan dengan rekod SSM secara automatik. Notifikasi automatik (SMS/Email) hendaklah dihantar kepada pemohon berdaftar bagi setiap transaksi kritikal (contoh: penghantaran permohonan, perubahan maklumat, kelulusan).",Mandatori
+1.1,AI Chatbot / Virtual Assistant,
+1.1.1,"Petender hendaklah membangunkan AI Chatbot / Virtual Assistant yang boleh diakses dari sistem SPPT, aplikasi mudah alih, dan saluran komunikasi lain (contoh: WhatsApp, Telegram).",Mandatori
+1.1.2,Sistem mestilah menyokong Natural Language Processing (NLP) dwibahasa (Bahasa Melayu & Inggeris) untuk memahami pertanyaan usahawan secara semula jadi.,Mandatori
+1.1.3,"Chatbot perlu berfungsi sebagai Onboarding Assistant, membantu pengguna baharu melalui proses pendaftaran ID, muat naik dokumen, pemilihan produk, dan semakan status permohonan.",Mandatori
+1.1.4,"Chatbot hendaklah diintegrasikan dengan modul dalaman (contoh: semakan kelayakan awal, status permohonan, notifikasi pembayaran) untuk memberi jawapan masa nyata.",Mandatori
+1.1.5,Chatbot mestilah menyokong fungsi AI Recommendation untuk mencadangkan produk pembiayaan yang sesuai berdasarkan profil usahawan digital.,Mandatori
+1.1.6,"Semua interaksi chatbot hendaklah direkodkan dalam audit trail (ID pengguna, masa, pertanyaan, jawapan chatbot) untuk kawalan dalaman dan pematuhan.",Mandatori
+1.1.7,Petender hendaklah membangunkan AI Chatbot / Virtual Assistant yang boleh diakses oleh usahawan melalui portal SPPT (web & mobile) sepanjang proses pendaftaran dan permohonan.,Mandatori
+1.1.8,"AI Chatbot mestilah menyokong Natural Language Processing (NLP) dalam sekurang-kurangnya Bahasa Melayu & Bahasa Inggeris untuk menjawab pertanyaan umum (contoh: dokumen yang diperlukan, beza produk SPUMI vs Kontrak-i, status permohonan).",Mandatori
+1.1.9,Sistem hendaklah menyokong integrasi Chatbot dengan Profil Usahawan Digital untuk memberikan jawapan khusus (contoh: “Permohonan anda sedang di semak Jawatankuasa Kredit”).,Mandatori
+1.1.10,"Chatbot perlu menyokong AI Recommendation untuk mencadangkan produk pembiayaan, latihan keusahawanan, atau dokumen tambahan yang perlu dimuat naik, berdasarkan data pemohon.",Mandatori
+1.1.11,"Semua interaksi Chatbot hendaklah direkodkan dalam audit trail untuk tujuan analitik (contoh: soalan paling kerap ditanya, tahap kepuasan pengguna) serta kawalan keselamatan.",Mandatori
+1.1.12,"Chatbot perlu menyokong handover kepada pegawai manusia (live agent) sekiranya soalan tidak dapat dijawab, dengan rekod perbualan dipindahkan kepada pegawai untuk kesinambungan.",Mandatori
+1.1.13,"Chatbot hendaklah mempunyai fungsi handover to human agent, di mana pertanyaan kompleks boleh dihantar terus ke pegawai TEKUN melalui sistem tiket atau live chat.",Mandatori
+1.2,Pendaftaran Maklumat Pemohon (Individu/Syarikat),
+1.2.1,"Petender hendaklah membangunkan borang elektronik untuk input maklumat asas pemohon (Contoh Nama, No. MyKad, Alamat, Maklumat Syarikat/Perniagaan) yang mesra pengguna, responsive design, serta boleh diakses melalui web & mudah alih (Android, iOS & Huawei). Borang hendaklah menyokong auto-save draft dan validation rules (contoh: format nombor telefon, email, poskod).",Mandatori
+1.2.2,Petender hendaklah membangunkan fungsi pendaftaran ID baharu dengan menyediakan pilihan awal (Radio Button/Dropdown) untuk pemohon memilih kategori pendaftaran sama ada: (i) Individu atau (ii) Syarikat.,Mandatori
+1.2.3,Petender hendaklah membangunkan borang dinamik di mana medan (fields) akan berubah secara automatik berdasarkan kategori yang dipilih oleh pemohon:,Mandatori
+,"• Individu ? Contoh No. MyKad, Tarikh Lahir, Email Peribadi, No. Telefon.",Mandatori
+,"• Syarikat ? Contoh No. Pendaftaran SSM, Nama Syarikat, Nama Pengarah/Pemilik, Email Rasmi Syarikat, No. Telefon.",Mandatori
+1.2.4,"Sistem mestilah dilengkapi dengan integrasi automatik kepada pangkalan data agensi berkaitan (MyGDX, JPN, SSM, CIDB, Agensi Pelaporan Kredit dan lain-lain yang berkaitan) untuk menarik maklumat asas secara automatik, sekaligus mengurangkan pengisian manual oleh pemohon.",Mandatori
+1.2.5,"Sistem hendaklah menyediakan fungsi AI eKYC untuk semakan wajah berbanding MyKad, dilengkapi dengan AI Fraud Detection. Sistem juga hendaklah menyokong liveness detection (contoh: kedipan mata / pergerakan kepala) bagi mengelakkan spoofing menggunakan gambar atau video.",Mandatori
+1.2.6,"Petender hendaklah membangunkan fungsi duplicate record check yang mengesan pendaftaran berganda berdasarkan No. MyKad, No. Telefon atau Email, dengan amaran automatik kepada pengguna dan pegawai TEKUN.",Mandatori
+1.2.7,Sistem hendaklah menyediakan modul auto-fill di mana maklumat asas yang telah wujud dalam pangkalan data TEKUN atau hasil semakan MyIdentity boleh dimasukkan secara automatik ke dalam borang untuk mengurangkan kesilapan manual.,Mandatori
+1.2.8,Semua data pemohon (input borang & data semakan) mestilah disimpan dalam MSSQL versi terkini dengan enkripsi AES-256 semasa penghantaran (TLS 1.3) dan semasa penyimpanan (data-at-rest encryption).,Mandatori
+1.2.9,"Sistem hendaklah menyediakan audit trail bagi setiap tindakan (masa, ID pengguna, IP address, jenis tindakan) untuk tujuan keselamatan & kawalan dalaman. Laporan audit hendaklah boleh dieksport dalam format PDF/Excel/dan lain-lain.",Mandatori
+1.2.10,Petender hendaklah memastikan sistem menyokong dua bahasa bi-lingual support) iaitu Bahasa Melayu & Bahasa Inggeris untuk kegunaan pemohon dan pegawai.,Mandatori
+1.2.11,"Sistem hendaklah mempunyai auto-notification (SMS/Email) selepas pendaftaran berjaya dihantar, termasuk nombor rujukan permohonan unik (Application Reference ID).",Mandatori
+1.3,Pemilihan Jenis Perniagaan,
+1.3.1,"Sistem hendaklah membolehkan pemohon/pegawai memilih kategori aktiviti perniagaan sama ada: (i) Perniagaan Patuh Syariah, (ii) Perniagaan Tidak Patuh Syariah yang dibenarkan, (iii) Perniagaan Bercampur, atau (iv) Lain-lain kategori berdasarkan penetapan Jawatankuasa Syariah TEKUN.",Mandatori
+1.3.2,"Sistem hendaklah mempunyai senarai dinamik (dynamic list) yang boleh dikemaskini oleh pegawai Syariah atau pentadbir TEKUN mengikut perubahan dasar/penetapan semasa, tanpa memerlukan ubah suai kod.",Mandatori
+1.3.3,"Sistem hendaklah membolehkan pegawai menambah rujukan dokumen sokongan (contoh: Lesen Perniagaan, SSM Form 9, Surat Pengesahan Syariah) sebelum mengesahkan kategori perniagaan.",Mandatori
+1.3.4,Sistem hendaklah menyediakan ruang catatan pegawai untuk merekodkan alasan pemilihan/penetapan kategori perniagaan.,Mandatori
+1.3.5,"Semua pemilihan jenis perniagaan hendaklah direkodkan dalam audit trail (tarikh, masa, ID pegawai, kategori dipilih, dokumen sokongan).",Mandatori
+1.3.6,Sistem hendaklah menyediakan paparan status Syariah awal yang jelas (contoh: “Produk ini hanya untuk perniagaan Patuh Syariah” atau “Kategori bercampur – semakan lanjut diperlukan”).,Mandatori
+1.3.7,Data pemilihan jenis perniagaan hendaklah diintegrasikan dengan modul seterusnya (Penilaian & Kelulusan) untuk rujukan TEKUN Nasional.,Mandatori
+1.4,Pemilihan Jenis Produk Pembiayaan,
+1.4.1,"Sistem hendaklah membolehkan pegawai memilih jenis produk pembiayaan (contoh: SPUMI, Kontrak-i, Tekun Niaga) melalui senarai dropdown/menu interaktif yang mesra pengguna.",Mandatori
+1.4.2,"Sistem hendaklah menyediakan AI Recommendation Engine yang menganalisis maklumat asas usahawan (umur, sektor perniagaan, lokasi, keperluan modal) dan mencadangkan produk pembiayaan yang paling sesuai secara automatik.",Mandatori
+1.4.3,"Petender hendaklah membangunkan paparan perbandingan produk (comparison view) yang menunjukkan ringkasan ciri-ciri utama seperti had pembiayaan maksimum, tempoh bayaran balik, kadar keuntungan, dan keperluan dokumen, bagi membantu usahawan atau pegawai membuat pilihan tepat.",Mandatori
+1.4.4,"Sistem hendaklah membolehkan usahawan atau pegawai menapis (filter) produk mengikut kategori tertentu (contoh: pembiayaan mikro, pembiayaan kontrak, pembiayaan khas wanita, pembiayaan belia, dsb).",Mandatori
+1.4.5,"Sistem hendaklah membolehkan pegawai melihat status syariah produk (contoh: patuh Syariah, Tawarruq, dsb) yang dipaparkan secara jelas dengan label/tagging.",Mandatori
+1.4.6,"Sistem hendaklah membolehkan pegawai TEKUN mengkonfigurasi kriteria cadangan AI (contoh: sektor perniagaan tertentu, lokasi luar bandar, atau kategori asnaf) supaya lebih fleksibel dengan dasar semasa.",Mandatori
+1.4.7,Sistem hendaklah menyokong fungsi bi-language (BM/BI) dalam paparan produk & cadangan.,Mandatori
+1.4.8,"Sistem hendaklah merekod semua pilihan produk dan cadangan ke dalam audit trail untuk tujuan pemantauan, kawalan dalaman, dan analitik dasar.",Mandatori
+1.4.9,"Petender hendaklah memastikan modul ini mesra mobile-first design, supaya pemilihan produk boleh dilakukan dengan lancar melalui peranti mudah alih.",Mandatori
+1.5,Profil Usahawan Digital (Entrepreneur Profile),
+1.5.1,Petender hendaklah membangunkan Profil Usahawan Digital yang dijana secara automatik selepas pemohon melengkapkan pendaftaran asas dan pemilihan produk pembiayaan. Profil ini perlu dipaparkan dalam Portal SPPT dengan antara muka mesra pengguna (web & mudah alih).,Mandatori
+1.5.2,"Profil hendaklah mengandungi maklumat lengkap pemohon (contoh peribadi, perniagaan, cagaran, status Syariah), senarai produk yang dipohon, serta status kelulusan terkini.",Mandatori
+1.5.3,"Sistem mestilah menyokong status pelbagai peringkat permohonan (contoh: diterima, dalam semakan, memerlukan dokumen tambahan, lulus, tidak lulus) dan memaparkan maklumat tersebut kepada pemohon secara masa nyata.",Mandatori
+1.5.4,"Petender perlu membangunkan fungsi document checklist di dalam profil, bagi menunjukkan dokumen yang telah dimuat naik, dokumen yang menunggu semakan, dan dokumen yang masih diperlukan.",Mandatori
+1.5.5,"Profil mestilah disepadukan dengan notifikasi automatik (SMS, Email, Portal) supaya usahawan menerima kemas kini setiap kali berlaku perubahan status permohonan.",Mandatori
+1.5.6,"Semua interaksi di Profil Usahawan Digital mestilah direkodkan dalam audit trail untuk tujuan kawalan dalaman, pemantauan pengurusan, dan pematuhan piawaian keselamatan (ISO 27001 & Risk Management in Technology - RMiT BNM).",Mandatori
+1.6,Semakan Kelayakan Awal (Automatik/Manual),
+1.6.1,"Sistem hendaklah melakukan semakan kelayakan awal automatik melalui integrasi ke Agensi Pelaporan Kredit (APK), SSM, serta sistem dalaman TEKUN untuk status overlap, reschedule, blacklist dan lain-lain.",Mandatori
+1.6.2,"Petender hendaklah membolehkan pegawai TEKUN membuat semakan dan kemaskini manual tambahan bagi kes khas (contoh: pengecualian dasar, pembiayaan khas kerajaan, atau akaun yang memerlukan pengesahan dokumen tambahan) dan mestilah direkodkan dalam audit trail untuk tujuan kawalan dalaman.",Mandatori
+1.6.3,"Sistem hendaklah dilengkapi dengan AI Risk Scoring Engine yang mengira tahap risiko pemohon berdasarkan data APK, rekod bayaran TEKUN, sejarah reschedule, serta faktor demografi/perniagaan.",Mandatori
+1.6.4,"Sistem hendaklah menyediakan dashboard semakan kelayakan yang memaparkan hasil integrasi (status APK, rekod SSM, status dalaman TEKUN) dalam bentuk ringkas dengan indikator warna. Contohnya (Hijau = Layak, Kuning = Semakan Lanjut, Merah = Tidak Layak).",Mandatori
+1.6.5,"Sistem hendaklah menyokong rule-based validation (contoh: umur minimum 18 tahun, syarikat mesti berdaftar SSM, tiada rekod blacklist) yang boleh dikonfigurasi oleh pegawai TEKUN tanpa pengubahsuaian kod sistem.",Mandatori
+1.6.6,"Semua hasil semakan (automatik & manual) hendaklah direkodkan dalam audit trail dengan maklumat masa, ID pegawai, keputusan, dan sumber data (MyGDX, JPN, SSM, CIDB, Agensi Pelaporan Kredit dan lain-lain yang berkaitan) untuk tujuan kawalan dalaman & pematuhan.",Mandatori
+1.7,Muat Naik dan Penghantaran Dokumen Sokongan,
+1.7.1,"Sistem hendaklah membolehkan pemohon memuat naik dokumen sokongan (contoh Kad Pengenalan, Lesen Perniagaan, Penyata Bank, dll) dalam format PDF/JPG/PNG dan lain-lain format yang berkaitan.",Mandatori
+1.7.2,Sistem hendaklah menggunakan AI-OCR untuk membaca dokumen sokongan dan auto-populate ke dalam sistem secara automatik.,Mandatori
+1.7.3,Sistem hendaklah menyokong drag-and-drop upload dan batch upload (multiple files) untuk kemudahan pengguna.,Mandatori
+1.7.4,"Sistem hendaklah mempunyai fungsi real-time validation bagi setiap dokumen yang dimuat naik (contoh: saiz fail, jenis fail, kualiti imej minimum).",Mandatori
+1.7.5,"Sistem hendaklah menggunakan AI Document Classifier untuk mengenal pasti jenis dokumen secara automatik (contoh: IC, SSM Form 9, Penyata Bank) tanpa pengguna perlu memilih kategori.",Mandatori
+1.7.6,"Sistem hendaklah menyokong digital stamping / watermark (contoh: “Untuk Kegunaan TEKUN Sahaja”) secara automatik selepas dokumen berjaya dimuat naik, bagi tujuan keselamatan.",
+1.7.7,"Sistem hendaklah menyimpan semua dokumen di dalam document repository yang selamat, dengan enkripsi AES-256 dan kawalan akses berasaskan peranan (Role-Based Access Control – RBAC).",Mandatori
+1.7.8,"Sistem hendaklah menyediakan version control bagi setiap dokumen (contoh: jika dokumen dimuat naik semula, versi lama masih disimpan untuk rekod audit).",Mandatori
+1.7.9,"Semua aktiviti muat naik, semakan, dan pengesahan dokumen hendaklah direkodkan dalam audit trail (tarikh, masa, pengguna, tindakan).",Mandatori
+1.7.10,Sistem hendaklah menghantar notifikasi automatik (SMS/Email) kepada pemohon / pegawai selepas semua dokumen berjaya dimuat naik atau jika terdapat kegagalan muat naik.,Mandatori
+1.8,Penjadualan Temuduga / Tapisan Awal,
+1.8.1,Sistem hendaklah membolehkan pemohon memilih slot masa temuduga yang ditawarkan pegawai melalui portal/aplikasi SPPT (self-service appointment).,Mandatori
+1.8.2,"Sistem hendaklah menyediakan modul penjadualan temuduga/tapisan awal yang membolehkan pegawai atau pemohon menetapkan tarikh, masa, dan lokasi secara automatik serta menghantar notifikasi SMS/Email kepada pemohon.",Mandatori
+1.8.3,Sistem hendaklah menyokong fungsi setup kalendar.,Mandatori
+1.8.4,Sistem hendaklah diintegrasikan dengan kalendar sedia ada (contoh: Google Calendar) untuk mengelakkan konflik jadual pegawai.,
+1.8.5,"Sistem hendaklah menyokong auto-rescheduling jika pegawai menukar tarikh/masa, dengan notifikasi automatik dihantar semula kepada pemohon.",Mandatori
+1.8.6,"Sistem hendaklah menyokong mod temuduga fizikal dan maya (online), termasuk penyediaan pautan automatik (contoh: Microsoft Teams/Zoom/Google Meet) berdasarkan ketetapan polisi/SOP sedia ada TEKUN.",Mandatori
+1.8.7,"Sistem hendaklah menyimpan semua rekod temuduga (contoh tarikh, masa, lokasi, pegawai yang dijadualkan, jenis temuduga) dalam audit trail.",Mandatori
+1.8.8,Sistem hendaklah membolehkan pegawai memuat naik nota/penilaian ringkas selepas sesi temuduga untuk rujukan modul seterusnya (Penilaian & Kelulusan).,Mandatori
+1.8.9,"Sistem hendaklah menyediakan laporan statistik temuduga (contoh: bilangan temuduga dijalankan, kehadiran/tidak hadir, kadar penjadualan semula).",Mandatori
+1.9,Notifikasi & Audit Trail,
+1.9.1,"Sistem hendaklah menghantar notifikasi automatik (SMS/Email) selepas selesai pendaftaran, semakan awal, atau penjadualan temuduga.",Mandatori
+1.9.2,"Sistem hendaklah menyokong multi-channel notification (contoh: SMS, Email, Push Notification dalam aplikasi mudah alih).",Mandatori
+1.9.3,"Sistem hendaklah menyediakan template notifikasi boleh ubah suai (customizable templates) oleh pegawai TEKUN tanpa perlu bantuan vendor (contoh: mesej makluman kelulusan, temuduga, atau dokumen tidak lengkap).",Mandatori
+1.9.4,"Sistem hendaklah menghantar notifikasi pengesahan transaksi (contoh: pendaftaran berjaya, dokumen diterima, status kelayakan awal) yang mengandungi nombor rujukan unik permohonan.",Mandatori
+1.9.5,"Sistem hendaklah merekod semua aktiviti (log masuk, input, upload, semakan, kelulusan) ke dalam audit trail (ID pengguna, masa, tindakan, IP address, peranti digunakan).",Mandatori
+1.9.6,"Sistem hendaklah menyokong fungsi Anomaly Detection untuk mengenal pasti aktiviti luar biasa (contoh: percubaan login berulang, muat turun data besar, perubahan tidak normal).",Mandatori
+1.9.7,"Sistem hendaklah menyediakan reporting & dashboard audit trail yang boleh ditapis mengikut pengguna, tarikh, jenis aktiviti, dan lokasi akses.",Mandatori
+1.9.8,"Sistem hendaklah membolehkan export log audit trail dalam format PDF/Excel/CSV untuk tujuan audit dalaman dan pematuhan pihak ketiga (contoh: BNM, Ketua Audit Negara).",Mandatori
+1.9.9,Semua rekod notifikasi & audit trail hendaklah disimpan sekurang-kurangnya 7 tahun (atau mengikut polisi semasa) mengikut piawaian arkib data kewangan.,Mandatori
+1.9.10,"Sistem hendaklah menyokong tamper-proof logging (contoh: hash encryption, blockchain-based logging atau write-once storage) bagi mengelakkan manipulasi rekod audit.",Mandatori
+1.1,Integrasi Ke Semua Modul Yang Berkaitan,
+1.10.1,Semua data yang lengkap hendaklah dihantar secara automatik ke semua modul yang berkaitan untuk proses seterusnya.,Mandatori
+TAMAT MODUL PENDAFTARAN & PERMOHONAN,,

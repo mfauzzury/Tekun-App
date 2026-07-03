@@ -1,0 +1,117 @@
+,,,,,,,,,,
+PEMBANGUNAN SISTEM PENGURUSAN PEMBIAYAAN TEKUN NASIONAL (SPPT),,,,,,,,,,
+JADUAL PEMATUHAN SPESIFIKASI TEKNIKAL,,,,,,,,,,
+NO. TENDER : TEKUN/JP/TENDER2026/SPPT (1),,,,,,,,,,
+Mohon isi Maklum Balas YA / TIDAK (Wajib Dilengkapkan) dan Cadangan/Catatan (Sekiranya Ada) di Kotak Berwarna Biru,,,,,,,,,,
+BIL.,SPESIFIKASI PERKHIDMATAN,PEMATUHAN,MAKLUM BALAS (WAJIB PILIH YA / TIDAK),CADANGAN/CATATAN,,,,,,
+5,MODUL BAYARAN PEMBIAYAAN (FINANCING PAYMENT),,,,,,,,,
+5.1,Saluran Pembayaran,,,,,,,,,
+5.1.1,Petender hendaklah menyediakan fungsi pembayaran di kaunter (tunai / kad debit) melalui MAC dengan resit rasmi yang dijana secara automatik dan baki pinjaman dikemaskini secara real-time.,Mandatori,,,,,,,,
+5.1.2,"Petender perlu menyediakan integrasi pembayaran FPX melalui SPPT dan TEKUNPay yang mempunyai pilihan bank seperti CIMB, Maybank, Bank Islam dan lain-lain termasuk pengesahan automatik (API) dan rekod rujukan transaksi.",Mandatori,,,,,,,,
+5.1.3,Petender hendaklah melaksanakan integrasi sepenuhnya dengan TEKUNPay. Kemaskini status error FPX dalam TEKUNPay serta merta selepas proses update status dilakukan (SPPT). Semakan semasa API bersama TEKUNPay.,Mandatori,,,,,,,,
+5.1.4,"Petender dikehendaki membangunkan fungsi pembayaran melalui Auto Debit (e-Mandate) yang mempunyai ciri integrasi dengan bank panel, penyedia perkhidmatan auto-debit (contoh: PayNet, eMandate) termasuk notifikasi prabayaran, log status berjaya/gagal dan auto-terminate selepas 3 kegagalan.",Mandatori,,,,,,,,
+5.1.5,"Petender dikehendaki membangunkan fungsi tetapan seperti penetapan tarikh potongan bulanan, notifikasi prabayaran sebelum potongan dilaksanakan, penyimpanan log bayaran berjaya atau gagal, mekanisme auto-stop bagi akaun yang telah selesai bayar serta auto-terminate selepas tiga bulan berturut-turut percubaan potongan gagal.",Mandatori,,,,,,,,
+5.1.6,"Petender hendaklah menyediakan integrasi pembayaran melalui e-Wallet (Touch ‘n Go, ShopeePay, Boost, GrabPay, MAE) termasuk DuitNow QR Code / redirect dan rekod transaksi automatik.",Mandatori,,,,,,,,
+5.1.7,"Petender perlu memastikan bagi Produk Kontrak-i, sistem membenarkan rekod pembayaran melalui EFT, cek atau kiriman wang dengan slip transaksi dan dokumen sokongan dimuat naik ke sistem.",Mandatori,,,,,,,,
+5.1.8,"Petender dikehendaki membangunkan fungsi pembayaran melalui digital banking seperti contoh GX Bank, Ryt Bank dan lain-lain.",Mandatori,,,,,,,,
+5.1.9,Petender hendaklah membangunkan Digit akaun (virtual akaun) untuk usahawan seperti proses CDM dan lain-lain,Mandatori,,,,,,,,
+5.2,Resit Manual / Bulk Payment,,,,,,,,,
+5.2.1,"Permohonan pembukaan resit manual daripada lain-lain jabatan berkaitan bayaran seperti adv, insuran, dividen, IPM, OVL, dll yang perlu ada lampiran seperti senarai nama, emel dll. Kemasukan resit daripada bank - fungsi upload ke sistem mengikut format bank.",Mandatori,,,,,,,,
+5.2.2,Petender hendaklah menyediakan fungsi offline (sync pembayaran selepas online).,Mandatori,,,,,,,,
+5.3,Kaedah Bayaran,,,,,,,,,
+5.3.1,"Petender hendaklah menyediakan kaedah bayaran seperti contoh EFT, Cek, Tunai, Kiriman Wang (Bank Draft), Online Banking dan Bayaran di PSAT.",Mandatori,,,,,,,,
+5.3.2,"Sistem hendaklah menyediakan dashboard pergerakan pengesahan baucer (Pembantu Pegawai (PP), Pengurus Cawangan (PC), HQ) dengan menarik automatik maklumat inden dan syarikat sebelum PP merekod baucer. Sistem melakukan validation tarikh daftar cek, menjana resit automatik tanpa resit fizikal, memadankan No. IC dan Akaun Pembiayaan, membenarkan muat naik dokumen serta menyediakan slip transaksi. Notifikasi dihantar jika PC lewat mengesahkan dan sistem mesti verified resit supaya tally dengan bank statement. Selepas PC sahkan, resit sementara dijana dan HQ membuat semakan akhir. Tarikh duit masuk dipaparkan secara automatik tetapi boleh di edit. Jensi carian kekal dengan fungsi boleh ditambah oleh admin dan laporan boleh dijana mengikut mod bayaran.",Mandatori,,,,,,,,
+5.3.3,Batal Buku Resit - Pendaftaran dan pemantauan buku resit.,Mandatori,,,,,,,,
+5.3.4,Petender hendaklah membangunkan Bayaran Pembiayaan Melalui Portal Usahawan di mana Usahawan boleh membuat bayaran melalui FPX/e-wallet/debit card/credit card dan lain-lain dalam portal website usahawan.,Mandatori,,,,,,,,
+5.4,Pemadanan Resit Bayaran,,,,,,,,,
+5.4.1,"Petender hendaklah menyediakan pemadanan resit bayaran automatik (Direct Hit) berdasarkan nombor akaun pinjaman, nombor IC dan kod transaksi unik.",Mandatori,,,,,,,,
+5.4.2,Petender perlu menyediakan fungsi pemadanan manual bagi kes bayaran luar talian atau tanpa rujukan lengkap di mana pegawai boleh membuat pemadanan manual melalui sistem back-end termasuk log audit pegawai.,Mandatori,,,,,,,,
+5.4.3,Petender dikehendaki membangunkan mekanisme pengendalian bayaran tidak dikenali (Unmatched/Unverified) yang direkodkan dalam log untuk tindakan pegawai dan proses refund serta dibenarkan untuk membuat pembetulan atau pindaan data transaksi bayaran.,Mandatori,,,,,,,,
+5.4.4,Petender hendaklah memastikan setiap pemadanan automatik atau manual dikemas kini dalam Modul Pinjaman dan Modul Audit dengan rekod log audit lengkap.,Mandatori,,,,,,,,
+5.4.5,Notifikasi boleh dihantar kepada penerima biaya untuk pengesahan rujukan bayaran pembiayaan bagi akaun selesai bayar/tutup tamat.,Mandatori,,,,,,,,
+5.4.6,Proses pelaksanaan refund dalam sistem diproses oleh kewangan dan EFT ke akaun usahawan.,Mandatori,,,,,,,,
+5.4.7,"Segala permintaan pindaan transaksi dilakukan dalam sistem dashboard, kelompok/resit dan audit log bagi setiap level.",Mandatori,,,,,,,,
+5.4.8,Pengesahan Resit dengan menggunakan AI OCR,Mandatori,,,,,,,,
+5.4.9,"Kemaskini slip bank dengan mewujudkan fungsi upload dokumen (skrin PP & PC) untuk pengesahan cawangan.
+i.	Imej slip-bank
+ii.	Imej Cek
+iii.	Slip deposit cek
+
+Diperingkat Ibu Pejabat boleh papar dan muat turun dokumen tersebut.",Mandatori,,,,,,,,
+5.4.10,"Pemadanan Berdasarkan tarikh bayaran, jumlah bayaran dan status pembiayaan (aktif / tertunggak). Jika padan, sistem akan terus mengemaskini baki pembiayaan, tandakan ansuran sebagai “telah dibayar” dan simpan log rekod bayaran.",Mandatori,,,,,,,,
+5.4.11,Petender hendaklah membangunkan borang JPSP02 secara online yang mempunyai maklumat seperti pindaan maklumat transaksi pembayaran. Segala permintaan pindaan transaksi dilakukan dalam sistem melalui dashboard dan kelompok/resit serta mempunyai audit log bagi setiap level. Pengesahan borang adalah secara digital (online).,Mandatori,,,,,,,,
+5.4.12,Resit gagal proses yang mempunyai paparan skrin bagi keseluruhan mengikut negeri/cawangan untuk tindakan pindaan. Validation resit akan dilakukan oleh Jabatan Penyelarasan Pembayaran (JPSP).,Mandatori,,,,,,,,
+5.5,Pengurusan Lebihan & Kekurangan Bayaran,,,,,,,,,
+5.5.1,Petender hendaklah menyediakan mekanisme automatik untuk mengesan lebihan bayaran (Overpayment) dan merekodnya sebagai kredit lebihan dengan pilihan offset ansuran akan datang atau refund serta menjana notifikasi kepada penerima biaya dan pegawai kewangan untuk tindakan lanjut.,Mandatori,,,,,,,,
+5.5.2,"Petender hendaklah menyediakan kaedah pilihan pengurusan lebihan adalah ditolak dari ansuran bulan hadapan, diminta untuk dikembalikan (refund), disimpan dalam akaun sebagai “advance payment”.",Mandatori,,,,,,,,
+5.5.3,"Petender perlu menyediakan pengesanan kekurangan bayaran (Underpayment) secara automatik, termasuk status tunggakan sebahagian dan peringatan kepada peminjam.",Mandatori,,,,,,,,
+5.5.4,"Sistem akan merekod kekurangan sebagai “tunggakan sebahagian”, status ansuran dikira “tidak  mencukupi” dan menghantar peringatan kepada penerima biaya untuk bayaran penuh.",Mandatori,,,,,,,,
+5.5.5,Petender dikehendaki membangunkan sistem yang menyesuaikan jadual bayaran dan baki pinjaman secara automatik mengikut lebihan/kekurangan bayaran tanpa campur tangan manual.,Mandatori,,,,,,,,
+5.5.6,Jumlah kekurangan akan digabungkan dengan ansuran bulan seterusnya (bayaran mengikut priority payment) atau dikenakan ta’widh lewat (jika berkenaan).,Mandatori,,,,,,,,
+5.5.7,Petender hendaklah memastikan semua lebihan dan kekurangan direkodkan dalam laporan berkala dan audit trail yang lengkap.,Mandatori,,,,,,,,
+5.5.8,"Petender hendaklah membangunkan fungsi dan proses Lebihan Bayaran untuk skim Kontrak-i yang perlu memaparkan semula maklumat kontrak (inden, pemberi kontrak, dan sebagainya untuk double check). Jabatan Kontrak-i boleh view semula paparan pengesahan resit oleh Jabatan Penyelarasan Pembayaran (JPSP) untuk memastikan proses semak imbang (checker maker).",Mandatori,,,,,,,,
+5.5.9,"Sistem hendaklah menyokong proses pengurusan lebihan bayaran, termasuk bayaran tambahan, bon serta kes tersalah bayar contohnya situasi di mana pemberi kontrak membuat bayaran secara tidak tepat ke akaun TEKUN. Pengurusan lebihan bayaran ini hendaklah dilaksanakan melalui aliran kerja yang melibatkan Cawangan, Jabatan Kontrak-i (JKI) serta pengesahan rasmi melalui memo. Selepas selsai proses Lebihan Bayaran, akaun akan auto close.",Mandatori,,,,,,,,
+5.5.10,Petender hendaklah membangunkan fungsi bayaran lebihan ke pihak ketiga (kontra) seperti contoh akaun Sendiri/Pihak Ketiga.,Mandatori,,,,,,,,
+5.6,Penyata Bayaran & Rekonsiliasi Bank,,,,,,,,,
+5.6.1,"Petender hendaklah membangunkan penjanaan penyata bayaran automatik (mingguan, bulanan, suku tahunan, tahunan) berdasarkan transaksi bayaran masuk, status pemadanan, baki semasa, owings, simpanan dan keuntungan caj terkumpul (jika ada).",Mandatori,,,,,,,,
+5.6.2,"Format penyata seperti nama penerima biaya, nombor akaun pembiayaan, tarikh & amaun bayaran, baki sebelum &  terkini, status bayaran: penuh / sebahagian / tertunggak, jumlah terkini dibayar, amaun tunggakan (jika ada), bayaran lebih (jika ada).",Mandatori,,,,,,,,
+5.6.3,"Petender perlu menyediakan akses penyata untuk peminjam melalui portal pengguna, memilih tempoh penyata (contoh: Jan-Jun, 2025), menerima salinan melalui emel secara automatik (jika ditetapkan) dan boleh dimuat turun dalam format PDF yang mempunyai timestamp dan nombor rujukan.",Mandatori,,,,,,,,
+5.6.4,Petender dikehendaki menyediakan akses untuk pegawai TEKUN menjana penyata individu atau berkumpulan dengan fungsi filter lokasi/tarikh/produk dan menggunakan penyata dalam sesi kutipan atau audit dalaman.,Mandatori,,,,,,,,
+5.6.5,Petender hendaklah menyediakan fungsi penyata atas permintaan (On-Demand Statement) dengan carian berdasarkan No. IC atau No. Pinjaman.,Mandatori,,,,,,,,
+5.6.6,"Petender perlu membangunkan fungsi recon penyata bank, termasuk pemadanan tarikh, masa, amaun, no akaun pembiayaan, kod ejen, nombor cek/EFT, log audit automatik untuk setiap transaksi dan lain-lain.",Mandatori,,,,,,,,
+5.6.7,"Petender dikehendaki merekod setiap akses, tarikh penjanaan penyata, muat turun, atau perubahan atau pengemaskinian penyata dalam log audit untuk pematuhan audit dalaman dan luaran.",Mandatori,,,,,,,,
+5.6.8,"Sistem hendaklah menyediakan modul Penyesuaian Resit (Recon) yang berupaya memadankan data resit dengan penyata bank secara automatik dan manual. Petender hendaklah memastikan perkara berikut disediakan:
+
+Pemadanan Data Resit & Penyata Bank
+• Keupayaan memuat naik semua penyata bank bagi akaun kutipan.
+• Setiap padanan hendaklah mengandungi maklumat penting seperti Tarikh, Masa, Jumlah, Nombor Akaun Pembiayaan, Kod Ejen, Nombor Cek dan maklumat lain yang relevan.
+• Sistem memberi keutamaan kepada pengiraan jumlah resit bulan semasa bagi tujuan recon, termasuk penentuan resit yang tidak dapat dipadankan.
+
+Pengurusan & Pembetulan oleh Jabatan Penyelarasan Pembayaran (JPSP)
+• Pegawai dibenarkan membuat pengemaskinian sekiranya berlaku kesilapan padanan.
+• Pegawai boleh memadam atau mengecualikan (delete/exclude) mana-mana rekod atau medan yang tidak diperlukan untuk proses recon.
+• Modul recon hendaklah disediakan pada skrin yang berasingan daripada modul Kewangan.
+
+Penetapan Kekerapan Recon
+• Sistem hendaklah menyokong penetapan kekerapan recon secara harian, mingguan atau bulanan.",Mandatori,,,,,,,,
+5.6.9,"Pengurusan dan Pindaan Resit
+Sistem hendaklah menyediakan modul Pengurusan dan Pindaan Resit yang menyokong keseluruhan kitaran hayat resit, termasuk proses pengesahan, pembatalan, pindaan, pengemaskinian, pewujudan baharu dan reversal resit. Modul ini hendaklah mematuhi keperluan berikut:
+
+1. Fungsi Pengurusan Resit
+Sistem hendaklah membolehkan:
+Pengesahan resit oleh pegawai yang diberi kuasa.
+Pembatalan resit bagi transaksi yang tidak sah.
+Pindaan dan pengemaskinian data resit bagi kesilapan input.
+Pewujudan resit baharu sekiranya diperlukan.
+Proses reversal resit mengikut kawalan dalaman kewangan.
+
+2. Muat Naik Dokumen
+Sistem hendaklah menyediakan fungsi muat naik dokumen sokongan berkaitan skim Kontrak-i.
+
+Dashboard Pengesahan
+Dashboard hendaklah memaparkan urutan pengesahan baucer berdasarkan tarikh pengesahan oleh Pengurus Cawangan (PC).
+
+Pemadanan Resit dengan Penyata Bank
+JPSP memuat naik penyata bank secara harian dan sistem hendaklah melakukan pemadanan automatik berdasarkan ciri-ciri berikut seperti Nama pembekal / pembayar, Nombor EFT / nombor cek, Jumlah transaksi, Nombor akaun pembiayaan dan maklumat lain yang berkaitan
+
+Notifikasi Automatik
+Sistem hendaklah menghantar emel notifikasi pengesahan baucer kepada Pembantu Pegawai (PP) dan PC secara automatik melalui alamat yang akan ditetapkan.
+
+3. Lain-Lain Produk (Mobile App Collector (MAC) / Cek)
+JPSP memuat naik penyata bank secara harian dan sistem hendaklah melaksanakan pemadanan automatik berdasarkan data berikut seperti Kod Ejen, Masa transaksi, Amaun, Tarikh dan maklumat lain yang berkaitan.",Mandatori,,,,,,,,
+5.7,Pengurusan Early Settlement,,,,,,,,,
+5.7.1,"Petender hendaklah membangunkan fungsi Pengiraan Penyelesaian Awal (Early Settlement) yang melaksanakan pengiraan rebat secara automatik selepas bayaran akhir dibuat. Sistem hendaklah membenarkan pentadbir jabatan untuk menetapkan atau mengubah parameter pengiraan rebat sekiranya berlaku perubahan polisi. Usahawan hanya dibenarkan melihat amaun bersih (net) yang perlu dijelaskan.
+Nota: Pengiraan hendaklah mengambil kira caj dua (2) bulan.",Mandatori,,,,,,,,
+5.8,Pengurusan Akaun Selesai Bayar,,,,,,,,,
+5.8.1,Mewujudkan status makluman serahan NOD kepada usahawan bagi memastikan caj owings dalam proses tindakan.,Mandatori,,,,,,,,
+5.8.2,Tindakan selesai bayar boleh dilaksanakan di peringkat cawangan tanpa melibatkan pelarasan secara manual.,Mandatori,,,,,,,,
+5.8.3,Mewujudkan dashboard untuk cawangan bagi pemantauan akaun selesai bayar mengikut jadual/ pengeluaran nama dari Agensi Pelaporan Kredit (seperti CTOS) untuk tindakan selanjutnya.,Mandatori,,,,,,,,
+5.9,Adjustment Akaun,,,,,,,,,
+5.9.1,"Sekiranya terdapat pengurangan bayaran setelah akaun tutup tamat tidak boleh dikemaskini tetapi terdapat fungsi untuk adjustment akaun tersebut tanpa mengubah status akaun asal dan pengiraan terkini pada akaun adjustment tersebut. Dari segi pelaporan, akaun terkini ada pada akaun adjustment.",Mandatori,,,,,,,,
+5.10,Komponen Kecerdasan AI untuk Pengurusan Bayaran Balik,,,,,,,,,
+5.10.1,Petender hendaklah menyediakan pemadanan resit bayaran automatik dengan akaun pinjaman menggunakan logik pintar.,Mandatori,,,,,,,,
+5.10.2,Petender perlu membangunkan analitik untuk mengesan lebihan/kekurangan bayaran dan memberi cadangan pelarasan automatik.,Mandatori,,,,,,,,
+5.10.3,"Petender dikehendaki menyediakan chatbot pintar untuk semakan baki, penyata dan panduan pembayaran.",Mandatori,,,,,,,,
+5.10.4,Petender hendaklah membangunkan penjanaan penyata automatik berkala atau atas permintaan serta menghantar notifikasi pintar melalui SMS/e-mel. Sistem perlu force ON notification.,Mandatori,,,,,,,,
+5.10.5,Petender perlu membangunkan fungsi ramalan corak bayaran untuk memberi peringatan awal tunggakan atau pembayaran awal kepada peminjam.,Mandatori,,,,,,,,
+TAMAT MODUL BAYARAN PEMBIAYAAN (FINANCING PAYMENT),,,,,,,,,,

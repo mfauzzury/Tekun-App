@@ -24,6 +24,7 @@ class RoleSeeder extends Seeder
                     'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
                     'settings.view', 'settings.edit',
                     'menus.view', 'menus.edit',
+                    'sppt.view', 'sppt.create', 'sppt.edit', 'sppt.delete',
                 ],
             ]
         );

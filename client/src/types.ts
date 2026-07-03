@@ -1,5 +1,6 @@
 export type PublishStatus = "draft" | "published" | "archived";
 export type ThemeColor = "violet" | "blue" | "green" | "red" | "black-white" | "grey";
+export type AppLanguage = "bm" | "bi";
 
 export type ApiError = { error: { code: string; message: string; details?: unknown } };
 
@@ -167,4 +168,104 @@ export type AuditLog = {
   userAgent: string | null;
   createdAt: string;
   user?: { id: number; name: string; email: string } | null;
+};
+
+// ── SPPT / Pengurusan Pembiayaan ──
+
+export type SpptDashboardSummary = {
+  permohonanDalamProses: number;
+  akaunAktif: number;
+  kutipanBulanIni: number;
+  tunggakan: number;
+  kesLitigasiAktif: number;
+  jaminanAktif: number;
+  pengeluaranMenunggu: number;
+  jumlahUsahawan: number;
+  permohonanSelesaiBulanIni: number;
+};
+
+export type SpptReferenceData = Record<string, unknown>;
+
+export type UsahawanInput = {
+  noUsahawan?: string;
+  nama: string;
+  noIc?: string;
+  alamat?: string;
+  poskod?: string;
+  negeri?: string;
+  noTelefon?: string;
+  email?: string;
+  jenisPerniagaan?: string;
+  status?: string;
+};
+
+export type Usahawan = UsahawanInput & {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PermohonanInput = {
+  noRujukan?: string;
+  usahawanId?: number;
+  nama: string;
+  kategoriPembiayaan?: string;
+  status?: string;
+  jumlahPermohonan?: number;
+  tarikhPermohonan?: string;
+  details?: Record<string, unknown>;
+};
+
+export type Permohonan = PermohonanInput & {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  usahawan?: Usahawan | null;
+};
+
+export type AkaunPembiayaan = {
+  id: number;
+  noAkaun: string;
+  permohonanId?: number | null;
+  usahawanId?: number | null;
+  ic?: string | null;
+  nama: string;
+  namaSyarikat?: string | null;
+  ssm?: string | null;
+  pukonsa?: string | null;
+  cawangan?: string | null;
+  negeri?: string | null;
+  produk?: string | null;
+  tarikhMula?: string | null;
+  tarikhTamat?: string | null;
+  jumlahPembiayaan: number;
+  bakiPokok: number;
+  bakiKeuntungan: number;
+  bakiSimpanan: number;
+  penalti: number;
+  tunggakan: number;
+  bakiAkhir: number;
+  bayaranBulanan: number;
+  status: string;
+  risiko: string;
+  noBsas?: string | null;
+  snc: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SpptSetupStatusItem = {
+  value: string;
+  label: string;
+  color?: string;
+  active?: boolean;
+  sort?: number;
+};
+
+export type SpptSetupCategory = {
+  key: string;
+  label: string;
+  labelEn?: string;
+  description?: string;
+  items: SpptSetupStatusItem[];
 };

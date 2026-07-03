@@ -3,8 +3,9 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
 import { useRoute, useRouter } from "vue-router";
 import { Bell, Check, ChevronDown, LogOut, Settings, Shield } from "lucide-vue-next";
 
-import type { ThemeColor } from "@/types";
+import type { AppLanguage, ThemeColor } from "@/types";
 import type { MenuItemDef, MenuNode } from "@/config/admin-menu";
+import { useI18n } from "@/composables/useI18n";
 import { useSidebarCollapse } from "@/composables/useSidebarCollapse";
 import { useToast } from "@/composables/useToast";
 import AppToastRegion from "@/components/AppToastRegion.vue";
@@ -12,6 +13,7 @@ import AppToastRegion from "@/components/AppToastRegion.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useMenuStore } from "@/stores/menu";
 import { useSiteStore } from "@/stores/site";
+import { useUiLocaleStore } from "@/stores/uiLocale";
 import { useUiThemeStore } from "@/stores/uiTheme";
 import { API_BASE_URL } from "@/env";
 
@@ -21,6 +23,8 @@ const auth = useAuthStore();
 const menuStore = useMenuStore();
 const site = useSiteStore();
 const uiTheme = useUiThemeStore();
+const uiLocale = useUiLocaleStore();
+const { t, menuLabel } = useI18n();
 const toast = useToast();
 const { isCollapsed, isCompact, toggle: toggleSidebar, toggleCompact } = useSidebarCollapse();
 
@@ -35,6 +39,11 @@ const themeChoices: Array<{ label: string; value: ThemeColor }> = [
   { label: "B&W", value: "black-white" },
   { label: "Grey", value: "grey" },
 ];
+
+const languageChoices = computed<Array<{ label: string; value: AppLanguage }>>(() => [
+  { label: t("layout.languageBm"), value: "bm" },
+  { label: t("layout.languageBi"), value: "bi" },
+]);
 
 const handleDocumentClick = (event: MouseEvent) => {
   if (!settingsOpen.value) return;
@@ -81,7 +90,7 @@ const userInitials = computed(() => {
     .slice(0, 2);
 });
 
-const userRoleLabel = computed(() => auth.user?.role || "Administrator");
+const userRoleLabel = computed(() => auth.user?.role || t("layout.administrator"));
 const HEADER_TEXT_MAX = 20;
 
 function truncateHeaderText(value: string, max = HEADER_TEXT_MAX) {
@@ -118,10 +127,10 @@ const childRowClass = computed(() =>
 async function signOut() {
   try {
     await auth.signOut();
-    toast.success("Signed out", "You have been logged out.");
+    toast.success(t("layout.signedOut"), t("layout.signedOutMessage"));
     router.push("/admin/login");
   } catch (e) {
-    toast.error("Sign out failed", e instanceof Error ? e.message : "Please try again.");
+    toast.error(t("layout.signOutFailed"), e instanceof Error ? e.message : t("auth.loginFailed"));
   }
 }
 
@@ -229,7 +238,7 @@ watch(
             <p class="text-sm font-medium text-slate-700 group-hover:text-white">{{ headerUserName }}</p>
             <p class="text-[11px] text-slate-500 group-hover:text-white/80">{{ headerUserRole }}</p>
           </div>
-          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Profile</span>
+          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t('layout.profile') }}</span>
         </router-link>
 
         <span class="h-full w-px bg-slate-200" />
@@ -240,14 +249,14 @@ watch(
             @click.stop="settingsOpen = !settingsOpen"
           >
             <Settings class="h-4 w-4" />
-            <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Theme settings</span>
+            <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t('layout.themeSettings') }}</span>
           </button>
 
           <div
             v-if="settingsOpen"
             class="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-slate-200 bg-white p-3 shadow-lg"
           >
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Theme color</p>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('layout.themeColor') }}</p>
             <div class="grid grid-cols-2 gap-2">
               <button
                 v-for="theme in themeChoices"
@@ -280,11 +289,29 @@ watch(
             </div>
 
             <div class="mt-3 border-t border-slate-200 pt-3">
+              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('layout.language') }}</p>
+              <div class="grid grid-cols-1 gap-2">
+                <button
+                  v-for="lang in languageChoices"
+                  :key="lang.value"
+                  class="flex items-center justify-between rounded-md border px-2.5 py-2 text-xs font-medium transition-colors"
+                  :class="uiLocale.language === lang.value
+                    ? 'border-[var(--accent-500)] bg-[var(--accent-50)] text-[var(--accent-700)]'
+                    : 'border-slate-200 text-slate-600 hover:border-[var(--accent-ring)] hover:text-slate-900'"
+                  @click="uiLocale.setLanguage(lang.value)"
+                >
+                  <span>{{ lang.label }}</span>
+                  <Check v-if="uiLocale.language === lang.value" class="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-3 border-t border-slate-200 pt-3">
               <button
                 class="flex w-full items-center justify-between rounded-md border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-700 transition-colors hover:border-[var(--accent-ring)]"
                 @click="toggleCompact"
               >
-                <span>Compact sidebar</span>
+                <span>{{ t('layout.compactSidebar') }}</span>
                 <span
                   class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
                   :class="isCompact ? 'bg-[var(--accent-600)]' : 'bg-slate-300'"
@@ -306,7 +333,7 @@ watch(
         >
           <Bell class="h-4 w-4" />
           <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
-          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Notifications</span>
+          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t('layout.notifications') }}</span>
         </button>
 
         <span class="h-full w-px bg-slate-200" />
@@ -316,7 +343,7 @@ watch(
           @click="signOut"
         >
           <LogOut class="h-4 w-4" />
-          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">Logout</span>
+          <span class="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t('layout.logout') }}</span>
         </button>
       </div>
     </header>
@@ -328,7 +355,7 @@ watch(
       >
         <button
           class="absolute -right-3.5 top-10 z-40 hidden h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-[var(--accent-600)] text-white shadow-md transition-all hover:bg-[var(--accent-700)] hover:shadow-lg md:flex"
-          :title="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+          :title="isCollapsed ? t('layout.expandSidebar') : t('layout.collapseSidebar')"
           @click="toggleSidebar"
         >
           <ChevronDown
@@ -354,7 +381,7 @@ watch(
               class="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
               :class="[gi === 0 ? 'mb-1' : 'mb-1 mt-4', isCollapsed ? 'md:hidden' : '']"
             >
-              {{ group.label }}
+              {{ menuLabel(group.id, group.label) }}
             </p>
 
             <div v-for="item in group.items" :key="item.id" class="mb-0.5">
@@ -377,7 +404,7 @@ watch(
                     isCollapsed && isNodeActive(item) ? 'md:text-[var(--accent-700)] text-slate-700' : isNodeActive(item) ? 'text-slate-900' : 'text-slate-400 group-hover:text-[var(--accent-600)]'
                   ]"
                 />
-                <span class="flex-1" :class="isCollapsed ? 'md:hidden' : ''">{{ item.label }}</span>
+                <span class="flex-1" :class="isCollapsed ? 'md:hidden' : ''">{{ menuLabel(item.id, item.label) }}</span>
                 <ChevronDown
                   class="h-4 w-4 text-slate-400 transition-transform duration-200"
                   :class="[{ '-rotate-90': !openMenus[item.id] }, isCollapsed ? 'md:hidden' : '']"
@@ -386,7 +413,7 @@ watch(
                   v-if="isCollapsed"
                   class="pointer-events-none absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 md:block"
                 >
-                  {{ item.label }}
+                  {{ menuLabel(item.id, item.label) }}
                 </span>
               </button>
 
@@ -408,12 +435,12 @@ watch(
                     isCollapsed && isActive(item.to) ? 'md:text-[var(--accent-700)] text-slate-700' : isActive(item.to) ? 'text-slate-900' : 'text-slate-400 group-hover:text-[var(--accent-600)]'
                   ]"
                 />
-                <span class="flex-1" :class="isCollapsed ? 'md:hidden' : ''">{{ item.label }}</span>
+                <span class="flex-1" :class="isCollapsed ? 'md:hidden' : ''">{{ menuLabel(item.id, item.label) }}</span>
                 <span
                   v-if="isCollapsed"
                   class="pointer-events-none absolute left-full z-50 ml-2 hidden whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 md:block"
                 >
-                  {{ item.label }}
+                  {{ menuLabel(item.id, item.label) }}
                 </span>
               </router-link>
 
@@ -429,7 +456,7 @@ watch(
                     :class="[childRowClass, childClass(isNodeActive(child) ? route.path : child.to)]"
                     @click="toggleMenu(child.id)"
                   >
-                    <span class="flex-1">{{ child.label }}</span>
+                    <span class="flex-1">{{ menuLabel(child.id, child.label) }}</span>
                     <ChevronDown
                       class="h-3.5 w-3.5 text-slate-400 transition-transform duration-200"
                       :class="{ '-rotate-90': !openMenus[child.id] }"
@@ -441,7 +468,7 @@ watch(
                     :to="child.to"
                     :class="[childRowClass, childClass(child.to)]"
                   >
-                    {{ child.label }}
+                    {{ menuLabel(child.id, child.label) }}
                   </router-link>
 
                   <div
@@ -454,7 +481,7 @@ watch(
                       :to="grandchild.to"
                       :class="[childRowClass, childClass(grandchild.to)]"
                     >
-                      {{ grandchild.label }}
+                      {{ menuLabel(grandchild.id, grandchild.label) }}
                     </router-link>
                   </div>
                 </template>
