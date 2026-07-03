@@ -14,15 +14,14 @@
     "marked": "^17.0.3",
     "pinia": "^3.0.3",
     "vue": "^3.5.21",
-    "vue-router": "^4.5.1"
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^24.4.0",
     "@vitejs/plugin-vue": "^6.0.1",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.9.2",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
     "vite": "^8.0.1",
     "vue-tsc": "^3.0.6"
   }
