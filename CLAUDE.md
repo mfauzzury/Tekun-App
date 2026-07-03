@@ -10,7 +10,7 @@
 | Name | CORRAD Laravel CMS |
 | Backend | Laravel 13, PHP 8.3+, Laravel Sanctum 4.3 |
 | Frontend | Vue 3 + TypeScript + Tailwind CSS 4 + Pinia 3 + Vite 8 |
-| Database | SQLite (dev), MySQL (prod) |
+| Database | MySQL (shared dev/staging + prod), SQLite (automated tests only) |
 | Auth | Sanctum session-based SPA auth, RBAC via `Permission` class |
 | Commands | `composer setup` (init), `composer dev` (run all), `composer test` (PHPUnit) |
 
@@ -513,6 +513,15 @@ These rules are mandatory and non-negotiable.
 - Use `WithoutModelEvents` in `DatabaseSeeder` (or in a specific seeder when intentionally suppressing model events)
 - Register in `DatabaseSeeder::run()` call chain
 - Existing order: RoleSeeder → UserSeeder → SettingSeeder → CategorySeeder
+
+### Shared Development Database (MySQL)
+
+- Local/staging dev now points at a **shared MySQL instance** used concurrently by the whole team, not a personal sandbox. Connection details live in `.env` (untracked); template in `.env.example`. Get `DB_PASSWORD` from the team password manager — never from chat.
+- Only `php artisan migrate` is permitted against this database. Never run `migrate:fresh`, `db:wipe`, or `migrate:rollback` — they affect every developer's data. If a migration needs correcting, write a new forward migration instead.
+- `php artisan db:seed` is safe to re-run at any time — all seeders use `updateOrCreate`/`firstOrCreate` and are idempotent.
+- Set `QUEUE_CONNECTION=sync` locally (the `.env.example` default) so `composer dev`'s queue listener runs jobs in-process instead of polling the shared `jobs` table, which would otherwise let one developer's local worker pick up another developer's queued job.
+- `CACHE_STORE` and `SESSION_DRIVER` stay on `database` against the shared instance — session rows are keyed per-browser-cookie and cache/rate-limiter keys are per-route/IP, so cross-developer collisions aren't a practical risk. Just be aware `cache:clear` affects the whole team.
+- PHPUnit is unaffected — `phpunit.xml` pins its own isolated `sqlite`/`:memory:` connection regardless of the app's `DB_CONNECTION`.
 
 ---
 

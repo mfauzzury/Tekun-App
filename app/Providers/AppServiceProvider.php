@@ -19,6 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (config('database.default') === 'sqlite' && ! $this->app->environment('testing')) {
+            throw new \RuntimeException(
+                'SQLite is only permitted in the testing environment. Set DB_CONNECTION=mysql in your .env (see .env.example).'
+            );
+        }
     }
 }
