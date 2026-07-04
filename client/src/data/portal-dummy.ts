@@ -119,3 +119,132 @@ export const FAQ_DUMMY = [
     a: "Pergi ke halaman Temuduga, pilih permohonan dan klik 'Tukar Tarikh' untuk memilih slot baharu.",
   },
 ];
+
+/**
+ * Auto-eligibility engine simulation (PDF §1.4 "Saringan Auto-Kelayakan").
+ * Pure, deterministic, client-side only — no real credit-bureau/blacklist API.
+ */
+export const ELIGIBILITY_RULES = {
+  minAge: 18,
+  maxAge: 60,
+  blacklistedIcs: ["800101-01-0001", "900202-02-0002"],
+  maxExistingCommitmentRatio: 0.7,
+} as const;
+
+export interface EligibilityInput {
+  umur: number;
+  noKp: string;
+  pendapatanBulanan: number;
+  jumlahKomitmenSediaAda: number;
+}
+
+export interface EligibilityResult {
+  eligible: boolean;
+  reasons: string[];
+}
+
+export function evaluateEligibility(input: EligibilityInput): EligibilityResult {
+  const reasons: string[] = [];
+
+  if (input.umur < ELIGIBILITY_RULES.minAge || input.umur > ELIGIBILITY_RULES.maxAge) {
+    reasons.push(`Umur mesti di antara ${ELIGIBILITY_RULES.minAge} hingga ${ELIGIBILITY_RULES.maxAge} tahun.`);
+  }
+
+  if ((ELIGIBILITY_RULES.blacklistedIcs as readonly string[]).includes(input.noKp.trim())) {
+    reasons.push("No. Kad Pengenalan disenaraikan dalam senarai hitam (blacklist).");
+  }
+
+  const ratio = input.pendapatanBulanan > 0 ? input.jumlahKomitmenSediaAda / input.pendapatanBulanan : 1;
+  if (ratio > ELIGIBILITY_RULES.maxExistingCommitmentRatio) {
+    reasons.push("Komitmen kewangan sedia ada melebihi had maksimum berbanding pendapatan.");
+  }
+
+  return { eligible: reasons.length === 0, reasons };
+}
+
+/** OTP/TAC simulation (PDF §1.2) — no real SMS/email gateway. */
+export const OTP_EXPIRY_SECONDS = 300;
+
+export function generateOtp(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+/** eKYC simulation (PDF §1.3) — no real vendor/liveness detection. */
+export interface EkycSimulationInput {
+  idFrontUploaded: boolean;
+  idBackUploaded: boolean;
+  selfieCaptured: boolean;
+}
+
+export interface EkycSimulationResult {
+  status: "lulus" | "gagal";
+  confidence: number;
+  reasons: string[];
+}
+
+export function simulateEkyc(input: EkycSimulationInput): EkycSimulationResult {
+  if (input.idFrontUploaded && input.idBackUploaded && input.selfieCaptured) {
+    return { status: "lulus", confidence: 0.94, reasons: ["Padanan wajah berjaya", "Dokumen sah dan jelas"] };
+  }
+
+  const reasons: string[] = [];
+  if (!input.idFrontUploaded) reasons.push("Imej hadapan kad pengenalan tidak dimuat naik.");
+  if (!input.idBackUploaded) reasons.push("Imej belakang kad pengenalan tidak dimuat naik.");
+  if (!input.selfieCaptured) reasons.push("Pengesahan wajah (liveness) tidak lengkap.");
+
+  return { status: "gagal", confidence: 0.2, reasons };
+}
+
+/** Status timeline (PDF §3.6 "application timeline tracker"), keyed by STATUS_OPTIONS' statusKey. */
+export interface StatusMilestone {
+  label: string;
+  done: boolean;
+}
+
+export const STATUS_TIMELINE: Record<string, StatusMilestone[]> = {
+  diterima: [
+    { label: "Permohonan Diterima", done: true },
+    { label: "Semakan Dokumen", done: false },
+    { label: "Penilaian Kredit", done: false },
+    { label: "Keputusan", done: false },
+  ],
+  dalam_semakan: [
+    { label: "Permohonan Diterima", done: true },
+    { label: "Semakan Dokumen", done: true },
+    { label: "Penilaian Kredit", done: false },
+    { label: "Keputusan", done: false },
+  ],
+  dokumen_tambahan: [
+    { label: "Permohonan Diterima", done: true },
+    { label: "Semakan Dokumen", done: true },
+    { label: "Dokumen Tambahan Diperlukan", done: false },
+    { label: "Penilaian Kredit", done: false },
+    { label: "Keputusan", done: false },
+  ],
+  lulus: [
+    { label: "Permohonan Diterima", done: true },
+    { label: "Semakan Dokumen", done: true },
+    { label: "Penilaian Kredit", done: true },
+    { label: "Keputusan: Lulus", done: true },
+  ],
+  tidak_lulus: [
+    { label: "Permohonan Diterima", done: true },
+    { label: "Semakan Dokumen", done: true },
+    { label: "Penilaian Kredit", done: true },
+    { label: "Keputusan: Tidak Lulus", done: true },
+  ],
+};
+
+/**
+ * Trimmed copy of the step taxonomy from views/sppt/PermohonanBaruView.vue (staff-side form),
+ * dropping staff-only fields marked "(diisi TEKUN)" there (e.g. PERKESO sektor/kelas).
+ */
+export const PERMOHONAN_BARU_STEPS = [
+  { id: "asas", label: "Asas" },
+  { id: "pemohon", label: "Pemohon" },
+  { id: "alamat", label: "Alamat" },
+  { id: "pekerjaan", label: "Pekerjaan" },
+  { id: "perniagaan", label: "Perniagaan" },
+  { id: "pembiayaan", label: "Pembiayaan" },
+  { id: "dokumen", label: "Dokumen" },
+] as const;
