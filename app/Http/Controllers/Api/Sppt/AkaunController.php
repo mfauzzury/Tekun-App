@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Sppt;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
 use App\Models\AkaunPembiayaan;
+use App\Services\SpptViewTransform;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,14 +33,23 @@ class AkaunController extends Controller
         }
 
         if ($status) {
-            $query->where('status', $status);
+            $statusMap = [
+                'aktif' => 'Aktif',
+                'tunggakan' => 'Tunggakan',
+                'npf' => 'NPF',
+                'selesai' => 'Selesai',
+                'dibekukan' => 'Dibekukan',
+                'batal' => 'Batal',
+            ];
+            $query->where('status', $statusMap[strtolower($status)] ?? $status);
         }
 
         $total = $query->count();
         $rows = $query->orderByDesc('created_at')
             ->skip(($page - 1) * $limit)
             ->take($limit)
-            ->get();
+            ->get()
+            ->map(fn (AkaunPembiayaan $row) => SpptViewTransform::akaun($row));
 
         return $this->sendOk($rows, [
             'page' => $page,
@@ -51,12 +61,18 @@ class AkaunController extends Controller
 
     public function summary(): JsonResponse
     {
+        $aktif = AkaunPembiayaan::where('status', 'Aktif')->count();
+        $totalBakiTertunggak = (float) AkaunPembiayaan::selectRaw('SUM(tunggakan + penalti) as total')->value('total');
+        $bayaranTerkini = AkaunPembiayaan::where('status', 'Aktif')->where('tunggakan', 0)->count();
+        $akaunBaru = AkaunPembiayaan::whereMonth('tarikh_mula', now()->month)
+            ->whereYear('tarikh_mula', now()->year)
+            ->count();
+
         return $this->sendOk([
-            'jumlahAktif' => AkaunPembiayaan::where('status', 'Aktif')->count(),
-            'bakiTertunggak' => (float) AkaunPembiayaan::sum('tunggakan'),
-            'akaunBaruBulanIni' => AkaunPembiayaan::whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
-                ->count(),
+            'jumlahAktif' => $aktif,
+            'bakiTertunggak' => $totalBakiTertunggak,
+            'bayaranTerkini' => $bayaranTerkini,
+            'akaunBaruBulanIni' => $akaunBaru,
         ]);
     }
 
@@ -67,6 +83,6 @@ class AkaunController extends Controller
             return $this->sendError(404, 'NOT_FOUND', 'Akaun not found');
         }
 
-        return $this->sendOk($akaun);
+        return $this->sendOk(SpptViewTransform::akaun($akaun));
     }
 }

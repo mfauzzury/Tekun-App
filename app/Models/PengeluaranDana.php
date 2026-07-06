@@ -26,6 +26,7 @@ class PengeluaranDana extends Model
         'status',
         'no_rujukan_bank',
         'fraud_risk',
+        'fraud_alert',
         'bsas_verified',
         'legal_docs_complete',
         'tarikh_pengeluaran',

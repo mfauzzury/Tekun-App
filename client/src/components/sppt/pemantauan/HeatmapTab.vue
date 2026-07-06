@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { usahawanList } from "@/data/pemantauan-usahawan-dummy";
-import { KATEGORI_COLORS } from "@/data/pemantauan-usahawan-dummy";
+import { ref, onMounted } from "vue";
+import { KATEGORI_COLORS, type UsahawanItem } from "@/data/pemantauan-usahawan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+
+const usahawanList = ref<UsahawanItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pemantauan", "usahawan_list");
+  usahawanList.value = res.data as UsahawanItem[];
+});
 
 // Dummy: Geospatial Risk Heatmap (Lite) - grid representation
 // Real map would use Leaflet/Mapbox - for dummy we show a grid of negeri with risk levels

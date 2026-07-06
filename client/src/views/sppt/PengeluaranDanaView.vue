@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import {
   Eye,
@@ -24,22 +24,52 @@ import {
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
+import { fetchSpptDataset, listPengeluaranDana } from "@/api/sppt";
 import {
-  items,
-  auditTrail,
-  batches as batchesData,
-  legalDocsTemplate,
-  exceptions,
-  integrationStatuses,
   BANK_OPTIONS,
   RBAC_ROLES,
   simulateAccountValidation,
   type PengeluaranItem,
   type BatchDisbursement,
+  type AuditTrailEntry,
+  type LegalDocument,
+  type ExceptionReport,
+  type IntegrationStatus,
 } from "@/data/pengeluaran-dana-dummy";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/composables/useExport";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
+
+const items = ref<PengeluaranItem[]>([]);
+const auditTrail = ref<AuditTrailEntry[]>([]);
+const batchesData = ref<BatchDisbursement[]>([]);
+const legalDocsTemplate = ref<LegalDocument[]>([]);
+const exceptions = ref<ExceptionReport[]>([]);
+const integrationStatuses = ref<IntegrationStatus[]>([]);
+const dataLoading = ref(true);
+
+onMounted(async () => {
+  try {
+    const [listRes, auditRes, batchRes, legalRes, excRes, intRes] = await Promise.all([
+      listPengeluaranDana({ limit: 100 }),
+      fetchSpptDataset("pengeluaran", "audit_trail"),
+      fetchSpptDataset("pengeluaran", "batches"),
+      fetchSpptDataset("pengeluaran", "legal_docs"),
+      fetchSpptDataset("pengeluaran", "exceptions"),
+      fetchSpptDataset("pengeluaran", "integration_statuses"),
+    ]);
+    items.value = listRes.data as PengeluaranItem[];
+    auditTrail.value = auditRes.data as AuditTrailEntry[];
+    batchesData.value = batchRes.data as BatchDisbursement[];
+    legalDocsTemplate.value = legalRes.data as LegalDocument[];
+    exceptions.value = excRes.data as ExceptionReport[];
+    integrationStatuses.value = intRes.data as IntegrationStatus[];
+  } finally {
+    dataLoading.value = false;
+  }
+});
 
 const activeTab = ref<"senarai" | "batch" | "audit" | "laporan" | "dokumen" | "exception" | "integrasi">("senarai");
 const status = ref("");
@@ -50,7 +80,11 @@ const validationResult = ref<{ valid: boolean; message: string } | null>(null);
 const validationLoading = ref(false);
 const currentRole = ref((RBAC_ROLES[1] as (typeof RBAC_ROLES)[number]).id);
 const selectedBatch = ref<BatchDisbursement | null>(null);
-const batches = ref<BatchDisbursement[]>([...batchesData]);
+const batches = ref<BatchDisbursement[]>([]);
+
+watch(batchesData, (val) => {
+  batches.value = [...val];
+}, { immediate: true });
 
 const summary = [
   { label: "Menunggu Pengeluaran", value: 8 },
@@ -74,7 +108,7 @@ const form = ref({
 const filteredItems = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   const statusVal = status.value.toLowerCase();
-  let list = [...items];
+  let list = [...items.value];
   if (query) {
     list = list.filter((i) => i.nama.toLowerCase().includes(query) || i.id.toLowerCase().includes(query) || i.idPembiayaan.toLowerCase().includes(query));
   }
@@ -112,17 +146,6 @@ watch(selectedItem, (item) => {
 }, { immediate: true });
 
 const rbacRole = computed(() => RBAC_ROLES.find((r) => r.id === currentRole.value) ?? RBAC_ROLES[0]);
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    Menunggu: "bg-amber-100 text-amber-700",
-    "Dalam Proses": "bg-blue-100 text-blue-700",
-    Berjaya: "bg-emerald-100 text-emerald-700",
-    Gagal: "bg-red-100 text-red-700",
-    Ditolak: "bg-slate-100 text-slate-600",
-  };
-  return map[s] ?? "bg-slate-100 text-slate-600";
-}
 
 function fraudRiskClass(r: string) {
   const map: Record<string, string> = {
@@ -183,7 +206,7 @@ const showEmptyState = computed(() => !selectedItem.value);
 
 // Export
 const exportData = computed(() =>
-  items.map((i) => ({
+  items.value.map((i) => ({
     ID: i.id,
     "ID Pembiayaan": i.idPembiayaan,
     "Nama Usahawan": i.nama,
@@ -315,7 +338,7 @@ const tabs = [
               <p class="mt-1 text-xs text-slate-600">{{ item.jumlah }} · {{ item.jenisPengeluaran }}</p>
               <div class="mt-2 flex flex-wrap gap-1.5">
                 <span class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="statusClass(item.status)">
-                  {{ item.status }}
+                  {{ statusLabel(item.status) }}
                 </span>
                 <span v-if="item.fraudRisk" class="rounded-full px-2 py-0.5 text-[10px] font-medium" :class="fraudRiskClass(item.fraudRisk)">
                   {{ item.fraudRisk }}
@@ -342,7 +365,7 @@ const tabs = [
                 <p class="mt-0.5 font-mono text-sm text-slate-500">{{ selectedItem.id }}</p>
                 <div class="mt-1 flex flex-wrap gap-1.5">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(selectedItem.status)">
-                    {{ selectedItem.status }}
+                    {{ statusLabel(selectedItem.status) }}
                   </span>
                   <span v-if="selectedItem.fraudRisk" class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="fraudRiskClass(selectedItem.fraudRisk)">
                     AI: {{ selectedItem.fraudRisk }}
@@ -498,7 +521,7 @@ const tabs = [
                 <p class="mt-1 text-lg font-semibold text-slate-700">{{ b.jumlahTotal }}</p>
                 <p class="text-xs text-slate-500">{{ b.jumlahRekod }} rekod</p>
               </div>
-              <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusClass(b.status)">{{ b.status }}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
             </div>
             <div v-if="rbacRole.canApprove && (b.status === 'Menunggu Kelulusan' || b.status === 'Draf')" class="mt-3 flex gap-2">
               <button
@@ -612,7 +635,7 @@ const tabs = [
                 <td class="py-2">{{ i.nama }}</td>
                 <td class="py-2">{{ i.jumlah }}</td>
                 <td class="py-2">{{ i.tarikh }}</td>
-                <td class="py-2">{{ i.status }}</td>
+                <td class="py-2">{{ statusLabel(i.status) }}</td>
                 <td class="py-2">{{ i.bank ?? "-" }}</td>
                 <td class="py-2 font-mono">{{ i.noAkaunBank ?? "-" }}</td>
               </tr>
@@ -635,7 +658,7 @@ const tabs = [
               <FileSignature class="h-8 w-8 text-slate-400" />
               <div>
                 <p class="font-medium text-slate-900">{{ doc.nama }}</p>
-                <p class="text-xs text-slate-500">{{ doc.status }} · {{ doc.tarikhJana ?? "-" }}</p>
+                <p class="text-xs text-slate-500">{{ statusLabel(doc.status) }} · {{ doc.tarikhJana ?? "-" }}</p>
               </div>
             </div>
             <span
@@ -650,7 +673,7 @@ const tabs = [
                       : 'bg-slate-100 text-slate-600'
               "
             >
-              {{ doc.status }}
+              {{ statusLabel(doc.status) }}
             </span>
           </div>
         </div>
@@ -692,7 +715,7 @@ const tabs = [
                           : 'bg-red-100 text-red-700'
                     "
                   >
-                    {{ e.status }}
+                    {{ statusLabel(e.status) }}
                   </span>
                 </td>
                 <td class="py-2">{{ e.pegawaiBertanggungjawab }}</td>
@@ -722,7 +745,7 @@ const tabs = [
             <div class="flex items-center gap-2">
               <span v-if="int.transaksiHariIni" class="text-sm text-slate-500">{{ int.transaksiHariIni }} transaksi hari ini</span>
               <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="integrationStatusClass(int.status)">
-                {{ int.status }}
+                {{ statusLabel(int.status) }}
               </span>
               <button type="button" class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Refresh">
                 <RefreshCw class="h-4 w-4" />

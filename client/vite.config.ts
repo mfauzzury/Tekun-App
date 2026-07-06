@@ -5,6 +5,8 @@ import path from "node:path";
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  envDir: path.resolve(__dirname, ".."),
+  envPrefix: ["VITE_", "MASK_"],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

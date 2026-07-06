@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   Calendar,
@@ -20,24 +20,54 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 import { exportToExcel, exportToPDF } from "@/composables/useExport";
+import { fetchSpptDataset, listKutipan } from "@/api/sppt";
 import {
-  KUTIPAN_ITEMS,
-  SKH_ITEMS,
-  CALL_CENTER_ITEMS,
-  PSAT_ITEMS,
+  type KutipanItem,
+  type SkhItem,
+  type CallCenterItem,
+  type PsatItem,
+  type AuditLogItem,
+  type KpiPegawai,
   SKM_MINGGUAN,
-  AUDIT_LOG_ITEMS,
-  KPI_PEGAWAI,
   CAWANGAN,
   ZON,
   PEGAWAI,
   STATUS_KUTIPAN,
   MAKLUM_BALAS_PANGGILAN,
 } from "@/data/kutipan-dummy";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const router = useRouter();
+
+const kutipanItems = ref<KutipanItem[]>([]);
+const skhItems = ref<SkhItem[]>([]);
+const callCenterItems = ref<CallCenterItem[]>([]);
+const psatItems = ref<PsatItem[]>([]);
+const skmMingguan = ref<(typeof SKM_MINGGUAN)[number][]>([]);
+const auditLogItems = ref<AuditLogItem[]>([]);
+const kpiPegawai = ref<KpiPegawai[]>([]);
+
+onMounted(async () => {
+  const [listRes, skhRes, callRes, psatRes, skmRes, auditRes, kpiRes] = await Promise.all([
+    listKutipan({ limit: 100 }),
+    fetchSpptDataset("kutipan", "skh_items"),
+    fetchSpptDataset("kutipan", "call_center_items"),
+    fetchSpptDataset("kutipan", "psat_items"),
+    fetchSpptDataset("kutipan", "skm_mingguan"),
+    fetchSpptDataset("kutipan", "audit_log_items"),
+    fetchSpptDataset("kutipan", "kpi_pegawai"),
+  ]);
+  kutipanItems.value = listRes.data as KutipanItem[];
+  skhItems.value = skhRes.data as SkhItem[];
+  callCenterItems.value = callRes.data as CallCenterItem[];
+  psatItems.value = psatRes.data as PsatItem[];
+  skmMingguan.value = skmRes.data as typeof skmMingguan.value;
+  auditLogItems.value = auditRes.data as AuditLogItem[];
+  kpiPegawai.value = kpiRes.data as KpiPegawai[];
+});
 
 const activeTab = ref<"senarai" | "skh" | "call-center" | "psat" | "kpi" | "audit">("senarai");
 const q = ref("");
@@ -65,7 +95,7 @@ const summary = computed(() => [
 
 // Filtered Senarai Kutipan
 const filteredItems = computed(() => {
-  let list = [...KUTIPAN_ITEMS];
+  let list = [...kutipanItems.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter(
@@ -97,22 +127,11 @@ const filteredItems = computed(() => {
 
 // Filtered SKH
 const filteredSkh = computed(() => {
-  let list = [...SKH_ITEMS];
+  let list = [...skhItems.value];
   if (zon.value) list = list.filter((i) => i.zon === zon.value);
   if (pegawai.value) list = list.filter((i) => i.pegawaiSeliaan === pegawai.value);
   return list;
 });
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    Berjaya: "bg-emerald-100 text-emerald-700",
-    Gagal: "bg-amber-100 text-amber-700",
-    "Janji Bayar": "bg-blue-100 text-blue-700",
-    "Dalam Tindakan Kutipan": "bg-slate-100 text-slate-700",
-    "Sedia untuk Tindakan Undang-Undang": "bg-rose-100 text-rose-700",
-  };
-  return map[s] ?? "bg-slate-100 text-slate-700";
-}
 
 function exportSenaraiExcel() {
   const data = filteredItems.value.map((i) => ({
@@ -291,7 +310,7 @@ const tabs = [
                 </td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">
@@ -380,7 +399,7 @@ const tabs = [
                 <td class="px-4 py-2 text-slate-600">{{ item.kawasan }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
               </tr>
@@ -420,7 +439,7 @@ const tabs = [
                 class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
               >
                 <option value="">Pilih...</option>
-                <option v-for="k in KUTIPAN_ITEMS" :key="k.id" :value="k.id">{{ k.nama }} ({{ k.noPembiayaan }})</option>
+                <option v-for="k in kutipanItems" :key="k.id" :value="k.id">{{ k.nama }} ({{ k.noPembiayaan }})</option>
               </select>
             </div>
             <div>
@@ -468,7 +487,7 @@ const tabs = [
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in CALL_CENTER_ITEMS" :key="item.id" class="transition-colors hover:bg-slate-50">
+              <tr v-for="item in callCenterItems" :key="item.id" class="transition-colors hover:bg-slate-50">
                 <td class="px-4 py-2 font-mono text-slate-600">{{ item.id }}</td>
                 <td class="px-4 py-2 font-mono text-slate-600">{{ item.noPembiayaan }}</td>
                 <td class="px-4 py-2 font-medium text-slate-900">{{ item.nama }}</td>
@@ -510,7 +529,7 @@ const tabs = [
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in SKM_MINGGUAN" :key="row.minggu" class="border-b border-slate-100">
+                <tr v-for="row in skmMingguan" :key="row.minggu" class="border-b border-slate-100">
                   <td class="px-3 py-2">{{ row.minggu }}</td>
                   <td class="px-3 py-2">{{ row.jumlah }}</td>
                   <td class="px-3 py-2 text-emerald-600">{{ row.berjaya }}</td>
@@ -533,14 +552,14 @@ const tabs = [
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in PSAT_ITEMS" :key="item.id" class="border-b border-slate-100">
+                <tr v-for="item in psatItems" :key="item.id" class="border-b border-slate-100">
                   <td class="px-3 py-2 font-medium">{{ item.tajuk }}</td>
                   <td class="px-3 py-2">{{ item.tarikh }}</td>
                   <td class="px-3 py-2">{{ item.lokasi }}</td>
                   <td class="px-3 py-2">{{ item.peserta }}</td>
                   <td class="px-3 py-2">
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                      {{ item.status }}
+                      {{ statusLabel(item.status) }}
                     </span>
                   </td>
                 </tr>
@@ -574,7 +593,7 @@ const tabs = [
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in KPI_PEGAWAI" :key="item.nama" class="transition-colors hover:bg-slate-50">
+              <tr v-for="item in kpiPegawai" :key="item.nama" class="transition-colors hover:bg-slate-50">
                 <td class="px-4 py-2">
                   <span
                     class="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
@@ -623,7 +642,7 @@ const tabs = [
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in AUDIT_LOG_ITEMS" :key="item.id" class="transition-colors hover:bg-slate-50">
+              <tr v-for="item in auditLogItems" :key="item.id" class="transition-colors hover:bg-slate-50">
                 <td class="px-4 py-2 font-mono text-slate-600">{{ item.tarikh }}</td>
                 <td class="px-4 py-2 font-medium text-slate-900">{{ item.pegawai }}</td>
                 <td class="px-4 py-2 text-slate-600">{{ item.tindakan }}</td>

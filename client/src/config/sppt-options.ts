@@ -59,7 +59,20 @@ export const JANTINA_OPTIONS = [
 /** BPP-BORANG-01: Agama */
 export const AGAMA_OPTIONS = [
   { value: "islam", label: "Islam" },
-  { value: "bukan_islam", label: "Bukan Islam" },
+  { value: "buddha", label: "Buddha" },
+  { value: "hindu", label: "Hindu" },
+  { value: "kristian", label: "Kristian" },
+  { value: "lain_lain", label: "Lain-lain" },
+] as const;
+
+/** BPP-BORANG-01: Bangsa */
+export const BANGSA_OPTIONS = [
+  "Cina",
+  "India",
+  "Melayu",
+  "Orang Asli",
+  "TIADA MAKLUMAT",
+  "Lain-lain",
 ] as const;
 
 /** BPP-BORANG-01: Taraf perkahwinan */
@@ -81,6 +94,39 @@ export const TARAF_PENDIDIKAN_OPTIONS = [
   "Sijil Setaraf",
   "Lain-lain",
 ];
+
+/** BPP-BORANG-01: Status pekerjaan */
+export const STATUS_PEKERJAAN_OPTIONS = [
+  { value: "bekerja", label: "Bekerja" },
+  { value: "tidak_bekerja", label: "Tidak Bekerja" },
+] as const;
+
+/** BPP-BORANG-01: Sektor pekerjaan */
+export const SEKTOR_PEKERJAAN_OPTIONS = [
+  "Kerajaan",
+  "Swasta",
+  "Badan Berkanun",
+  "Kerja Sendiri",
+  "Lain-Lain",
+] as const;
+
+/** BPP-BORANG-01: Jawatan */
+export const JAWATAN_OPTIONS = [
+  "Eksekutif",
+  "Pengurus",
+  "Kerani",
+  "Juruteknik",
+  "Operator",
+  "Pekerja Kasar",
+  "Lain-lain",
+] as const;
+
+/** BPP-BORANG-01: Status jawatan */
+export const STATUS_JAWATAN_OPTIONS = [
+  "Tetap",
+  "Kontrak",
+  "Sementara",
+] as const;
 
 /** BPP-BORANG-01: Status kediaman */
 export const STATUS_KEDIAMAN_OPTIONS = [
@@ -137,3 +183,6 @@ export const PERKESO_PAKEJ = [
   { value: "c", label: "RM 232.80/tahun", amount: 232.8 },
   { value: "d", label: "RM 592.80/tahun", amount: 592.8 },
 ] as const;
+
+/** BPP-BORANG-01: Senarai bank operasi perniagaan (lampiran-list-of-bank.csv) */
+export { BANK_OPERASI_OPTIONS } from "@/data/list-of-bank";

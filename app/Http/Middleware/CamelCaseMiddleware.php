@@ -11,9 +11,14 @@ class CamelCaseMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        // Convert incoming camelCase keys to snake_case
-        if ($request->isJson() || $request->wantsJson()) {
-            $input = $request->all();
+        // Convert incoming camelCase keys to snake_case. Multipart file fields stay in the files bag.
+        $contentType = (string) $request->header('Content-Type', '');
+        $isMultipart = str_starts_with($contentType, 'multipart/form-data');
+
+        if ($request->is('api/*') || $request->isJson() || $request->wantsJson()) {
+            $input = $isMultipart
+                ? $request->except(array_keys($request->allFiles()))
+                : $request->all();
             $request->replace($this->convertKeysToSnakeCase($input));
         }
 

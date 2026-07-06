@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import { Eye, Pencil, Download, FileText, Wallet, Phone, AlertTriangle, FileSearch, X } from "lucide-vue-next";
 
@@ -8,8 +8,9 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
+import { listAkaun } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 import {
-  items as rawItems,
   getSummaryFromItems,
   shortcutFunctions,
   type AkaunItem,
@@ -17,6 +18,19 @@ import {
 import { exportToCSV, exportToExcel, exportToPDF } from "@/composables/useExport";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass: spptStatusClassFn } = useSpptStatus();
+
+const rawItems = ref<AkaunItem[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const res = await listAkaun({ limit: 100 });
+    rawItems.value = res.data as unknown as AkaunItem[];
+  } finally {
+    loading.value = false;
+  }
+});
 
 const q = ref("");
 const status = ref("");
@@ -37,7 +51,7 @@ const filterOptions = [
 const filteredItems = computed(() => {
   const query = q.value.trim().toLowerCase();
   const statusVal = status.value.toLowerCase();
-  let list = [...rawItems];
+  let list = [...rawItems.value];
 
   if (query) {
     list = list.filter(
@@ -87,7 +101,7 @@ function statusClass(s: string) {
     "Meninggal Dunia": "bg-slate-200 text-slate-600",
     Reschedule: "bg-violet-100 text-violet-700",
   };
-  return map[s] ?? "bg-slate-100 text-slate-600";
+  return map[s] ?? spptStatusClassFn(s);
 }
 
 function risikoClass(r: string) {
@@ -246,7 +260,7 @@ const exportTableData = computed(() => filteredItems.value);
                 <td class="px-4 py-2 text-slate-600">{{ fmtRm(item.bayaranBulanan) }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">
@@ -359,7 +373,7 @@ const exportTableData = computed(() => filteredItems.value);
               <div>
                 <p class="text-xs text-slate-500">Status</p>
                 <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusClass(selectedItem.status)">
-                  {{ selectedItem.status }}
+                  {{ statusLabel(selectedItem.status) }}
                 </span>
               </div>
               <div>

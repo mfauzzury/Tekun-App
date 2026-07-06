@@ -1,20 +1,28 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { NOD_ITEMS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { NodItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const rawItems = ref<NodItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "nod_items");
+  rawItems.value = res.data as NodItem[];
+});
 
 const q = ref("");
 const status = ref("");
 const activeTab = ref<"dalaman" | "panel">("dalaman");
 
 const items = computed(() => {
-  let list = [...NOD_ITEMS];
+  let list = [...rawItems.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((x) => x.noRujukan.toLowerCase().includes(lower) || x.nama.toLowerCase().includes(lower));

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Eye, MapPin, Calendar, GraduationCap, Map, Cpu } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
@@ -13,25 +13,52 @@ import ProgramLatihanTab from "@/components/sppt/pemantauan/ProgramLatihanTab.vu
 import HeatmapTab from "@/components/sppt/pemantauan/HeatmapTab.vue";
 import AITab from "@/components/sppt/pemantauan/AITab.vue";
 
+import { fetchSpptDataset } from "@/api/sppt";
 import {
-  usahawanList,
-  getSummary,
+  type UsahawanItem,
   KATEGORI_COLORS,
   STATUS_LABELS,
 } from "@/data/pemantauan-usahawan-dummy";
 
 const { t, tp } = useI18n();
 
+const usahawanList = ref<UsahawanItem[]>([]);
+const lawatanList = ref<{ id: string; usahawanId: string; tarikh: string }[]>([]);
+
+onMounted(async () => {
+  const [usahawanRes, lawatanRes] = await Promise.all([
+    fetchSpptDataset("pemantauan", "usahawan_list"),
+    fetchSpptDataset("pemantauan", "lawatan_list"),
+  ]);
+  usahawanList.value = usahawanRes.data as UsahawanItem[];
+  lawatanList.value = lawatanRes.data as typeof lawatanList.value;
+});
+
 const q = ref("");
 const status = ref("");
 const activeTab = ref<"senarai" | "lawatan" | "program" | "peta" | "ai">("senarai");
-const profilUsahawan = ref<typeof usahawanList[0] | null>(null);
+const profilUsahawan = ref<UsahawanItem | null>(null);
 const showProfilModal = ref(false);
 
-const summary = getSummary();
+const summary = computed(() => {
+  const aktif = usahawanList.value.filter((u) => u.statusPerniagaan === "aktif_berkembang" || u.statusPerniagaan === "stabil").length;
+  const lawatanBulanIni = lawatanList.value.filter((l) => {
+    const d = new Date(l.tarikh);
+    const n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }).length;
+  const prestasiBaik = usahawanList.value.filter((u) => u.skorPrestasi >= 3).length;
+  const perluPerhatian = usahawanList.value.filter((u) => u.earlyWarning || u.skorPrestasi < 3).length;
+  return [
+    { label: "Usahawan Aktif", value: aktif },
+    { label: "Lawatan Bulan Ini", value: lawatanBulanIni },
+    { label: "Prestasi Baik", value: prestasiBaik },
+    { label: "Perlu Perhatian", value: perluPerhatian },
+  ];
+});
 
 const filteredItems = computed(() => {
-  let list = [...usahawanList];
+  let list = [...usahawanList.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter(
@@ -48,12 +75,12 @@ const filteredItems = computed(() => {
   return list;
 });
 
-function openProfil(u: typeof usahawanList[0]) {
+function openProfil(u: UsahawanItem) {
   profilUsahawan.value = u;
   showProfilModal.value = true;
 }
 
-function openMap(u: typeof usahawanList[0]) {
+function openMap(u: UsahawanItem) {
   const url = `https://www.google.com/maps?q=${u.lat},${u.lng}`;
   window.open(url, "_blank");
 }

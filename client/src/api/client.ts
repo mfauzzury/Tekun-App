@@ -29,6 +29,11 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   const isForm = options.body instanceof FormData;
   const headers = isForm ? new Headers(options.headers) : buildHeaders(options.headers);
 
+  // Laravel CamelCaseMiddleware converts incoming keys when the client expects JSON.
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+
   // Always include CSRF token, even for FormData uploads
   if (isForm) {
     const token = getCsrfToken();
@@ -43,10 +48,31 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     headers,
   });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload?.error?.message || "Request failed");
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = await response.json();
+  } catch {
+    if (response.status === 413) {
+      throw new Error(`Fail terlalu besar untuk dimuat naik. Had aplikasi: 10MB setiap fail.`);
+    }
+    if (!response.ok) {
+      throw new Error(
+        response.status === 0 || response.status >= 500
+          ? "Pelayan tidak memberi respons. AI-OCR borang penuh boleh mengambil 1–5 minit — cuba semula."
+          : "Request failed",
+      );
+    }
   }
 
-  return payload;
+  if (!response.ok) {
+    const error = new Error(payload?.error?.message || "Request failed") as Error & {
+      code?: string;
+      details?: Record<string, string[] | string> | null;
+    };
+    error.code = payload?.error?.code;
+    error.details = payload?.error?.details ?? null;
+    throw error;
+  }
+
+  return payload as T;
 }

@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Calendar, FileText, MapPin } from "lucide-vue-next";
-import type { LawatanItem } from "@/data/pemantauan-usahawan-dummy";
-import { lawatanList, usahawanList } from "@/data/pemantauan-usahawan-dummy";
+import type { LawatanItem, UsahawanItem } from "@/data/pemantauan-usahawan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
+
+const lawatanList = ref<LawatanItem[]>([]);
+const usahawanList = ref<UsahawanItem[]>([]);
+
+onMounted(async () => {
+  const [lawatanRes, usahawanRes] = await Promise.all([
+    fetchSpptDataset("pemantauan", "lawatan_list"),
+    fetchSpptDataset("pemantauan", "usahawan_list"),
+  ]);
+  lawatanList.value = lawatanRes.data as LawatanItem[];
+  usahawanList.value = usahawanRes.data as UsahawanItem[];
+});
 
 const activeSub = ref<"kalendar" | "form" | "laporan">("kalendar");
 
@@ -18,7 +30,7 @@ const daysInMonth = computed(() => {
   const days: { date: Date; lawatan: LawatanItem[] }[] = [];
   for (let d = 1; d <= last.getDate(); d++) {
     const date = new Date(year, month, d);
-    const lawatan = lawatanList.filter(
+    const lawatan = lawatanList.value.filter(
       (l) => l.tarikh === date.toISOString().slice(0, 10)
     );
     days.push({ date, lawatan });
@@ -27,7 +39,7 @@ const daysInMonth = computed(() => {
 });
 
 function getUsahawanName(id: string) {
-  return usahawanList.find((u) => u.id === id)?.nama ?? id;
+  return usahawanList.value.find((u) => u.id === id)?.nama ?? id;
 }
 
 function getDayName(d: Date) {

@@ -1,262 +1,92 @@
 <script setup lang="ts">
-import { useI18n } from "@/composables/useI18n";
-import { computed } from "vue";
+import { useSpptStatus } from "@/composables/useSpptStatus";
+import { useToast } from "@/composables/useToast";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft } from "lucide-vue-next";
+import { ArrowLeft, FileText } from "lucide-vue-next";
 
+import { getPermohonan, openPermohonanDocument } from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import { documentClassLabel } from "@/config/sppt-document-classes";
+import type { Permohonan, PermohonanAttachment } from "@/types";
 import {
   AGAMA_OPTIONS,
   JANTINA_OPTIONS,
   PERKESO_PAKEJ,
+  STATUS_PEKERJAAN_OPTIONS,
   TAKAFUL_KEMALANGAN_PAKEJ,
 } from "@/config/sppt-options";
 
-const { t, tp } = useI18n();
+function normalizeStatusPekerjaan(value: unknown): "bekerja" | "tidak_bekerja" | "" {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "bekerja") return "bekerja";
+  if (normalized === "tidak_bekerja") return "tidak_bekerja";
+  return "";
+}
+
+const toast = useToast();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const route = useRoute();
 const router = useRouter();
-const id = computed(() => (route.params.id as string) || "");
+const permohonanId = computed(() => Number(route.params.id) || 0);
+
+const loading = ref(true);
+const permohonan = ref<Permohonan | null>(null);
+const form = ref<Record<string, unknown>>({});
+
+const displayTitle = computed(() => permohonan.value?.noRujukan ?? `Permohonan #${permohonanId.value}`);
+
+const attachments = computed(() => {
+  const saved = form.value.attachments;
+  if (!Array.isArray(saved)) return [] as PermohonanAttachment[];
+  return saved.filter(
+    (item): item is PermohonanAttachment =>
+      typeof item === "object" && item !== null && "id" in item && "name" in item,
+  );
+});
 
 const BULAN_OPTIONS = [
   "Januari", "Februari", "Mac", "April", "Mei", "Jun",
   "Julai", "Ogos", "September", "Oktober", "November", "Disember",
 ];
 
-// Dummy data - map list item ids to full form data
-const DUMMY_DATA: Record<string, Record<string, unknown>> = {
-  "P-2024-001": {
-    kategoriPembiayaan: "TEKUN Niaga",
-    statusPerniagaan: "sedang_berniaga",
-    sektorPerniagaan: "Peruncitan",
-    kaedahPerniagaan: "offline",
-    namaBank: "Maybank",
-    noAkaunBank: "1234567890",
-    noUsahawan: "U-001",
-    nama: "Ahmad bin Abdullah",
-    noIcBaru: "850312-10-1234",
-    noIcLama: "",
-    jantina: "L",
-    agama: "islam",
-    tarikhLahirHari: "12",
-    tarikhLahirBulan: "3",
-    tarikhLahirTahun: "1985",
-    bangsa: "Melayu",
-    kaum: "",
-    umur: "39",
-    tarafPerkahwinan: "Berkahwin",
-    bilanganTanggungan: "3",
-    oku: false,
-    diberhentikanPandemik: false,
-    asnafBerdaftar: false,
-    tarafPendidikan: "SPM",
-    alamat: "No. 12, Jalan Merdeka, 50000 Kuala Lumpur",
-    poskod: "50000",
-    negeri: "Wilayah Persekutuan Kuala Lumpur",
-    noTelefonRumah: "",
-    noTelefonBimbit: "012-3456789",
-    email: "ahmad@email.com",
-    facebook: "",
-    instagram: "",
-    statusKediaman: "Sendiri",
-    pekerjaanSekarang: "Usahawan",
-    pendapatan: "3500",
-    pendapatanBulan: "1",
-    namaMajikan: "",
-    alamatMajikan: "",
-    noTelefonMajikan: "",
-    namaPasangan: "Siti binti Abdullah",
-    noIcPasangan: "880315-08-5678",
-    pekerjaanPasangan: "Suri rumah",
-    pendapatanPasangan: "0",
-    pendapatanPasanganBulan: "1",
-    jumlahPermohonan: "50000",
-    tempohPembiayaan: "60",
-    kekerapanBayaran: "Bulanan",
-    tujuan: "Modal pusingan dan pembelian stok",
-    namaPerniagaan: "Kedai Runcit Ahmad",
-    noSsm: "",
-    tempohBerniaga: "5",
-    alamatPremis: "No. 12, Jalan Merdeka",
-    poskodPremis: "50000",
-    anggaranPendapatan: "5000",
-    statusPremis: "Sewa",
-    pemilikanPerniagaan: "Pemilikan Tunggal",
-    takafulPembiayaan: true,
-    takafulKemalangan: false,
-    perkeso: false,
-    wasiat: false,
-    kebenaranKredit: true,
-  },
-  "P-2024-002": {
-    kategoriPembiayaan: "TEKUN Niaga",
-    statusPerniagaan: "sedang_berniaga",
-    sektorPerniagaan: "Perkhidmatan",
-    kaedahPerniagaan: "online",
-    namaBank: "CIMB",
-    noAkaunBank: "9876543210",
-    noUsahawan: "U-002",
-    nama: "Siti Nurhaliza binti Omar",
-    noIcBaru: "920515-14-5678",
-    noIcLama: "",
-    jantina: "P",
-    agama: "islam",
-    tarikhLahirHari: "15",
-    tarikhLahirBulan: "5",
-    tarikhLahirTahun: "1992",
-    bangsa: "Melayu",
-    kaum: "",
-    umur: "32",
-    tarafPerkahwinan: "Berkahwin",
-    bilanganTanggungan: "2",
-    oku: false,
-    diberhentikanPandemik: false,
-    asnafBerdaftar: false,
-    tarafPendidikan: "Diploma",
-    alamat: "Lot 5, Taman Desa, 43000 Kajang",
-    poskod: "43000",
-    negeri: "Selangor",
-    noTelefonRumah: "",
-    noTelefonBimbit: "019-8765432",
-    email: "siti@email.com",
-    facebook: "",
-    instagram: "",
-    statusKediaman: "Sewa",
-    pekerjaanSekarang: "Usahawan",
-    pendapatan: "2800",
-    pendapatanBulan: "1",
-    namaPasangan: "Omar bin Hassan",
-    noIcPasangan: "900101-01-1234",
-    pekerjaanPasangan: "Pegawai Kerajaan",
-    pendapatanPasangan: "4500",
-    pendapatanPasanganBulan: "1",
-    jumlahPermohonan: "30000",
-    tempohPembiayaan: "48",
-    kekerapanBayaran: "Bulanan",
-    tujuan: "Pembelian peralatan dan stok",
-    namaPerniagaan: "Siti Catering",
-    tempohBerniaga: "2",
-    statusPremis: "Sewa",
-    pemilikanPerniagaan: "Pemilikan Tunggal",
-    takafulPembiayaan: true,
-    takafulKemalangan: true,
-    perkeso: false,
-    wasiat: false,
-    kebenaranKredit: true,
-  },
-  "P-2024-003": {
-    kategoriPembiayaan: "TEKUN Niaga",
-    statusPerniagaan: "sedang_berniaga",
-    sektorPerniagaan: "Pembuatan",
-    kaedahPerniagaan: "offline",
-    namaBank: "Bank Rakyat",
-    noAkaunBank: "5555666677",
-    noUsahawan: "U-003",
-    nama: "Mohd Rizal bin Hassan",
-    noIcBaru: "780820-10-9999",
-    noIcLama: "",
-    jantina: "L",
-    agama: "islam",
-    tarikhLahirHari: "20",
-    tarikhLahirBulan: "8",
-    tarikhLahirTahun: "1978",
-    bangsa: "Melayu",
-    kaum: "",
-    umur: "46",
-    tarafPerkahwinan: "Berkahwin",
-    bilanganTanggungan: "4",
-    oku: false,
-    diberhentikanPandemik: false,
-    asnafBerdaftar: false,
-    tarafPendidikan: "SPM",
-    alamat: "Kampung Baru, 15100 Kota Bharu",
-    poskod: "15100",
-    negeri: "Kelantan",
-    noTelefonBimbit: "013-1112233",
-    email: "rizal@email.com",
-    statusKediaman: "Sendiri",
-    pekerjaanSekarang: "Usahawan",
-    pendapatan: "4200",
-    pendapatanBulan: "1",
-    namaPasangan: "Fatimah binti Yusof",
-    noIcPasangan: "820505-06-4321",
-    pekerjaanPasangan: "Suri rumah",
-    pendapatanPasangan: "0",
-    pendapatanPasanganBulan: "1",
-    jumlahPermohonan: "75000",
-    tempohPembiayaan: "72",
-    kekerapanBayaran: "Bulanan",
-    tujuan: "Pengembangan kilang kecil dan mesin",
-    namaPerniagaan: "Rizal Woodcraft",
-    tempohBerniaga: "8",
-    statusPremis: "Sendiri",
-    pemilikanPerniagaan: "Pemilikan Tunggal",
-    takafulPembiayaan: true,
-    takafulKemalangan: true,
-    perkeso: true,
-    wasiat: false,
-    kebenaranKredit: true,
-  },
-  "P-2024-004": {
-    kategoriPembiayaan: "TEKUN Niaga",
-    statusPerniagaan: "memulakan",
-    sektorPerniagaan: "Peruncitan",
-    kaedahPerniagaan: "offline",
-    namaBank: "RHB",
-    noAkaunBank: "1122334455",
-    noUsahawan: "U-004",
-    nama: "Fatimah binti Ibrahim",
-    noIcBaru: "950210-08-1234",
-    noIcLama: "",
-    jantina: "P",
-    agama: "islam",
-    tarikhLahirHari: "10",
-    tarikhLahirBulan: "2",
-    tarikhLahirTahun: "1995",
-    bangsa: "Melayu",
-    kaum: "",
-    umur: "29",
-    tarafPerkahwinan: "Bujang",
-    bilanganTanggungan: "0",
-    oku: false,
-    diberhentikanPandemik: false,
-    asnafBerdaftar: false,
-    tarafPendidikan: "STPM",
-    alamat: "No. 8, Jalan Damansara, 50490 Kuala Lumpur",
-    poskod: "50490",
-    negeri: "Wilayah Persekutuan Kuala Lumpur",
-    noTelefonBimbit: "018-5556677",
-    email: "fatimah@email.com",
-    statusKediaman: "Sewa",
-    pekerjaanSekarang: "Memulakan Perniagaan",
-    pendapatan: "0",
-    pendapatanBulan: "1",
-    namaPasangan: "",
-    noIcPasangan: "",
-    pekerjaanPasangan: "",
-    pendapatanPasangan: "0",
-    pendapatanPasanganBulan: "1",
-    jumlahPermohonan: "25000",
-    tempohPembiayaan: "36",
-    kekerapanBayaran: "Bulanan",
-    tujuan: "Modal permulaan kedai runcit",
-    namaPerniagaan: "Kedai Fatimah",
-    tempohBerniaga: "0",
-    statusPremis: "Sewa",
-    pemilikanPerniagaan: "Pemilikan Tunggal",
-    takafulPembiayaan: true,
-    takafulKemalangan: false,
-    perkeso: false,
-    wasiat: false,
-    kebenaranKredit: true,
-  },
-};
+async function loadPermohonan() {
+  if (!permohonanId.value) {
+    router.push("/admin/permohonan");
+    return;
+  }
 
-const form = computed(() => {
-  const data = DUMMY_DATA[id.value] || DUMMY_DATA["P-2024-001"];
-  return { ...DUMMY_DATA["P-2024-001"], ...data };
-});
+  loading.value = true;
+  try {
+    const res = await getPermohonan(permohonanId.value);
+    permohonan.value = res.data;
+
+    const details = (res.data.details ?? {}) as Record<string, unknown>;
+    const { adaPasangan, currentStep, attachmentNames, attachments: savedAttachments, ...formFields } = details;
+
+    form.value = { ...formFields };
+    if (adaPasangan !== undefined) form.value.adaPasangan = adaPasangan;
+    if (Array.isArray(savedAttachments)) form.value.attachments = savedAttachments;
+
+    if (res.data.nama) form.value.nama = res.data.nama;
+    if (res.data.kategoriPembiayaan) form.value.kategoriPembiayaan = res.data.kategoriPembiayaan;
+    if (res.data.jumlahPermohonan != null) {
+      form.value.jumlahPermohonan = String(res.data.jumlahPermohonan);
+    }
+
+    const normalizedStatus = normalizeStatusPekerjaan(form.value.statusPekerjaan);
+    if (normalizedStatus) form.value.statusPekerjaan = normalizedStatus;
+  } catch {
+    toast.error("Gagal memuatkan butiran permohonan.");
+    router.push("/admin/permohonan");
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(loadPermohonan);
 
 function getStatusLabel(v: string) {
   if (v === "sedang_berniaga") return "Sedang Berniaga";
@@ -285,6 +115,22 @@ function getPerkesoPakejLabel(v: string) {
   return PERKESO_PAKEJ.find((p) => p.value === v)?.label ?? v;
 }
 
+function getStatusPekerjaanLabel(v: string) {
+  return STATUS_PEKERJAAN_OPTIONS.find((o) => o.value === v)?.label ?? v;
+}
+
+const isBekerja = computed(
+  () => form.value.statusPekerjaan === "bekerja" || (!form.value.statusPekerjaan && Boolean(form.value.pekerjaanSekarang)),
+);
+
+async function viewAttachment(item: PermohonanAttachment) {
+  try {
+    await openPermohonanDocument(permohonanId.value, item.id);
+  } catch {
+    toast.error("Gagal membuka fail.");
+  }
+}
+
 function batal() {
   router.push("/admin/permohonan");
 }
@@ -297,15 +143,28 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
   <AdminLayout>
     <div class="mx-auto max-w-4xl space-y-4">
       <SpptPageHeader
-        :title="`Permohonan ${id}`"
+        :title="displayTitle"
         :breadcrumb="[
           { label: 'Permohonan', to: '/admin/permohonan' },
           { label: 'Pendaftaran Permohonan', to: '/admin/permohonan' },
-          { label: id || 'Butiran' },
+          { label: displayTitle },
         ]"
       />
 
-      <div class="space-y-6">
+      <div v-if="loading" class="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+        Memuatkan butiran permohonan...
+      </div>
+
+      <div v-else class="space-y-6">
+        <div v-if="permohonan?.status" class="flex items-center gap-2">
+          <span class="text-xs font-medium text-slate-500">Status:</span>
+          <span
+            class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
+            :class="statusClass(permohonan.status)"
+          >
+            {{ statusLabel(permohonan.status) }}
+          </span>
+        </div>
         <!-- Maklumat Asas -->
         <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 bg-slate-50/80 px-4 py-3">
@@ -394,7 +253,9 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
                 <label :class="labelClass">Bangsa</label>
-                <div :class="valueClass">{{ form.bangsa || "—" }}</div>
+                <div :class="valueClass">
+                  {{ form.bangsa === "Lain-lain" && form.kaum ? form.kaum : (form.bangsa || "—") }}
+                </div>
               </div>
               <div>
                 <label :class="labelClass">Taraf Pendidikan</label>
@@ -452,21 +313,45 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
             <p class="mt-0.5 text-xs text-slate-500">Pendapatan dan maklumat majikan.</p>
           </div>
           <div class="space-y-4 p-4">
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label :class="labelClass">Pekerjaan Sekarang</label>
-                <div :class="valueClass">{{ form.pekerjaanSekarang }}</div>
-              </div>
-              <div>
-                <label :class="labelClass">Pendapatan (RM/bulan)</label>
-                <div :class="valueClass">{{ form.pendapatan }} / {{ form.pendapatanBulan }}</div>
+            <div>
+              <label :class="labelClass">Status Pekerjaan</label>
+              <div :class="valueClass">
+                {{ getStatusPekerjaanLabel(String(form.statusPekerjaan || (form.pekerjaanSekarang ? "bekerja" : "tidak_bekerja"))) }}
               </div>
             </div>
+            <template v-if="isBekerja">
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label :class="labelClass">Sektor Pekerjaan</label>
+                  <div :class="valueClass">{{ form.sektorPekerjaan || "—" }}</div>
+                </div>
+                <div>
+                  <label :class="labelClass">Status Jawatan</label>
+                  <div :class="valueClass">{{ form.statusJawatan || "—" }}</div>
+                </div>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label :class="labelClass">Jawatan</label>
+                  <div :class="valueClass">{{ form.jawatan || form.pekerjaanSekarang || "—" }}</div>
+                </div>
+                <div>
+                  <label :class="labelClass">Nama Majikan</label>
+                  <div :class="valueClass">{{ form.namaMajikan || "—" }}</div>
+                </div>
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label :class="labelClass">Pendapatan (RM/bulan)</label>
+                  <div :class="valueClass">{{ form.pendapatan || "0" }} / {{ form.pendapatanBulan || "1" }}</div>
+                </div>
+              </div>
+            </template>
           </div>
         </article>
 
         <!-- Maklumat Pasangan -->
-        <article v-if="form.namaPasangan" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <article v-if="form.adaPasangan && form.namaPasangan" class="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 bg-slate-50/80 px-4 py-3">
             <h2 class="text-sm font-semibold text-slate-700">Maklumat Pasangan Pemohon</h2>
           </div>
@@ -578,6 +463,38 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
               <span v-if="form.takafulKemalangan">({{ getTakafulPakejLabel(String(form.takafulKemalanganPakej)) }})</span>
               <span>PERKESO: {{ form.perkeso ? "Ya" : "Tidak" }}</span>
               <span v-if="form.perkeso">({{ getPerkesoPakejLabel(String(form.perkesoPakej)) }})</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Dokumen Lampiran -->
+        <article v-if="attachments.length > 0" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+            <h2 class="text-sm font-semibold text-slate-700">Dokumen Lampiran</h2>
+            <p class="mt-0.5 text-xs text-slate-500">{{ attachments.length }} fail dilampirkan.</p>
+          </div>
+          <div class="divide-y divide-slate-100 p-4">
+            <div
+              v-for="item in attachments"
+              :key="item.id"
+              class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+            >
+              <div class="flex min-w-0 items-center gap-2">
+                <FileText class="h-4 w-4 shrink-0 text-slate-400" />
+                <div class="min-w-0">
+                  <span class="truncate text-sm text-slate-700">{{ item.name }}</span>
+                  <p class="text-xs text-violet-700">
+                    {{ documentClassLabel(item.documentClass, item.documentClassOther) }}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
+                @click="viewAttachment(item)"
+              >
+                Lihat fail
+              </button>
             </div>
           </div>
         </article>

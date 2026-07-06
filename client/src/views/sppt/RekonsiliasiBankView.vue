@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Upload, FileCheck } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { REKON_BANK } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
 
-const items = ref([...REKON_BANK]);
+const items = ref<(typeof REKON_BANK)[number][]>([]);
 const kekerapan = ref<"harian" | "mingguan" | "bulanan">("harian");
 const uploadFile = ref<File | null>(null);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "rekon_bank");
+  items.value = res.data as typeof items.value;
+});
 
 function statusClass(s: string) {
   if (s === "padan") return "bg-emerald-100 text-emerald-700";

@@ -1,13 +1,26 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { CreditCard, Smartphone, RefreshCw, Banknote } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { PAYMENT_CHANNELS, BAYARAN_ITEMS } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
+
+const paymentChannels = ref<(typeof PAYMENT_CHANNELS)[number][]>([]);
+const bayaranItems = ref<(typeof BAYARAN_ITEMS)[number][]>([]);
+
+onMounted(async () => {
+  const [channelsRes, itemsRes] = await Promise.all([
+    fetchSpptDataset("pembayaran", "payment_channels"),
+    fetchSpptDataset("pembayaran", "bayaran_items"),
+  ]);
+  paymentChannels.value = channelsRes.data as typeof paymentChannels.value;
+  bayaranItems.value = itemsRes.data as typeof bayaranItems.value;
+});
 
 const activeChannel = ref<"fpx" | "ewallet" | "auto-debit" | "kaunter">("fpx");
 
@@ -25,10 +38,10 @@ const noIC = ref("");
 const jumlah = ref("");
 const rujukan = ref("");
 
-const recentPayments = computed(() => BAYARAN_ITEMS.slice(0, 5));
+const recentPayments = computed(() => bayaranItems.value.slice(0, 5));
 
-const fpxBanks = PAYMENT_CHANNELS.find((c) => c.id === "fpx")?.banks ?? [];
-const ewalletOptions = PAYMENT_CHANNELS.find((c) => c.id === "ewallet")?.options ?? [];
+const fpxBanks = computed(() => paymentChannels.value.find((c) => c.id === "fpx")?.banks ?? []);
+const ewalletOptions = computed(() => paymentChannels.value.find((c) => c.id === "ewallet")?.options ?? []);
 
 function submitPayment() {
   alert("Bayaran direkod (dummy). Tiada sambungan API.");

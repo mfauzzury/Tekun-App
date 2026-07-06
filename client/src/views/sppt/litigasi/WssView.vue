@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { WSS_ITEMS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { WssItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
 
-const items = ref([...WSS_ITEMS]);
+const items = ref<WssItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "wss_items");
+  items.value = res.data as WssItem[];
+});
 
 function statusClass(s: string) {
   const m: Record<string, string> = { penyitaan: "bg-amber-100 text-amber-700", "lelongan-dijadual": "bg-blue-100 text-blue-700", "lelongan-selesai": "bg-purple-100 text-purple-700", "hasil-dikredit": "bg-emerald-100 text-emerald-700" };

@@ -1,20 +1,28 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { LITIGASI_AUDIT } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { LitigasiAuditItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const rawItems = ref<LitigasiAuditItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "litigasi_audit");
+  rawItems.value = res.data as LitigasiAuditItem[];
+});
 
 const q = ref("");
 
 const items = computed(() => {
-  if (!q.value) return [...LITIGASI_AUDIT];
+  if (!q.value) return [...rawItems.value];
   const lower = q.value.toLowerCase();
-  return LITIGASI_AUDIT.filter((x) => x.pegawai.toLowerCase().includes(lower) || x.kes.toLowerCase().includes(lower) || x.tindakan.toLowerCase().includes(lower));
+  return rawItems.value.filter((x) => x.pegawai.toLowerCase().includes(lower) || x.kes.toLowerCase().includes(lower) || x.tindakan.toLowerCase().includes(lower));
 });
 </script>
 

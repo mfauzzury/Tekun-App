@@ -1,19 +1,35 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Calendar, Users, Award } from "lucide-vue-next";
-import { programLatihanList, kehadiranLatihanList, usahawanList } from "@/data/pemantauan-usahawan-dummy";
+import type { ProgramLatihan, UsahawanItem, KehadiranLatihan } from "@/data/pemantauan-usahawan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
+
+const programLatihanList = ref<ProgramLatihan[]>([]);
+const kehadiranLatihanList = ref<KehadiranLatihan[]>([]);
+const usahawanList = ref<UsahawanItem[]>([]);
+
+onMounted(async () => {
+  const [programRes, kehadiranRes, usahawanRes] = await Promise.all([
+    fetchSpptDataset("pemantauan", "program_latihan"),
+    fetchSpptDataset("pemantauan", "kehadiran_latihan"),
+    fetchSpptDataset("pemantauan", "usahawan_list"),
+  ]);
+  programLatihanList.value = programRes.data as ProgramLatihan[];
+  kehadiranLatihanList.value = kehadiranRes.data as typeof kehadiranLatihanList.value;
+  usahawanList.value = usahawanRes.data as UsahawanItem[];
+});
 
 const activeSub = ref<"takwim" | "kehadiran" | "laporan">("takwim");
 
 function getUsahawanName(id: string) {
-  return usahawanList.find((u) => u.id === id)?.nama ?? id;
+  return usahawanList.value.find((u) => u.id === id)?.nama ?? id;
 }
 
 function getKehadiranForProgram(programId: string) {
-  return kehadiranLatihanList.filter((k) => k.programId === programId);
+  return kehadiranLatihanList.value.filter((k) => k.programId === programId);
 }
 </script>
 

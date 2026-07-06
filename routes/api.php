@@ -35,6 +35,18 @@ Route::prefix('public')->group(function () {
     Route::post('/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:otp');
 });
 
+if (app()->environment('local')) {
+    Route::get('/dev/php-limits', function () {
+        return response()->json([
+            'data' => [
+                'uploadMaxFilesize' => ini_get('upload_max_filesize'),
+                'postMaxSize' => ini_get('post_max_size'),
+                'permohonanDocumentMaxKb' => config('sppt.permohonan_document_max_kb'),
+            ],
+        ]);
+    });
+}
+
 // Auth routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -89,6 +101,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/datasets/{module}', [SpptDatasetController::class, 'module']);
 
         Route::get('/permohonan/summary', [PermohonanController::class, 'summary']);
+        Route::post('/permohonan/ocr/extract', [PermohonanController::class, 'extractFormOcr'])
+            ->middleware('permission:sppt.edit');
+        Route::post('/permohonan/dokumen/verify', [PermohonanController::class, 'verifyDocument'])
+            ->middleware('permission:sppt.edit');
+        Route::post('/permohonan/dokumen/classify', [PermohonanController::class, 'classifyDocument'])
+            ->middleware('permission:sppt.edit');
+        Route::post('/permohonan/{permohonan}/dokumen', [PermohonanController::class, 'uploadDocument'])
+            ->middleware('permission:sppt.edit');
+        Route::patch('/permohonan/{permohonan}/dokumen/{attachmentId}', [PermohonanController::class, 'updateDocumentClass'])
+            ->middleware('permission:sppt.edit');
+        Route::get('/permohonan/{permohonan}/dokumen/{attachmentId}', [PermohonanController::class, 'showDocument']);
+        Route::delete('/permohonan/{permohonan}/dokumen/{attachmentId}', [PermohonanController::class, 'deleteDocument'])
+            ->middleware('permission:sppt.edit');
         Route::apiResource('permohonan', PermohonanController::class)->middleware([
             'store' => 'permission:sppt.create',
             'update' => 'permission:sppt.edit',
@@ -106,7 +131,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/akaun', [AkaunController::class, 'index']);
         Route::get('/akaun/{id}', [AkaunController::class, 'show']);
 
+        Route::get('/pengeluaran-dana/summary', [PengeluaranDanaController::class, 'summary']);
         Route::get('/pengeluaran-dana', [PengeluaranDanaController::class, 'index']);
+        Route::get('/jaminan/summary', [JaminanController::class, 'summary']);
         Route::get('/jaminan', [JaminanController::class, 'index']);
         Route::get('/kutipan', [KutipanController::class, 'index']);
     });

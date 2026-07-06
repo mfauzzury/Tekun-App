@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Eye } from "lucide-vue-next";
 import { RouterLink } from "vue-router";
 
@@ -8,9 +8,17 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { BAYARAN_ITEMS } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
+
+const rawItems = ref<(typeof BAYARAN_ITEMS)[number][]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "bayaran_items");
+  rawItems.value = res.data as typeof rawItems.value;
+});
 
 const q = ref("");
 const status = ref("");
@@ -23,7 +31,7 @@ const summary = [
 ];
 
 const items = computed(() => {
-  let list = BAYARAN_ITEMS;
+  let list = rawItems.value;
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((r) => r.id.toLowerCase().includes(lower) || r.nama.toLowerCase().includes(lower));

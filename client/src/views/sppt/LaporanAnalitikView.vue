@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import {
   Download,
   FileText,
@@ -21,9 +21,12 @@ import LaporanLineChart from "@/components/sppt/laporan/LaporanLineChart.vue";
 import LaporanPieChart from "@/components/sppt/laporan/LaporanPieChart.vue";
 import LaporanMapMalaysia from "@/components/sppt/laporan/LaporanMapMalaysia.vue";
 import { exportToCSV, exportToExcel } from "@/composables/useExport";
+import { fetchSpptDataset } from "@/api/sppt";
 import {
+  type LaporanItem,
+  type RoleLaporan,
+  type AuditLaporan,
   KPI_SUMMARY,
-  LAPORAN_ITEMS,
   KUTIPAN_VS_SASARAN,
   TREND_NPF,
   AGIHAN_STATUS_AKAUN,
@@ -37,13 +40,77 @@ import {
   LAPORAN_PATUH_SYARIAH,
   LAPORAN_SNC,
   LAPORAN_NISBAH_SELIAAN,
-  AUDIT_LAPORAN,
   ARKIB_LAPORAN,
   NOTIFIKASI_LAPORAN,
   MEDAN_TERSEDIA,
-  type LaporanItem,
-  type RoleLaporan,
 } from "@/data/laporan-dummy";
+
+const kpiSummary = ref({ ...KPI_SUMMARY });
+const laporanItems = ref<LaporanItem[]>([]);
+const kutipanVsSasaran = ref<(typeof KUTIPAN_VS_SASARAN)[number][]>([]);
+const trendNpf = ref<(typeof TREND_NPF)[number][]>([]);
+const agihanStatusAkaun = ref<(typeof AGIHAN_STATUS_AKAUN)[number][]>([]);
+const prestasiNegeri = ref<(typeof PRESTASI_NEGERI)[number][]>([]);
+const crossAnalysisProduk = ref<(typeof CROSS_ANALYSIS_PRODUK)[number][]>([]);
+const laporanIndividu = ref<(typeof LAPORAN_INDIVIDU)[number][]>([]);
+const laporanResit = ref<(typeof LAPORAN_RESIT)[number][]>([]);
+const laporanPenyesuaianBank = ref<(typeof LAPORAN_PENYESUAIAN_BANK)[number][]>([]);
+const laporanMonthEnd = ref<(typeof LAPORAN_MONTH_END)[number][]>([]);
+const laporanNpf = ref<(typeof LAPORAN_NPF)[number][]>([]);
+const laporanPatuhSyariah = ref<(typeof LAPORAN_PATUH_SYARIAH)[number][]>([]);
+const laporanSnc = ref<(typeof LAPORAN_SNC)[number][]>([]);
+const laporanNisbahSeliaan = ref<(typeof LAPORAN_NISBAH_SELIAAN)[number][]>([]);
+const auditLaporan = ref<AuditLaporan[]>([]);
+const arkibLaporan = ref<(typeof ARKIB_LAPORAN)[number][]>([]);
+const notifikasiLaporan = ref<(typeof NOTIFIKASI_LAPORAN)[number][]>([]);
+const medanTersedia = ref<(typeof MEDAN_TERSEDIA)[number][]>([]);
+
+onMounted(async () => {
+  const [
+    kpiRes, itemsRes, kutipanRes, trendRes, agihanRes, prestasiRes, crossRes,
+    individuRes, resitRes, penyesuaianRes, monthEndRes, npfRes, syariahRes, sncRes,
+    nisbahRes, auditRes, arkibRes, notifRes, medanRes,
+  ] = await Promise.all([
+    fetchSpptDataset("laporan", "kpi_summary"),
+    fetchSpptDataset("laporan", "laporan_items"),
+    fetchSpptDataset("laporan", "kutipan_vs_sasaran"),
+    fetchSpptDataset("laporan", "trend_npf"),
+    fetchSpptDataset("laporan", "agihan_status_akaun"),
+    fetchSpptDataset("laporan", "prestasi_negeri"),
+    fetchSpptDataset("laporan", "cross_analysis_produk"),
+    fetchSpptDataset("laporan", "laporan_individu"),
+    fetchSpptDataset("laporan", "laporan_resit"),
+    fetchSpptDataset("laporan", "laporan_penyesuaian_bank"),
+    fetchSpptDataset("laporan", "laporan_month_end"),
+    fetchSpptDataset("laporan", "laporan_npf"),
+    fetchSpptDataset("laporan", "laporan_patuh_syariah"),
+    fetchSpptDataset("laporan", "laporan_snc"),
+    fetchSpptDataset("laporan", "laporan_nisbah_seliaan"),
+    fetchSpptDataset("laporan", "audit_laporan"),
+    fetchSpptDataset("laporan", "arkib_laporan"),
+    fetchSpptDataset("laporan", "notifikasi_laporan"),
+    fetchSpptDataset("laporan", "medan_tersedia"),
+  ]);
+  kpiSummary.value = kpiRes.data as typeof kpiSummary.value;
+  laporanItems.value = itemsRes.data as LaporanItem[];
+  kutipanVsSasaran.value = kutipanRes.data as typeof kutipanVsSasaran.value;
+  trendNpf.value = trendRes.data as typeof trendNpf.value;
+  agihanStatusAkaun.value = agihanRes.data as typeof agihanStatusAkaun.value;
+  prestasiNegeri.value = prestasiRes.data as typeof prestasiNegeri.value;
+  crossAnalysisProduk.value = crossRes.data as typeof crossAnalysisProduk.value;
+  laporanIndividu.value = individuRes.data as typeof laporanIndividu.value;
+  laporanResit.value = resitRes.data as typeof laporanResit.value;
+  laporanPenyesuaianBank.value = penyesuaianRes.data as typeof laporanPenyesuaianBank.value;
+  laporanMonthEnd.value = monthEndRes.data as typeof laporanMonthEnd.value;
+  laporanNpf.value = npfRes.data as typeof laporanNpf.value;
+  laporanPatuhSyariah.value = syariahRes.data as typeof laporanPatuhSyariah.value;
+  laporanSnc.value = sncRes.data as typeof laporanSnc.value;
+  laporanNisbahSeliaan.value = nisbahRes.data as typeof laporanNisbahSeliaan.value;
+  auditLaporan.value = auditRes.data as AuditLaporan[];
+  arkibLaporan.value = arkibRes.data as typeof arkibLaporan.value;
+  notifikasiLaporan.value = notifRes.data as typeof notifikasiLaporan.value;
+  medanTersedia.value = medanRes.data as typeof medanTersedia.value;
+});
 
 // --- Fasa 1: Filter & state ---
 const activeTab = ref<"dashboard" | "utama" | "khusus" | "arkib">("dashboard");
@@ -59,7 +126,7 @@ const drillDown = ref<{ level: string; value: string } | null>(null);
 
 // --- Fasa 1: Filtered items ---
 const filteredItems = computed(() => {
-  let list = [...LAPORAN_ITEMS];
+  let list = [...laporanItems.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((x) => x.tajuk.toLowerCase().includes(lower) || x.id.toLowerCase().includes(lower));
@@ -75,7 +142,7 @@ const filteredItems = computed(() => {
 
 // --- Fasa 1: Summary dinamik ---
 const summaryCards = computed(() => {
-  const k = KPI_SUMMARY;
+  const k = kpiSummary.value;
   const kutipanPct = Math.round((k.kutipanBulanan / k.sasaranKutipan) * 100);
   const kutipanColor = kutipanPct >= 90 ? "text-emerald-600" : kutipanPct >= 70 ? "text-amber-600" : "text-rose-600";
   return [
@@ -106,19 +173,19 @@ function downloadReport(item: LaporanItem) {
 
 // --- Fasa 2: Chart data ---
 const barChartData = computed(() =>
-  KUTIPAN_VS_SASARAN.map((r) => ({ label: r.bulan, value: r.kutipan, value2: r.sasaran }))
+  kutipanVsSasaran.value.map((r) => ({ label: r.bulan, value: r.kutipan, value2: r.sasaran }))
 );
 
 // --- Fasa 3: Cross-analysis filtered ---
 const crossAnalysisFiltered = computed(() => {
-  let list = [...CROSS_ANALYSIS_PRODUK];
+  let list = [...crossAnalysisProduk.value];
   if (negeri.value) list = list.filter((x) => x.negeri === negeri.value);
   if (drillDown.value?.level === "negeri") list = list.filter((x) => x.negeri === drillDown.value?.value);
   return list;
 });
 
 // --- Fasa 5: Audit filtered ---
-const auditFiltered = computed(() => AUDIT_LAPORAN);
+const auditFiltered = computed(() => auditLaporan.value);
 
 // --- Fasa 5: Toggle favourite ---
 function toggleFavourite(field: string) {
@@ -233,18 +300,18 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
           </article>
           <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">Trend Kadar NPF (%)</h3>
-            <LaporanLineChart :data="TREND_NPF.map((r) => ({ label: r.bulan, value: r.kadar }))" :max="8" />
+            <LaporanLineChart :data="trendNpf.map((r) => ({ label: r.bulan, value: r.kadar }))" :max="8" />
           </article>
         </div>
 
         <div class="grid gap-4 lg:grid-cols-2">
           <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">Agihan Status Akaun</h3>
-            <LaporanPieChart :data="AGIHAN_STATUS_AKAUN" />
+            <LaporanPieChart :data="agihanStatusAkaun" />
           </article>
           <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h3 class="mb-3 text-sm font-semibold text-slate-900">Prestasi Kutipan mengikut Negeri (%)</h3>
-            <LaporanMapMalaysia :negeri="PRESTASI_NEGERI" />
+            <LaporanMapMalaysia :negeri="prestasiNegeri" />
           </article>
         </div>
       </div>
@@ -400,7 +467,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in LAPORAN_INDIVIDU" :key="row.no" class="hover:bg-slate-50">
+                <tr v-for="row in laporanIndividu" :key="row.no" class="hover:bg-slate-50">
                   <td class="px-4 py-2 font-mono text-slate-600">{{ row.no }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.negeri }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.cawangan }}</td>
@@ -432,7 +499,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="row in LAPORAN_RESIT" :key="row.tarikh" class="hover:bg-slate-50">
+                  <tr v-for="row in laporanResit" :key="row.tarikh" class="hover:bg-slate-50">
                     <td class="px-4 py-2 font-medium text-slate-900">{{ row.tarikh }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.resit }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.tunai }}</td>
@@ -458,7 +525,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="row in LAPORAN_PENYESUAIAN_BANK" :key="row.bank" class="hover:bg-slate-50">
+                  <tr v-for="row in laporanPenyesuaianBank" :key="row.bank" class="hover:bg-slate-50">
                     <td class="px-4 py-2 font-medium text-slate-900">{{ row.bank }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.bakiBawa }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.kutipan }}</td>
@@ -483,7 +550,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in LAPORAN_MONTH_END" :key="row.item" class="hover:bg-slate-50">
+                <tr v-for="row in laporanMonthEnd" :key="row.item" class="hover:bg-slate-50">
                   <td class="px-4 py-2 font-medium text-slate-900">{{ row.item }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.nilai }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.catatan }}</td>
@@ -507,7 +574,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in LAPORAN_NPF" :key="row.kategori" class="hover:bg-slate-50">
+                <tr v-for="row in laporanNpf" :key="row.kategori" class="hover:bg-slate-50">
                   <td class="px-4 py-2 font-medium text-slate-900">{{ row.kategori }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.bil }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.amaun }}</td>
@@ -533,7 +600,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="row in LAPORAN_PATUH_SYARIAH" :key="row.produk" class="hover:bg-slate-50">
+                  <tr v-for="row in laporanPatuhSyariah" :key="row.produk" class="hover:bg-slate-50">
                     <td class="px-4 py-2 font-medium text-slate-900">{{ row.produk }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.akaun }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.disalurkan }}</td>
@@ -557,7 +624,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="row in LAPORAN_SNC" :key="row.produk" class="hover:bg-slate-50">
+                  <tr v-for="row in laporanSnc" :key="row.produk" class="hover:bg-slate-50">
                     <td class="px-4 py-2 font-medium text-slate-900">{{ row.produk }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.akaun }}</td>
                     <td class="px-4 py-2 text-slate-600">{{ row.disalurkan }}</td>
@@ -585,7 +652,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in LAPORAN_NISBAH_SELIAAN" :key="row.pegawai" class="hover:bg-slate-50">
+                <tr v-for="row in laporanNisbahSeliaan" :key="row.pegawai" class="hover:bg-slate-50">
                   <td class="px-4 py-2 font-medium text-slate-900">{{ row.pegawai }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.negeri }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.cawangan }}</td>
@@ -611,7 +678,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
           </h3>
           <ul class="space-y-2">
             <li
-              v-for="n in NOTIFIKASI_LAPORAN"
+              v-for="n in notifikasiLaporan"
               :key="n.id"
               class="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2"
               :class="{ 'bg-slate-50': !n.dibaca }"
@@ -673,7 +740,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="row in ARKIB_LAPORAN" :key="row.id" class="hover:bg-slate-50">
+                <tr v-for="row in arkibLaporan" :key="row.id" class="hover:bg-slate-50">
                   <td class="px-4 py-2 font-medium text-slate-900">{{ row.tajuk }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.tarikh }}</td>
                   <td class="px-4 py-2 text-slate-600">{{ row.saiz }}</td>
@@ -702,7 +769,7 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
           <p class="mb-3 text-xs text-slate-500">Pilih medan untuk laporan. Simpan sebagai kegemaran.</p>
           <div class="space-y-2">
             <label
-              v-for="field in MEDAN_TERSEDIA"
+              v-for="field in medanTersedia"
               :key="field"
               class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50"
             >

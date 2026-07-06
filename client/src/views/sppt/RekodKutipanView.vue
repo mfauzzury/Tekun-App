@@ -1,16 +1,28 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { MapPin, Camera, FileSignature } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
-import { KUTIPAN_ITEMS, STATUS_KUTIPAN } from "@/data/kutipan-dummy";
+import { listKutipan } from "@/api/sppt";
+import { STATUS_KUTIPAN, type KutipanItem } from "@/data/kutipan-dummy";
 
 const { t, tp } = useI18n();
 
 const router = useRouter();
+
+const kutipanItems = ref<KutipanItem[]>([]);
+
+onMounted(async () => {
+  const res = await listKutipan({ limit: 100 });
+  kutipanItems.value = res.data as KutipanItem[];
+});
+
+const usahawanOptions = computed(() =>
+  kutipanItems.value.map((k) => ({ value: k.id, label: `${k.nama} (${k.noPembiayaan})` }))
+);
 
 const usahawanId = ref("");
 const tarikhLawatan = ref("");
@@ -22,8 +34,6 @@ const status = ref("");
 const catatan = ref("");
 const buktiGambar = ref<File | null>(null);
 const buktiTandatangan = ref(false);
-
-const usahawanOptions = KUTIPAN_ITEMS.map((k) => ({ value: k.id, label: `${k.nama} (${k.noPembiayaan})` }));
 
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;

@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { EXECUTION_ITEMS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { ExecutionItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
 
-const items = ref([...EXECUTION_ITEMS]);
+const items = ref<ExecutionItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "execution_items");
+  items.value = res.data as ExecutionItem[];
+});
 
 function statusClass(s: string) {
   const m: Record<string, string> = { draf: "bg-slate-100 text-slate-600", permohonan: "bg-amber-100 text-amber-700", "notis-hantar": "bg-blue-100 text-blue-700", penyitaan: "bg-orange-100 text-orange-700", lelongan: "bg-purple-100 text-purple-700", selesai: "bg-emerald-100 text-emerald-700" };

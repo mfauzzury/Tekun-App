@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { TrendingUp, TrendingDown, Minus } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { LEBIHAN_KEKURANGAN } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
@@ -13,7 +14,12 @@ const { t, tp } = useI18n();
 const q = ref("");
 const jenisFilter = ref("");
 
-const items = ref([...LEBIHAN_KEKURANGAN]);
+const items = ref<(typeof LEBIHAN_KEKURANGAN)[number][]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "lebihan_kekurangan");
+  items.value = res.data as typeof items.value;
+});
 
 const filteredItems = computed(() => {
   let list = items.value;

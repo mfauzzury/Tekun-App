@@ -9,177 +9,386 @@ use App\Models\Permohonan;
 use App\Models\PengeluaranDana;
 use App\Models\SpptDataset;
 use App\Models\Usahawan;
+use App\Services\SpptViewTransform;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class SpptSeeder extends Seeder
 {
+    private string $dataPath;
+
     public function run(): void
     {
-        $usahawan = [
-            Usahawan::updateOrCreate(['no_usahawan' => 'USW-00001'], [
-                'nama' => 'Ahmad bin Abdullah',
-                'no_ic' => '850315-10-5432',
-                'alamat' => 'No 12, Jalan Merdeka',
-                'poskod' => '50000',
-                'negeri' => 'Wilayah Persekutuan Kuala Lumpur',
-                'no_telefon' => '012-3456789',
-                'email' => 'ahmad@example.com',
-                'jenis_perniagaan' => 'Peruncitan',
-                'status' => 'Aktif',
-            ]),
-            Usahawan::updateOrCreate(['no_usahawan' => 'USW-00002'], [
-                'nama' => 'Siti Nurhaliza binti Omar',
-                'no_ic' => '920618-14-6789',
-                'alamat' => 'Lot 5, Kampung Baru',
-                'poskod' => '15000',
-                'negeri' => 'Kelantan',
-                'no_telefon' => '019-8765432',
-                'email' => 'siti@example.com',
-                'jenis_perniagaan' => 'Makanan & Minuman',
-                'status' => 'Aktif',
-            ]),
-            Usahawan::updateOrCreate(['no_usahawan' => 'USW-00003'], [
-                'nama' => 'Mohd Rizal bin Hassan',
-                'no_ic' => '780512-08-1234',
-                'alamat' => 'No 8, Taman Industri',
-                'poskod' => '80000',
-                'negeri' => 'Johor',
-                'no_telefon' => '013-1122334',
-                'email' => 'rizal@example.com',
-                'jenis_perniagaan' => 'Pembuatan',
-                'status' => 'Aktif',
-            ]),
-        ];
+        $this->dataPath = database_path('seeders/data');
 
-        $permohonan = [
-            Permohonan::updateOrCreate(['no_rujukan' => 'PM-2024-0001'], [
-                'usahawan_id' => $usahawan[0]->id,
-                'nama' => 'Ahmad bin Abdullah',
-                'kategori_pembiayaan' => 'TEKUN Niaga',
-                'status' => 'Dalam Proses',
-                'jumlah_permohonan' => 15000,
-                'tarikh_permohonan' => '2024-03-01',
-            ]),
-            Permohonan::updateOrCreate(['no_rujukan' => 'PM-2024-0002'], [
-                'usahawan_id' => $usahawan[1]->id,
-                'nama' => 'Siti Nurhaliza binti Omar',
-                'kategori_pembiayaan' => 'TEMAN TEKUN',
-                'status' => 'Menunggu Dokumen',
-                'jumlah_permohonan' => 20000,
-                'tarikh_permohonan' => '2024-03-05',
-            ]),
-            Permohonan::updateOrCreate(['no_rujukan' => 'PM-2024-0003'], [
-                'usahawan_id' => $usahawan[2]->id,
-                'nama' => 'Mohd Rizal bin Hassan',
-                'kategori_pembiayaan' => 'Kontrak',
-                'status' => 'Lengkap',
-                'jumlah_permohonan' => 50000,
-                'tarikh_permohonan' => '2024-02-15',
-            ]),
-        ];
-
-        $akaun = [
-            AkaunPembiayaan::updateOrCreate(['no_akaun' => 'PF-2023-041'], [
-                'permohonan_id' => $permohonan[2]->id,
-                'usahawan_id' => $usahawan[2]->id,
-                'ic' => '780512-08-1234',
-                'nama' => 'Mohd Rizal bin Hassan',
-                'cawangan' => 'Kota Bharu',
-                'negeri' => 'Kelantan',
-                'produk' => 'Pembiayaan Mikro',
-                'tarikh_mula' => '2023-06-01',
-                'tarikh_tamat' => '2026-06-01',
-                'jumlah_pembiayaan' => 50000,
-                'baki_pokok' => 32000,
-                'baki_keuntungan' => 4500,
-                'baki_simpanan' => 500,
-                'penalti' => 0,
-                'tunggakan' => 1200,
-                'baki_akhir' => 37700,
-                'bayaran_bulanan' => 1500,
-                'status' => 'Tunggakan',
-                'risiko' => 'Amaran',
-            ]),
-            AkaunPembiayaan::updateOrCreate(['no_akaun' => 'PF-2023-008'], [
-                'permohonan_id' => $permohonan[0]->id,
-                'usahawan_id' => $usahawan[0]->id,
-                'ic' => '850315-10-5432',
-                'nama' => 'Ahmad bin Abdullah',
-                'cawangan' => 'Kuala Lumpur',
-                'negeri' => 'Wilayah Persekutuan Kuala Lumpur',
-                'produk' => 'Pembiayaan Mikro',
-                'tarikh_mula' => '2023-04-01',
-                'tarikh_tamat' => '2026-04-01',
-                'jumlah_pembiayaan' => 15000,
-                'baki_pokok' => 8000,
-                'baki_keuntungan' => 1200,
-                'baki_simpanan' => 200,
-                'penalti' => 0,
-                'tunggakan' => 0,
-                'baki_akhir' => 9400,
-                'bayaran_bulanan' => 500,
-                'status' => 'Aktif',
-                'risiko' => 'Normal',
-            ]),
-        ];
-
-        PengeluaranDana::updateOrCreate(['rujukan' => 'PD-2024-001'], [
-            'akaun_id' => $akaun[1]->id,
-            'id_pembiayaan' => 'PF-2023-008',
-            'nama' => 'Ahmad bin Abdullah',
-            'jumlah' => 15000,
-            'jenis' => 'Penuh',
-            'bank' => 'Maybank',
-            'no_akaun_bank' => '1234567890',
-            'status' => 'Berjaya',
-            'fraud_risk' => 'Rendah',
-            'bsas_verified' => true,
-            'legal_docs_complete' => true,
-            'tarikh_pengeluaran' => '2023-04-05',
-        ]);
-
-        PengeluaranDana::updateOrCreate(['rujukan' => 'PD-2024-002'], [
-            'akaun_id' => $akaun[0]->id,
-            'id_pembiayaan' => 'PF-2023-041',
-            'nama' => 'Mohd Rizal bin Hassan',
-            'jumlah' => 25000,
-            'jenis' => 'Berperingkat',
-            'fasa' => 1,
-            'peratus_fasa' => 50,
-            'bank' => 'CIMB',
-            'no_akaun_bank' => '9876543210',
-            'status' => 'Menunggu',
-            'fraud_risk' => 'Sederhana',
-            'bsas_verified' => false,
-            'legal_docs_complete' => true,
-        ]);
-
-        Jaminan::updateOrCreate(['rujukan' => 'JMN-001'], [
-            'nama' => 'Ahmad bin Abdullah',
-            'jenis' => 'Inden',
-            'nilai' => 15000,
-            'status' => 'Aktif',
-            'risiko' => 'Rendah',
-            'no_pinjaman' => 'PF-2023-008',
-            'tarikh_mula' => '2023-04-01',
-            'tarikh_tamat' => '2026-04-01',
-        ]);
-
-        Kutipan::updateOrCreate(['rujukan' => 'KUT-2024-001'], [
-            'akaun_id' => $akaun[0]->id,
-            'usahawan_id' => $usahawan[2]->id,
-            'nama' => 'Mohd Rizal bin Hassan',
-            'no_akaun' => 'PF-2023-041',
-            'cawangan' => 'Kota Bharu',
-            'zon' => 'Zon Utara',
-            'pegawai' => 'Ahmad bin Ali',
-            'tunggakan' => 1200,
-            'status' => 'Janji Bayar',
-            'janji_bayar' => now()->addDays(7)->toDateString(),
-        ]);
-
+        $this->seedUsahawan();
+        $this->seedPermohonan();
+        $this->seedAkaun();
+        $this->seedPengeluaranDana();
+        $this->seedJaminan();
+        $this->seedKutipan();
         $this->seedDatasets();
         $this->seedSetup();
+    }
+
+    private function loadJson(string $file): array
+    {
+        $path = $this->dataPath.'/'.$file;
+
+        return json_decode(File::get($path), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    private function seedUsahawan(): void
+    {
+        $pemantauan = $this->loadJson('pemantauan-usahawan.json');
+
+        foreach ($pemantauan['usahawanList'] as $item) {
+            Usahawan::updateOrCreate(
+                ['no_usahawan' => $item['id']],
+                [
+                    'nama' => $item['nama'],
+                    'no_ic' => $item['ic'],
+                    'negeri' => $item['negeri'],
+                    'no_telefon' => null,
+                    'email' => null,
+                    'jenis_perniagaan' => $item['perniagaan'] ?? null,
+                    'status' => 'Aktif',
+                ]
+            );
+        }
+
+        Usahawan::updateOrCreate(
+            ['no_usahawan' => 'U-004'],
+            [
+                'nama' => 'Fatimah binti Ibrahim',
+                'no_ic' => '950410-10-3456',
+                'negeri' => 'Perak',
+                'status' => 'Tidak Aktif',
+            ]
+        );
+    }
+
+    private function seedPermohonan(): void
+    {
+        $pengeluaran = $this->loadJson('pengeluaran-dana.json');
+        $detailsData = $this->loadJson('permohonan-details.json');
+        $detailsByRef = collect($detailsData['applications'])->keyBy('noRujukan');
+
+        $statusMap = [
+            'Menunggu' => 'Menunggu',
+            'Dalam Proses' => 'Dalam Penilaian',
+            'Berjaya' => 'Diluluskan',
+            'Gagal' => 'Ditolak',
+            'Ditolak' => 'Ditolak',
+        ];
+
+        foreach ($pengeluaran['items'] as $item) {
+            $ref = $item['idPembiayaan'];
+            $meta = $detailsByRef->get($ref, []);
+            $usahawan = Usahawan::where('nama', $item['nama'])->first();
+
+            Permohonan::updateOrCreate(
+                ['no_rujukan' => $ref],
+                $this->permohonanSeedAttributes($item['nama'], $usahawan?->id, [
+                    'kategori_pembiayaan' => $meta['kategoriPembiayaan'] ?? 'TEKUN Niaga',
+                    'status' => $meta['status'] ?? ($statusMap[$item['status']] ?? 'Menunggu'),
+                    'jumlah_permohonan' => $item['jumlahNumeric'],
+                    'tarikh_permohonan' => $item['tarikhIso'],
+                    'details' => $this->snakeCaseKeys($meta['details'] ?? []),
+                ])
+            );
+        }
+
+        foreach ($detailsData['applications'] as $app) {
+            if ($detailsByRef->has($app['noRujukan']) && collect($pengeluaran['items'])->contains('idPembiayaan', $app['noRujukan'])) {
+                continue;
+            }
+
+            $usahawan = Usahawan::where('nama', $app['nama'])->first();
+
+            Permohonan::updateOrCreate(
+                ['no_rujukan' => $app['noRujukan']],
+                $this->permohonanSeedAttributes($app['nama'], $usahawan?->id, [
+                    'kategori_pembiayaan' => $app['kategoriPembiayaan'] ?? 'TEKUN Niaga',
+                    'status' => $app['status'],
+                    'jumlah_permohonan' => $app['jumlahPermohonan'],
+                    'tarikh_permohonan' => $app['tarikhPermohonan'],
+                    'details' => $this->snakeCaseKeys($app['details'] ?? []),
+                ])
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function permohonanSeedAttributes(string $nama, ?int $usahawanId, array $attributes): array
+    {
+        return array_merge([
+            'nama' => $nama,
+            'usahawan_id' => $usahawanId,
+        ], $attributes);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function snakeCaseKeys(array $data): array
+    {
+        $result = [];
+        foreach ($data as $key => $value) {
+            $snakeKey = is_string($key) ? Str::snake($key) : $key;
+            $result[$snakeKey] = is_array($value) ? $this->snakeCaseKeys($value) : $value;
+        }
+
+        return $result;
+    }
+
+    private function seedAkaun(): void
+    {
+        $data = $this->loadJson('pengurusan-akaun.json');
+
+        foreach ($data['items'] as $item) {
+            $permohonan = Permohonan::where('nama', $item['nama'])->first();
+            $usahawan = Usahawan::where('nama', $item['nama'])->first();
+
+            AkaunPembiayaan::updateOrCreate(
+                ['no_akaun' => $item['id']],
+                [
+                    'permohonan_id' => $permohonan?->id,
+                    'usahawan_id' => $usahawan?->id,
+                    'ic' => $item['ic'],
+                    'nama' => $item['nama'],
+                    'nama_syarikat' => $item['namaSyarikat'] ?? null,
+                    'ssm' => $item['ssm'] ?? null,
+                    'pukonsa' => $item['pukonsa'] ?? null,
+                    'cawangan' => $item['cawangan'],
+                    'negeri' => $item['negeri'],
+                    'produk' => $item['produk'],
+                    'tarikh_mula' => $item['tarikhMula'],
+                    'tarikh_tamat' => $item['tarikhTamat'],
+                    'jumlah_pembiayaan' => $item['jumlahPembiayaan'],
+                    'baki_pokok' => $item['bakiPokok'],
+                    'baki_keuntungan' => $item['bakiKeuntungan'],
+                    'baki_simpanan' => $item['bakiSimpanan'],
+                    'penalti' => $item['penalti'],
+                    'tunggakan' => $item['tunggakan'],
+                    'baki_akhir' => $item['bakiAkhir'],
+                    'bayaran_bulanan' => $item['bayaranBulanan'],
+                    'status' => $item['status'],
+                    'risiko' => $item['risiko'],
+                    'no_bsas' => $item['noBsas'] ?? null,
+                    'snc' => $item['snc'] ?? false,
+                ]
+            );
+        }
+    }
+
+    private function seedPengeluaranDana(): void
+    {
+        $data = $this->loadJson('pengeluaran-dana.json');
+
+        foreach ($data['items'] as $item) {
+            $akaun = AkaunPembiayaan::where('nama', $item['nama'])->first();
+
+            PengeluaranDana::updateOrCreate(
+                ['rujukan' => $item['id']],
+                [
+                    'akaun_id' => $akaun?->id,
+                    'id_pembiayaan' => $item['idPembiayaan'],
+                    'nama' => $item['nama'],
+                    'jumlah' => $item['jumlahNumeric'],
+                    'jenis' => $item['jenisPengeluaran'],
+                    'fasa' => $item['fasa'] ?? null,
+                    'peratus_fasa' => $item['peratusFasa'] ?? null,
+                    'bank' => $item['bank'] ?? null,
+                    'no_akaun_bank' => $item['noAkaunBank'] ?? null,
+                    'status' => $item['status'],
+                    'no_rujukan_bank' => $item['noRujukanBank'] ?? null,
+                    'fraud_risk' => $item['fraudRisk'] ?? null,
+                    'fraud_alert' => $item['fraudAlert'] ?? null,
+                    'bsas_verified' => $item['bsasVerified'] ?? false,
+                    'legal_docs_complete' => $item['legalDocsComplete'] ?? false,
+                    'tarikh_pengeluaran' => $item['tarikhIso'],
+                ]
+            );
+        }
+    }
+
+    private function seedJaminan(): void
+    {
+        $data = $this->loadJson('pengurusan-jaminan.json');
+
+        foreach ($data['items'] as $item) {
+            Jaminan::updateOrCreate(
+                ['rujukan' => $item['id']],
+                [
+                    'nama' => $item['nama'],
+                    'jenis' => $item['jenis'],
+                    'nilai' => $item['nilai'],
+                    'status' => $item['status'],
+                    'risiko' => $item['risiko'],
+                    'no_pinjaman' => $item['noPinjaman'],
+                    'tarikh_mula' => $item['tarikhMula'],
+                    'tarikh_tamat' => $item['tarikhTamat'],
+                    'deskripsi' => $item['deskripsi'] ?? null,
+                    'dokumen' => $item['dokumen'] ?? null,
+                ]
+            );
+        }
+    }
+
+    private function seedKutipan(): void
+    {
+        $data = $this->loadJson('kutipan.json');
+
+        foreach ($data['KUTIPAN_ITEMS'] as $item) {
+            $akaun = AkaunPembiayaan::where('no_akaun', $item['noPembiayaan'])
+                ->orWhere('nama', $item['nama'])
+                ->first();
+
+            Kutipan::updateOrCreate(
+                ['rujukan' => $item['id']],
+                [
+                    'akaun_id' => $akaun?->id,
+                    'usahawan_id' => $akaun?->usahawan_id,
+                    'nama' => $item['nama'],
+                    'no_akaun' => $item['noPembiayaan'],
+                    'cawangan' => $item['cawangan'],
+                    'zon' => $item['zon'],
+                    'pegawai' => $item['pegawaiSeliaan'],
+                    'tunggakan' => SpptViewTransform::parseRm($item['jumlahTunggakan']) ?? 0,
+                    'hasil_kutipan' => SpptViewTransform::parseRm($item['jumlahDikutip']),
+                    'tarikh_akhir_bayaran' => $this->guessIsoDate($item['tarikhAkhirBayaran']),
+                    'hari_lewat' => $item['hariLewat'],
+                    'maklumat_psat' => $item['maklumatPsat'] ?? null,
+                    'status' => $item['status'],
+                    'tarikh_lawatan' => $this->guessIsoDate($item['tarikhLawatan']),
+                ]
+            );
+        }
+    }
+
+    private function guessIsoDate(string $display): ?string
+    {
+        if ($display === '—' || $display === '') {
+            return null;
+        }
+
+        $months = [
+            'Jan' => '01', 'Feb' => '02', 'Mac' => '03', 'Apr' => '04',
+            'Mei' => '05', 'Jun' => '06', 'Jul' => '07', 'Ogos' => '08',
+            'Sep' => '09', 'Okt' => '10', 'Nov' => '11', 'Dis' => '12',
+        ];
+
+        if (preg_match('/(\d{1,2})\s+(\w+)\s+(\d{4})/', $display, $m)) {
+            $month = $months[$m[2]] ?? '01';
+
+            return sprintf('%s-%s-%02d', $m[3], $month, (int) $m[1]);
+        }
+
+        try {
+            return Carbon::parse($display)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function seedDatasets(): void
+    {
+        $pengeluaran = $this->loadJson('pengeluaran-dana.json');
+        $this->upsertDataset('pengeluaran', 'audit_trail', $pengeluaran['auditTrail']);
+        $this->upsertDataset('pengeluaran', 'batches', $pengeluaran['batches']);
+        $this->upsertDataset('pengeluaran', 'legal_docs', $pengeluaran['legalDocsTemplate']);
+        $this->upsertDataset('pengeluaran', 'exceptions', $pengeluaran['exceptions']);
+        $this->upsertDataset('pengeluaran', 'integration_statuses', $pengeluaran['integrationStatuses']);
+
+        $jaminan = $this->loadJson('pengurusan-jaminan.json');
+        $this->upsertDataset('jaminan', 'audit_logs', $jaminan['auditLogs']);
+        $this->upsertDataset('jaminan', 'notifikasi', $jaminan['notifikasi']);
+
+        $kutipan = $this->loadJson('kutipan.json');
+        $this->upsertDataset('kutipan', 'skh_items', $kutipan['SKH_ITEMS']);
+        $this->upsertDataset('kutipan', 'call_center_items', $kutipan['CALL_CENTER_ITEMS']);
+        $this->upsertDataset('kutipan', 'psat_items', $kutipan['PSAT_ITEMS']);
+        $this->upsertDataset('kutipan', 'skm_mingguan', $kutipan['SKM_MINGGUAN']);
+        $this->upsertDataset('kutipan', 'audit_log_items', $kutipan['AUDIT_LOG_ITEMS']);
+        $this->upsertDataset('kutipan', 'kpi_pegawai', $kutipan['KPI_PEGAWAI']);
+
+        $pembayaran = $this->loadJson('bayaran-pembiayaan.json');
+        foreach ([
+            'payment_channels' => 'PAYMENT_CHANNELS',
+            'bayaran_items' => 'BAYARAN_ITEMS',
+            'pemadanan_resit' => 'PEMADANAN_RESIT',
+            'rekon_bank' => 'REKON_BANK',
+            'lebihan_kekurangan' => 'LEBIHAN_KEKURANGAN',
+            'penyata_bayaran' => 'PENYATA_BAYARAN',
+            'early_settlement' => 'EARLY_SETTLEMENT_DUMMY',
+            'akaun_selesai_bayar' => 'AKAUN_SELESAI_BAYAR',
+            'ai_ocr_results' => 'AI_OCR_RESULTS',
+            'ai_analytics' => 'AI_ANALYTICS',
+            'chatbot_sample_qa' => 'CHATBOT_SAMPLE_QA',
+        ] as $key => $source) {
+            $this->upsertDataset('pembayaran', $key, $pembayaran[$source]);
+        }
+
+        $litigasi = $this->loadJson('litigasi.json');
+        foreach ([
+            'panel_peguam' => 'PANEL_PEGUAM',
+            'akaun_npf' => 'AKAUN_NPF',
+            'nod_items' => 'NOD_ITEMS',
+            'kes_litigasi' => 'KES_LITIGASI',
+            'execution_items' => 'EXECUTION_ITEMS',
+            'wss_items' => 'WSS_ITEMS',
+            'garnishee_items' => 'GARNISHEE_ITEMS',
+            'jds_items' => 'JDS_ITEMS',
+            'kebankrapan_items' => 'KEBANKRAPAN_ITEMS',
+            'winding_up_items' => 'WINDING_UP_ITEMS',
+            'litigasi_audit' => 'LITIGASI_AUDIT',
+            'laporan_kes_aktif' => 'LAPORAN_KES_AKTIF',
+            'laporan_keputusan_bulanan' => 'LAPORAN_KEPUTUSAN_BULANAN',
+        ] as $key => $source) {
+            $this->upsertDataset('litigasi', $key, $litigasi[$source]);
+        }
+
+        $laporan = $this->loadJson('laporan.json');
+        foreach ($laporan as $key => $payload) {
+            $this->upsertDataset('laporan', $this->snakeKey($key), $payload);
+        }
+
+        $audit = $this->loadJson('audit.json');
+        foreach ($audit as $key => $payload) {
+            $this->upsertDataset('audit', $this->snakeKey($key), $payload);
+        }
+
+        $pemantauan = $this->loadJson('pemantauan-usahawan.json');
+        foreach ([
+            'usahawan_list' => 'usahawanList',
+            'dokumen_by_usahawan' => 'dokumenByUsahawan',
+            'lawatan_list' => 'lawatanList',
+            'program_latihan' => 'programLatihanList',
+            'kehadiran_latihan' => 'kehadiranLatihanList',
+            'ai_forecast' => 'aiForecastData',
+        ] as $key => $source) {
+            $this->upsertDataset('pemantauan', $key, $pemantauan[$source]);
+        }
+    }
+
+    private function upsertDataset(string $module, string $key, mixed $payload): void
+    {
+        SpptDataset::updateOrCreate(
+            ['module' => $module, 'dataset_key' => $key],
+            ['payload' => $payload]
+        );
+    }
+
+    private function snakeKey(string $key): string
+    {
+        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $key));
     }
 
     private function seedSetup(): void
@@ -192,50 +401,5 @@ class SpptSeeder extends Seeder
                 ['payload' => $items]
             );
         }
-    }
-
-    private function seedDatasets(): void
-    {
-        SpptDataset::updateOrCreate(
-            ['module' => 'litigasi', 'dataset_key' => 'panel_peguam'],
-            ['payload' => [
-                ['id' => 'PP-001', 'namaFirma' => 'Messrs Ahmad & Associates', 'negeri' => 'Kuala Lumpur', 'status' => 'aktif', 'kuotaNod' => 1000, 'kesAktif' => 45],
-                ['id' => 'PP-002', 'namaFirma' => 'Messrs Siti & Partners', 'negeri' => 'Kuala Lumpur', 'status' => 'aktif', 'kuotaNod' => 1000, 'kesAktif' => 32],
-            ]]
-        );
-
-        SpptDataset::updateOrCreate(
-            ['module' => 'litigasi', 'dataset_key' => 'kes_litigasi'],
-            ['payload' => [
-                ['id' => 'KES-001', 'noKes' => 'KTR-2024-001', 'noAkaun' => 'PF-2023-041', 'nama' => 'Mohd Rizal bin Hassan', 'statusKes' => 'nod-dihantar', 'peringkat' => 'NOD'],
-                ['id' => 'KES-002', 'noKes' => 'KTR-2024-002', 'noAkaun' => 'PF-2022-089', 'nama' => 'Syarikat XYZ Sdn Bhd', 'statusKes' => 'saman-dihantar', 'peringkat' => 'Saman'],
-            ]]
-        );
-
-        SpptDataset::updateOrCreate(
-            ['module' => 'pembayaran', 'dataset_key' => 'bayaran_items'],
-            ['payload' => [
-                ['id' => 'BYR-001', 'noAkaun' => 'PF-2023-008', 'nama' => 'Ahmad bin Abdullah', 'jumlah' => 'RM 500.00', 'tarikh' => '2 Jul 2024', 'kaedah' => 'FPX'],
-                ['id' => 'BYR-002', 'noAkaun' => 'PF-2023-041', 'nama' => 'Mohd Rizal bin Hassan', 'jumlah' => 'RM 1,500.00', 'tarikh' => '1 Jul 2024', 'kaedah' => 'Kaunter'],
-            ]]
-        );
-
-        SpptDataset::updateOrCreate(
-            ['module' => 'laporan', 'dataset_key' => 'kpi_summary'],
-            ['payload' => [
-                'permohonanBulanIni' => 128,
-                'kelulusanRate' => 72.5,
-                'kutipanBulanIni' => 2450000,
-                'npfRate' => 3.2,
-            ]]
-        );
-
-        SpptDataset::updateOrCreate(
-            ['module' => 'audit', 'dataset_key' => 'audit_trail'],
-            ['payload' => [
-                ['id' => 'AUD-001', 'tarikh' => '2 Jul 2024', 'pengguna' => 'admin', 'modul' => 'Permohonan', 'tindakan' => 'Kemaskini status', 'jenisTindakan' => 'update'],
-                ['id' => 'AUD-002', 'tarikh' => '1 Jul 2024', 'pengguna' => 'pegawai1', 'modul' => 'Pengeluaran Dana', 'tindakan' => 'Lulus batch', 'jenisTindakan' => 'approve'],
-            ]]
-        );
     }
 }

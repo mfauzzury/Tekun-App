@@ -22,6 +22,9 @@ class Kutipan extends Model
         'zon',
         'pegawai',
         'tunggakan',
+        'tarikh_akhir_bayaran',
+        'hari_lewat',
+        'maklumat_psat',
         'hasil_kutipan',
         'janji_bayar',
         'status',
@@ -34,6 +37,8 @@ class Kutipan extends Model
     {
         return [
             'tunggakan' => 'decimal:2',
+            'tarikh_akhir_bayaran' => 'date',
+            'hari_lewat' => 'integer',
             'hasil_kutipan' => 'decimal:2',
             'janji_bayar' => 'date',
             'tarikh_lawatan' => 'datetime',
