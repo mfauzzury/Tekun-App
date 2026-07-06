@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DevelopersGuideController;
 use App\Http\Controllers\Api\MediaController;
+use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PublicController;
@@ -29,6 +30,9 @@ Route::prefix('public')->group(function () {
     Route::get('/site', [PublicController::class, 'site']);
     Route::get('/pages/frontpage', [PublicController::class, 'frontpage']);
     Route::get('/pages/{slug}', [PublicController::class, 'pageBySlug']);
+
+    Route::post('/otp/request', [OtpController::class, 'request'])->middleware('throttle:otp');
+    Route::post('/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:otp');
 });
 
 if (app()->environment('local')) {

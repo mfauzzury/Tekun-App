@@ -80,6 +80,19 @@ import { useSiteStore } from "@/stores/site";
 import { translateRouteTitle } from "@/i18n";
 import { useUiLocaleStore } from "@/stores/uiLocale";
 import { maskBrowserUrl } from "@/utils/maskUrl";
+import { usePemohonStore } from "@/stores/pemohon";
+
+import PemohonLandingView from "@/views/pemohon/PemohonLandingView.vue";
+import PemohonDaftarView from "@/views/pemohon/PemohonDaftarView.vue";
+import PemohonLogMasukView from "@/views/pemohon/PemohonLogMasukView.vue";
+import PemohonSemakanKelayakanView from "@/views/pemohon/PemohonSemakanKelayakanView.vue";
+import PemohonEkycView from "@/views/pemohon/PemohonEkycView.vue";
+import PemohonDashboardView from "@/views/pemohon/PemohonDashboardView.vue";
+import PemohonPermohonanListView from "@/views/pemohon/PemohonPermohonanListView.vue";
+import PemohonPermohonanBaruView from "@/views/pemohon/PemohonPermohonanBaruView.vue";
+import PemohonPermohonanDetailView from "@/views/pemohon/PemohonPermohonanDetailView.vue";
+import PemohonProfilView from "@/views/pemohon/PemohonProfilView.vue";
+import PemohonBantuanView from "@/views/pemohon/PemohonBantuanView.vue";
 
 const legacyAdminPaths = [
   "/login",
@@ -306,6 +319,19 @@ const router = createRouter({
       redirect: (to: RouteLocationGeneric) => `/admin${to.fullPath}`,
     })),
 
+    // ── Pemohon Portal (Public Self-Service) ──
+    { path: "/pemohon", name: "pemohon-landing", component: PemohonLandingView, meta: { title: "Portal Pemohon" } },
+    { path: "/pemohon/daftar", name: "pemohon-daftar", component: PemohonDaftarView, meta: { pemohonGuestOnly: true, title: "Pendaftaran Akaun" } },
+    { path: "/pemohon/log-masuk", name: "pemohon-log-masuk", component: PemohonLogMasukView, meta: { pemohonGuestOnly: true, title: "Log Masuk" } },
+    { path: "/pemohon/semakan-kelayakan", name: "pemohon-semakan-kelayakan", component: PemohonSemakanKelayakanView, meta: { requiresPemohonAuth: true, title: "Semakan Kelayakan" } },
+    { path: "/pemohon/ekyc", name: "pemohon-ekyc", component: PemohonEkycView, meta: { requiresPemohonAuth: true, title: "Pengesahan Identiti" } },
+    { path: "/pemohon/dashboard", name: "pemohon-dashboard", component: PemohonDashboardView, meta: { requiresPemohonAuth: true, title: "Dashboard Pemohon" } },
+    { path: "/pemohon/permohonan", name: "pemohon-permohonan", component: PemohonPermohonanListView, meta: { requiresPemohonAuth: true, title: "Permohonan Saya" } },
+    { path: "/pemohon/permohonan/baru", name: "pemohon-permohonan-baru", component: PemohonPermohonanBaruView, meta: { requiresPemohonAuth: true, title: "Permohonan Baharu" } },
+    { path: "/pemohon/permohonan/:id", name: "pemohon-permohonan-detail", component: PemohonPermohonanDetailView, meta: { requiresPemohonAuth: true, title: "Butiran Permohonan" } },
+    { path: "/pemohon/profil", name: "pemohon-profil", component: PemohonProfilView, meta: { requiresPemohonAuth: true, title: "Profil Saya" } },
+    { path: "/pemohon/bantuan", name: "pemohon-bantuan", component: PemohonBantuanView, meta: { title: "Bantuan & Soalan Lazim" } },
+
     { path: "/", name: "storefront-home", component: StorefrontHomeView, meta: { title: "Webfront" } },
     { path: "/:slug", name: "storefront-page", component: StorefrontPageView, meta: { title: "Webfront" } },
   ],
@@ -321,6 +347,17 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return { name: "main-dashboard" };
+  }
+
+  const pemohon = usePemohonStore();
+  pemohon.initFromStorage();
+
+  if (to.meta.requiresPemohonAuth && !pemohon.isLoggedIn) {
+    return { name: "pemohon-log-masuk" };
+  }
+
+  if (to.meta.pemohonGuestOnly && pemohon.isLoggedIn) {
+    return { name: "pemohon-dashboard" };
   }
 
   return true;
