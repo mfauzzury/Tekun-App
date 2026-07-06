@@ -5,11 +5,11 @@ import {
   PERMOHONAN_DUMMY,
   PROFIL_USAHAWAN_DUMMY,
   evaluateEligibility,
-  generateOtp,
   simulateEkyc,
   type EkycSimulationInput,
   type EligibilityInput,
 } from "@/data/portal-dummy";
+import { requestOtp as requestOtpApi, verifyOtp as verifyOtpApi, type OtpChannel } from "@/api/otp";
 
 const SESSION_KEY = "pemohon.session";
 
@@ -109,25 +109,32 @@ export const usePemohonStore = defineStore("pemohon", () => {
     }
   }
 
-  function register(payload: { nama: string; email: string; telefon: string; password: string }) {
+  async function register(payload: { nama: string; email: string; telefon: string; password: string }, channel: OtpChannel = "sms") {
     account.value = { ...payload };
     profil.value = { ...profil.value, nama: payload.nama, email: payload.email, telefon: payload.telefon };
-    return requestOtp("sms");
+    await requestOtp(channel);
   }
 
-  function requestOtp(target: "sms" | "email") {
-    const code = generateOtp();
-    otp.value = { code, sentAt: Date.now(), verified: false, target };
-    return code;
+  function destinationFor(channel: OtpChannel): string {
+    const destination = channel === "sms" ? account.value?.telefon : account.value?.email;
+    if (!destination) throw new Error(channel === "sms" ? "Tiada nombor telefon berdaftar." : "Tiada emel berdaftar.");
+    return destination;
   }
 
-  function verifyOtp(code: string): boolean {
-    const isValid = otp.value.code !== null && code.trim() === otp.value.code;
-    if (isValid) {
+  async function requestOtp(channel: OtpChannel) {
+    await requestOtpApi(channel, destinationFor(channel));
+    otp.value = { code: null, sentAt: Date.now(), verified: false, target: channel };
+  }
+
+  async function verifyOtp(code: string): Promise<boolean> {
+    const channel = otp.value.target ?? "sms";
+    const response = await verifyOtpApi(channel, destinationFor(channel), code.trim());
+    if (response.data.verified) {
       otp.value.verified = true;
       isLoggedIn.value = true;
+      return true;
     }
-    return isValid;
+    return false;
   }
 
   function login(email: string, password: string): boolean {

@@ -26,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinutes(10, 20)->by($request->ip());
         });
+
+        RateLimiter::for('otp', function (Request $request) {
+            return Limit::perMinutes(10, 5)->by($request->ip());
+        });
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();

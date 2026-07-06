@@ -162,13 +162,6 @@ export function evaluateEligibility(input: EligibilityInput): EligibilityResult 
   return { eligible: reasons.length === 0, reasons };
 }
 
-/** OTP/TAC simulation (PDF §1.2) — no real SMS/email gateway. */
-export const OTP_EXPIRY_SECONDS = 300;
-
-export function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
 /** eKYC simulation (PDF §1.3) — no real vendor/liveness detection. */
 export interface EkycSimulationInput {
   idFrontUploaded: boolean;
