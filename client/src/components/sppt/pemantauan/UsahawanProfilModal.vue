@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
+import { ref, onMounted } from "vue";
 import { FileText, MapPin, Award, BookOpen } from "lucide-vue-next";
-import type { UsahawanItem } from "@/data/pemantauan-usahawan-dummy";
+import type { UsahawanItem, DokumenSokongan } from "@/data/pemantauan-usahawan-dummy";
 import {
   STATUS_LABELS,
   SKOR_LABELS,
   KATEGORI_COLORS,
-  dokumenByUsahawan,
 } from "@/data/pemantauan-usahawan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
 
 defineProps<{
   usahawan: UsahawanItem | null;
@@ -15,6 +16,13 @@ defineProps<{
 }>();
 
 const { t, tp } = useI18n();
+
+const dokumenByUsahawan = ref<Record<string, DokumenSokongan[]>>({});
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pemantauan", "dokumen_by_usahawan");
+  dokumenByUsahawan.value = res.data as Record<string, DokumenSokongan[]>;
+});
 
 const emit = defineEmits<{ close: [] }>();
 

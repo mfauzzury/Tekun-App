@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { WINDING_UP_ITEMS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { WindingUpItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
 
-const items = ref([...WINDING_UP_ITEMS]);
+const items = ref<WindingUpItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "winding_up_items");
+  items.value = res.data as WindingUpItem[];
+});
 
 function statusClass(s: string) {
   const m: Record<string, string> = { petisyen: "bg-amber-100 text-amber-700", perintah: "bg-blue-100 text-blue-700", "block-payment": "bg-rose-100 text-rose-700", liquidator: "bg-purple-100 text-purple-700" };

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { Check, GripVertical, Plus, RefreshCw, Save, Trash2, X } from "lucide-vue-next";
+import { Check, GripVertical, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
@@ -32,6 +32,8 @@ const showAddForm = ref(false);
 const newItem = ref<SpptSetupStatusItem>({ value: "", label: "", color: "slate", active: true, sort: 0 });
 
 const selectedCategory = computed(() => categories.value.find((c) => c.key === selectedKey.value));
+const isKnowledgeCategory = computed(() => selectedCategory.value?.type === "knowledge");
+const editingIndex = ref<number | null>(null);
 
 const isDirty = computed(() => {
   const original = selectedCategory.value?.items ?? [];
@@ -70,6 +72,7 @@ async function loadSetup() {
 function syncEditItems() {
   const cat = selectedCategory.value;
   editItems.value = cat ? cat.items.map((item) => ({ ...item })) : [];
+  editingIndex.value = null;
 }
 
 function selectCategory(key: string) {
@@ -94,7 +97,9 @@ function selectCategory(key: string) {
 
 function addItem() {
   if (!newItem.value.label.trim()) return;
-  const value = newItem.value.value.trim() || slugify(newItem.value.label);
+  const value = isKnowledgeCategory.value
+    ? newItem.value.value.trim() || String(editItems.value.length + 1)
+    : newItem.value.value.trim() || slugify(newItem.value.label);
   if (editItems.value.some((i) => i.value === value)) return;
 
   editItems.value.push({
@@ -108,13 +113,29 @@ function addItem() {
   showAddForm.value = false;
 }
 
+function startEdit(index: number) {
+  editingIndex.value = index;
+}
+
+function finishEdit() {
+  editingIndex.value = null;
+}
+
 async function removeItem(index: number) {
   const ok = await confirm({
-    title: tp("Padam status"),
-    message: tp("Adakah anda pasti mahu memadam status ini?"),
+    title: isKnowledgeCategory.value ? tp("Padam kriteria") : tp("Padam status"),
+    message: isKnowledgeCategory.value
+      ? tp("Adakah anda pasti mahu memadam kriteria ini?")
+      : tp("Adakah anda pasti mahu memadam status ini?"),
     destructive: true,
   });
-  if (ok) editItems.value.splice(index, 1);
+  if (!ok) return;
+  editItems.value.splice(index, 1);
+  if (editingIndex.value === index) {
+    editingIndex.value = null;
+  } else if (editingIndex.value !== null && editingIndex.value > index) {
+    editingIndex.value -= 1;
+  }
 }
 
 async function saveCategory() {
@@ -127,6 +148,7 @@ async function saveCategory() {
     const idx = categories.value.findIndex((c) => c.key === selectedKey.value);
     if (idx >= 0) categories.value[idx] = res.data;
     editItems.value = res.data.items.map((item) => ({ ...item }));
+    editingIndex.value = null;
     saved.value = true;
     setTimeout(() => { saved.value = false; }, 2500);
   } catch {
@@ -223,7 +245,85 @@ onMounted(loadSetup);
             </div>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <!-- Knowledge criteria editor -->
+              <table v-if="isKnowledgeCategory" class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-slate-100 text-left">
+                    <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
+                    <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ tp("Penerangan") }}</th>
+                    <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.status") }}</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.actions") }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-for="(item, index) in editItems" :key="`${item.value}-${index}`" class="align-top hover:bg-slate-50">
+                    <td class="w-20 px-4 py-3">
+                      <input
+                        v-if="editingIndex === index"
+                        v-model="item.value"
+                        type="text"
+                        class="w-full rounded border border-slate-200 px-2 py-1 font-mono text-xs text-slate-700 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                      />
+                      <span v-else class="font-mono text-xs text-slate-700">{{ item.value }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <textarea
+                        v-if="editingIndex === index"
+                        v-model="item.label"
+                        rows="3"
+                        class="w-full rounded border border-slate-200 px-2 py-1.5 text-slate-700 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                      />
+                      <p v-else class="whitespace-pre-wrap text-slate-700">{{ item.label }}</p>
+                    </td>
+                    <td class="w-32 px-4 py-3">
+                      <label v-if="editingIndex === index" class="inline-flex cursor-pointer items-center gap-2">
+                        <input v-model="item.active" type="checkbox" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                        <span class="text-xs text-slate-600">{{ item.active ? tp("Aktif") : tp("Tidak Aktif") }}</span>
+                      </label>
+                      <span
+                        v-else
+                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        :class="item.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'"
+                      >
+                        {{ item.active ? tp("Aktif") : tp("Tidak Aktif") }}
+                      </span>
+                    </td>
+                    <td class="w-24 px-4 py-3 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <button
+                          v-if="editingIndex === index"
+                          type="button"
+                          class="rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                          :title="tp('Selesai sunting')"
+                          @click="finishEdit"
+                        >
+                          <Check class="h-4 w-4" />
+                        </button>
+                        <button
+                          v-else
+                          type="button"
+                          class="rounded p-1 text-slate-400 hover:bg-violet-50 hover:text-violet-700"
+                          :title="t('common.edit')"
+                          @click="startEdit(index)"
+                        >
+                          <Pencil class="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                          :title="t('common.delete')"
+                          @click="removeItem(index)"
+                        >
+                          <Trash2 class="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Status code editor -->
+              <table v-else class="w-full text-sm">
                 <thead>
                   <tr class="border-b border-slate-100 text-left">
                     <th class="w-8 px-4 py-2" />
@@ -284,7 +384,7 @@ onMounted(loadSetup);
               </table>
             </div>
 
-            <!-- Add new status -->
+            <!-- Add new item -->
             <div class="border-t border-slate-100 px-4 py-3">
               <button
                 v-if="!showAddForm"
@@ -293,8 +393,54 @@ onMounted(loadSetup);
                 @click="showAddForm = true"
               >
                 <Plus class="h-4 w-4" />
-                {{ tp("Tambah Status") }}
+                {{ isKnowledgeCategory ? tp("Tambah Kriteria") : tp("Tambah Status") }}
               </button>
+
+              <div v-else-if="isKnowledgeCategory" class="space-y-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3">
+                <div class="grid gap-3 md:grid-cols-[120px_minmax(0,1fr)]">
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">ID</label>
+                    <input
+                      v-model="newItem.value"
+                      type="text"
+                      :placeholder="tp('Auto jika kosong')"
+                      class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm focus:border-violet-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Penerangan") }}</label>
+                    <textarea
+                      v-model="newItem.label"
+                      rows="3"
+                      :placeholder="tp('Contoh: Bumiputera dan Warganegara Malaysia')"
+                      class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm focus:border-violet-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <label class="inline-flex cursor-pointer items-center gap-2">
+                    <input v-model="newItem.active" type="checkbox" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                    <span class="text-xs text-slate-600">{{ tp("Aktif") }}</span>
+                  </label>
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 rounded-lg bg-violet-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-800"
+                      @click="addItem"
+                    >
+                      <Plus class="h-4 w-4" />
+                      {{ tp("Tambah") }}
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-white"
+                      @click="showAddForm = false"
+                    >
+                      <X class="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div v-else class="flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3">
                 <div class="min-w-[120px] flex-1">

@@ -1,22 +1,33 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { KES_LITIGASI, LAPORAN_KEPUTUSAN_BULANAN, NEGERI_OPTIONS, CAWANGAN_OPTIONS, PRODUK_OPTIONS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import { type KesLitigasi, NEGERI_OPTIONS, CAWANGAN_OPTIONS, PRODUK_OPTIONS, LAPORAN_KEPUTUSAN_BULANAN } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const kesLitigasi = ref<KesLitigasi[]>([]);
+const chartData = ref<(typeof LAPORAN_KEPUTUSAN_BULANAN)[number][]>([]);
+
+onMounted(async () => {
+  const [kesRes, chartRes] = await Promise.all([
+    fetchSpptDataset("litigasi", "kes_litigasi"),
+    fetchSpptDataset("litigasi", "laporan_keputusan_bulanan"),
+  ]);
+  kesLitigasi.value = kesRes.data as KesLitigasi[];
+  chartData.value = chartRes.data as typeof chartData.value;
+});
 
 const q = ref("");
 const negeri = ref("");
 const cawangan = ref("");
 const produk = ref("");
 
-const kesPenghakiman = computed(() => KES_LITIGASI.filter((k) => ["penghakiman", "selesai", "execution"].includes(k.status) || k.jenisPenghakiman));
-
-const chartData = LAPORAN_KEPUTUSAN_BULANAN;
+const kesPenghakiman = computed(() => kesLitigasi.value.filter((k) => ["penghakiman", "selesai", "execution"].includes(k.status) || k.jenisPenghakiman));
 
 function statusClass(s: string) {
   const m: Record<string, string> = { menang: "bg-emerald-100 text-emerald-700", kalah: "bg-rose-100 text-rose-700", "penyelesaian-luar": "bg-blue-100 text-blue-700" };

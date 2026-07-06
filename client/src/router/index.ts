@@ -79,6 +79,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useSiteStore } from "@/stores/site";
 import { translateRouteTitle } from "@/i18n";
 import { useUiLocaleStore } from "@/stores/uiLocale";
+import { maskBrowserUrl } from "@/utils/maskUrl";
 
 const legacyAdminPaths = [
   "/login",
@@ -170,7 +171,7 @@ const router = createRouter({
 
     // ── SPPT: PENGURUSAN PEMBIAYAAN ──
     { path: "/admin/permohonan", name: "permohonan", component: PermohonanListView, meta: { requiresAuth: true, title: "Pendaftaran Permohonan" } },
-    { path: "/admin/permohonan/baru", name: "permohonan-baru", component: PermohonanBaruView, meta: { requiresAuth: true, title: "Daftar Permohonan Baru" } },
+    { path: "/admin/permohonan/baru/:id?", name: "permohonan-baru", component: PermohonanBaruView, meta: { requiresAuth: true, title: "Daftar Permohonan Baru" } },
     { path: "/admin/permohonan/usahawan/daftar", name: "daftar-usahawan", component: DaftarUsahawanBaruView, meta: { requiresAuth: true, title: "Daftar Usahawan Baru" } },
     { path: "/admin/permohonan/usahawan", name: "rekod-usahawan", component: RekodUsahawanView, meta: { requiresAuth: true, title: "Rekod Usahawan" } },
     { path: "/admin/permohonan/:id", name: "permohonan-detail", component: PermohonanDetailView, meta: { requiresAuth: true, title: "Butiran Permohonan" } },
@@ -336,6 +337,7 @@ export function applyDocumentTitle(to: RouteLocationNormalizedLoaded) {
 
 router.afterEach((to) => {
   applyDocumentTitle(to);
+  maskBrowserUrl();
 });
 
 export default router;

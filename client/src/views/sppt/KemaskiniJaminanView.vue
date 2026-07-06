@@ -7,13 +7,13 @@ import { ArrowLeft, Save, Upload, FileText, Sparkles, CheckCircle } from "lucide
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import {
-  items as jaminanItems,
   JENIS_CAGARAN_OPTIONS,
   PINJAMAN_OPTIONS,
   type JaminanItem,
   type JenisCagaran,
   type RisikoCagaran,
 } from "@/data/pengurusan-jaminan-dummy";
+import { listJaminan } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
@@ -50,12 +50,17 @@ const form = ref({
   deskripsi: "",
 });
 
+const jaminanItems = ref<JaminanItem[]>([]);
+
 const isNew = computed(() => !route.query.id);
 
-onMounted(() => {
+onMounted(async () => {
+  const res = await listJaminan({ limit: 100 });
+  jaminanItems.value = res.data as JaminanItem[];
+
   const id = route.query.id as string;
   if (id) {
-    const item = jaminanItems.find((i) => i.id === id);
+    const item = jaminanItems.value.find((i) => i.id === id);
     if (item) {
       form.value = {
         id: item.id,
@@ -73,7 +78,7 @@ onMounted(() => {
       }
     }
   } else {
-    form.value.id = `JAM-${new Date().getFullYear()}-${String(jaminanItems.length + 1).padStart(3, "0")}`;
+    form.value.id = `JAM-${new Date().getFullYear()}-${String(jaminanItems.value.length + 1).padStart(3, "0")}`;
   }
 });
 

@@ -1,37 +1,106 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Eye, Pencil } from "lucide-vue-next";
 
+import { getPermohonanSummary, listPermohonan } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
+import type { Permohonan } from "@/types";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const q = ref("");
 const status = ref("");
+const loading = ref(true);
+const items = ref<Permohonan[]>([]);
+const summaryData = ref({
+  jumlah: 0,
+  draf: 0,
+  dalamProses: 0,
+  menungguDokumen: 0,
+  selesaiBulanIni: 0,
+});
 
-const summary = [
-  { label: t("sppt.totalApplications"), value: 24 },
-  { label: t("sppt.inProgress"), value: 8 },
-  { label: t("sppt.awaitingDocuments"), value: 5 },
-  { label: t("sppt.completedThisMonth"), value: 11 },
-];
+const statusMap: Record<string, string> = {
+  draf: "Draf",
+  proses: "Dalam Proses",
+  dokumen: "Menunggu Dokumen",
+  lengkap: "Lengkap",
+};
 
-const items = [
-  { id: "P-2024-001", nama: "Ahmad bin Abdullah", jumlah: "RM 50,000", tarikh: "10 Mac 2024", status: "Dalam Proses" },
-  { id: "P-2024-002", nama: "Siti Nurhaliza binti Omar", jumlah: "RM 30,000", tarikh: "9 Mac 2024", status: "Menunggu Dokumen" },
-  { id: "P-2024-003", nama: "Mohd Rizal bin Hassan", jumlah: "RM 75,000", tarikh: "8 Mac 2024", status: "Dalam Proses" },
-  { id: "P-2024-004", nama: "Fatimah binti Ibrahim", jumlah: "RM 25,000", tarikh: "7 Mac 2024", status: "Lengkap" },
-];
+const summary = computed(() => [
+  { label: t("sppt.totalApplications"), value: summaryData.value.jumlah },
+  { label: t("sppt.status.draf"), value: summaryData.value.draf },
+  { label: t("sppt.inProgress"), value: summaryData.value.dalamProses },
+  { label: t("sppt.awaitingDocuments"), value: summaryData.value.menungguDokumen },
+]);
 
-function statusClass(s: string) {
-  if (s === "Dalam Proses") return "bg-amber-100 text-amber-700";
-  if (s === "Menunggu Dokumen") return "bg-slate-100 text-slate-600";
-  if (s === "Lengkap") return "bg-emerald-100 text-emerald-700";
-  return "bg-slate-100 text-slate-600";
+async function loadSummary() {
+  try {
+    const res = await getPermohonanSummary();
+    summaryData.value = {
+      jumlah: res.data.jumlah ?? 0,
+      draf: res.data.draf ?? 0,
+      dalamProses: res.data.dalamProses ?? 0,
+      menungguDokumen: res.data.menungguDokumen ?? 0,
+      selesaiBulanIni: res.data.selesaiBulanIni ?? 0,
+    };
+  } catch {
+    // keep previous values
+  }
+}
+
+async function loadItems() {
+  loading.value = true;
+  try {
+    const res = await listPermohonan({
+      limit: 100,
+      q: q.value.trim() || undefined,
+      status: statusMap[status.value] ?? undefined,
+    });
+    items.value = res.data;
+  } catch {
+    items.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function reload() {
+  await Promise.all([loadSummary(), loadItems()]);
+}
+
+onMounted(reload);
+
+function fmtRm(amount?: number | null) {
+  if (amount == null || amount <= 0) return "—";
+  return `RM ${amount.toLocaleString("en-MY", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+function fmtDate(value?: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("ms-MY", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function displayNo(item: Permohonan) {
+  return item.noRujukan || `PM-${item.id}`;
+}
+
+function editTo(item: Permohonan) {
+  return item.status === "Draf" ? `/admin/permohonan/baru/${item.id}` : `/admin/permohonan/${item.id}`;
+}
+
+function viewTo(item: Permohonan) {
+  return item.status === "Draf" ? `/admin/permohonan/baru/${item.id}` : `/admin/permohonan/${item.id}`;
 }
 </script>
 
@@ -55,10 +124,12 @@ function statusClass(s: string) {
             v-model:status="status"
             :search-placeholder="t('sppt.searchApplicationPlaceholder')"
             :filter-options="[
+              { value: 'draf', label: t('sppt.status.draf') },
               { value: 'proses', label: t('sppt.inProgress') },
               { value: 'dokumen', label: t('sppt.awaitingDocuments') },
               { value: 'lengkap', label: t('sppt.complete') },
             ]"
+            @filter="reload"
           />
         </div>
         <div class="overflow-x-auto">
@@ -74,33 +145,40 @@ function statusClass(s: string) {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in items" :key="item.id" class="transition-colors hover:bg-slate-50">
-                <td class="px-4 py-2 font-mono text-slate-600">{{ item.id }}</td>
-                <td class="px-4 py-2 font-medium text-slate-900">{{ item.nama }}</td>
-                <td class="px-4 py-2 text-slate-600">{{ item.jumlah }}</td>
-                <td class="px-4 py-2 text-slate-600">{{ item.tarikh }}</td>
+              <tr v-if="loading">
+                <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-400">{{ tp("Memuatkan...") }}</td>
+              </tr>
+              <tr v-for="item in items" v-else :key="item.id" class="transition-colors hover:bg-slate-50">
+                <td class="px-4 py-2 font-mono text-slate-600">{{ displayNo(item) }}</td>
+                <td class="px-4 py-2 font-medium text-slate-900">{{ item.nama || "—" }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ fmtRm(item.jumlahPermohonan) }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ fmtDate(item.tarikhPermohonan ?? item.createdAt) }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">
                   <div class="flex items-center justify-end gap-1.5">
                     <router-link
-                      :to="`/admin/permohonan/${item.id}`"
+                      :to="viewTo(item)"
                       class="group relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                     >
                       <Eye class="h-3.5 w-3.5" />
                       <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t("common.view") }}</span>
                     </router-link>
-                    <button class="group relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                    <router-link
+                      v-if="item.status === 'Draf'"
+                      :to="editTo(item)"
+                      class="group relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                    >
                       <Pencil class="h-3.5 w-3.5" />
                       <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t("common.edit") }}</span>
-                    </button>
+                    </router-link>
                   </div>
                 </td>
               </tr>
-              <tr v-if="items.length === 0">
+              <tr v-if="!loading && items.length === 0">
                 <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-400">{{ tp("Tiada rekod dijumpai.") }}</td>
               </tr>
             </tbody>

@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { KES_LITIGASI } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { KesLitigasi } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const kesLitigasi = ref<KesLitigasi[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "kes_litigasi");
+  kesLitigasi.value = res.data as KesLitigasi[];
+});
 
 const q = ref("");
 const status = ref("");
 
 const samanItems = computed(() => {
-  let list = KES_LITIGASI.filter((k) => ["saman-dihantar", "pendengaran", "perbicaraan"].includes(k.status));
+  let list = kesLitigasi.value.filter((k) => ["saman-dihantar", "pendengaran", "perbicaraan"].includes(k.status));
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((x) => x.noKes.toLowerCase().includes(lower) || x.nama.toLowerCase().includes(lower));

@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { GARNISHEE_ITEMS } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { GarnisheeItem } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
 
-const items = ref([...GARNISHEE_ITEMS]);
+const items = ref<GarnisheeItem[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "garnishee_items");
+  items.value = res.data as GarnisheeItem[];
+});
 
 function statusClass(s: string) {
   const m: Record<string, string> = { permohonan: "bg-amber-100 text-amber-700", diluluskan: "bg-blue-100 text-blue-700", dikredit: "bg-emerald-100 text-emerald-700", ditolak: "bg-rose-100 text-rose-700" };

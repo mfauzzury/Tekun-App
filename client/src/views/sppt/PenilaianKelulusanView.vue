@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Check, Eye, X } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
@@ -8,7 +8,11 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 
+import { listPermohonan } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
+
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const q = ref("");
 const status = ref("");
@@ -20,20 +24,12 @@ const summary = [
   { label: "Ditolak Bulan Ini", value: 3 },
 ];
 
-const items = [
-  { id: "P-2024-001", nama: "Ahmad bin Abdullah", jumlah: "RM 50,000", tarikh: "10 Mac 2024", status: "Menunggu" },
-  { id: "P-2024-002", nama: "Siti Nurhaliza binti Omar", jumlah: "RM 30,000", tarikh: "9 Mac 2024", status: "Dalam Penilaian" },
-  { id: "P-2024-003", nama: "Mohd Rizal bin Hassan", jumlah: "RM 75,000", tarikh: "8 Mac 2024", status: "Menunggu" },
-  { id: "P-2024-004", nama: "Fatimah binti Ibrahim", jumlah: "RM 25,000", tarikh: "7 Mac 2024", status: "Diluluskan" },
-];
+const items = ref<{ id: string; nama: string; jumlah: string; tarikh: string; status: string }[]>([]);
 
-function statusClass(s: string) {
-  if (s === "Menunggu") return "bg-slate-100 text-slate-600";
-  if (s === "Dalam Penilaian") return "bg-amber-100 text-amber-700";
-  if (s === "Diluluskan") return "bg-emerald-100 text-emerald-700";
-  if (s === "Ditolak") return "bg-rose-100 text-rose-700";
-  return "bg-slate-100 text-slate-600";
-}
+onMounted(async () => {
+  const res = await listPermohonan({ limit: 100, penilaian: 1 });
+  items.value = res.data as unknown as typeof items.value;
+});
 </script>
 
 <template>
@@ -56,10 +52,10 @@ function statusClass(s: string) {
             v-model:status="status"
             :search-placeholder="t('sppt.searchApplicationPlaceholder')"
             :filter-options="[
-              { value: 'menunggu', label: 'Menunggu' },
-              { value: 'penilaian', label: 'Dalam Penilaian' },
-              { value: 'lulus', label: 'Diluluskan' },
-              { value: 'tolak', label: 'Ditolak' },
+              { value: 'menunggu', label: t('sppt.status.menunggu') },
+              { value: 'penilaian', label: t('sppt.status.dalamPenilaian') },
+              { value: 'lulus', label: t('sppt.status.diluluskan') },
+              { value: 'tolak', label: t('sppt.status.ditolak') },
             ]"
           />
         </div>
@@ -83,7 +79,7 @@ function statusClass(s: string) {
                 <td class="px-4 py-2 text-slate-600">{{ item.tarikh }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">

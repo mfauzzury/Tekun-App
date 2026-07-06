@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Check, Hand, AlertTriangle } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
+import { fetchSpptDataset } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 import { PEMADANAN_RESIT } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const q = ref("");
 const statusFilter = ref("");
 
-const items = ref([...PEMADANAN_RESIT]);
+const items = ref<(typeof PEMADANAN_RESIT)[number][]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "pemadanan_resit");
+  items.value = res.data as typeof items.value;
+});
 
 const filteredItems = computed(() => {
   let list = items.value;
@@ -26,20 +34,6 @@ const filteredItems = computed(() => {
   }
   return list;
 });
-
-function statusClass(s: string) {
-  if (s === "auto") return "bg-emerald-100 text-emerald-700";
-  if (s === "manual") return "bg-blue-100 text-blue-700";
-  if (s === "unverified") return "bg-amber-100 text-amber-700";
-  return "bg-slate-100 text-slate-600";
-}
-
-function statusLabel(s: string) {
-  if (s === "auto") return "Auto";
-  if (s === "manual") return "Manual";
-  if (s === "unverified") return "Tidak Dikenali";
-  return s;
-}
 
 function padanManual(id: string) {
   alert(`Pemadanan manual untuk ${id} (dummy)`);

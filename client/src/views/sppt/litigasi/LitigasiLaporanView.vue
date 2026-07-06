@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { LAPORAN_KES_AKTIF, LAPORAN_KEPUTUSAN_BULANAN } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
 
-const kesAktif = ref([...LAPORAN_KES_AKTIF]);
-const keputusanBulanan = ref([...LAPORAN_KEPUTUSAN_BULANAN]);
+const kesAktif = ref<(typeof LAPORAN_KES_AKTIF)[number][]>([]);
+const keputusanBulanan = ref<(typeof LAPORAN_KEPUTUSAN_BULANAN)[number][]>([]);
+
+onMounted(async () => {
+  const [aktifRes, bulananRes] = await Promise.all([
+    fetchSpptDataset("litigasi", "laporan_kes_aktif"),
+    fetchSpptDataset("litigasi", "laporan_keputusan_bulanan"),
+  ]);
+  kesAktif.value = aktifRes.data as typeof kesAktif.value;
+  keputusanBulanan.value = bulananRes.data as typeof keputusanBulanan.value;
+});
 </script>
 
 <template>

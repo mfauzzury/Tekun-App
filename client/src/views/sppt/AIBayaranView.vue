@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Scan, BarChart3, MessageCircle, Send } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { AI_OCR_RESULTS, AI_ANALYTICS, CHATBOT_SAMPLE_QA } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
@@ -13,9 +14,20 @@ const activeTab = ref<"ocr" | "analitik" | "chatbot">("ocr");
 const chatInput = ref("");
 const chatMessages = ref<{ role: "user" | "bot"; text: string }[]>([]);
 
-const ocrResults = ref([...AI_OCR_RESULTS]);
-const analytics = ref([...AI_ANALYTICS]);
-const sampleQA = ref([...CHATBOT_SAMPLE_QA]);
+const ocrResults = ref<(typeof AI_OCR_RESULTS)[number][]>([]);
+const analytics = ref<(typeof AI_ANALYTICS)[number][]>([]);
+const sampleQA = ref<(typeof CHATBOT_SAMPLE_QA)[number][]>([]);
+
+onMounted(async () => {
+  const [ocrRes, analyticsRes, qaRes] = await Promise.all([
+    fetchSpptDataset("pembayaran", "ai_ocr_results"),
+    fetchSpptDataset("pembayaran", "ai_analytics"),
+    fetchSpptDataset("pembayaran", "chatbot_sample_qa"),
+  ]);
+  ocrResults.value = ocrRes.data as typeof ocrResults.value;
+  analytics.value = analyticsRes.data as typeof analytics.value;
+  sampleQA.value = qaRes.data as typeof sampleQA.value;
+});
 
 function uploadOCR() {
   alert("Muat naik resit untuk AI OCR (dummy). Tiada sambungan API.");

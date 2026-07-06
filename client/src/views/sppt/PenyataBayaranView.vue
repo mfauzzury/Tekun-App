@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { FileText, Download, Mail } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { PENYATA_BAYARAN } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
@@ -12,7 +13,12 @@ const { t, tp } = useI18n();
 const carianIC = ref("");
 const carianPinjaman = ref("");
 const tempoh = ref("jan-jun-2025");
-const items = ref([...PENYATA_BAYARAN]);
+const items = ref<(typeof PENYATA_BAYARAN)[number][]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "penyata_bayaran");
+  items.value = res.data as typeof items.value;
+});
 
 function janaPenyata() {
   alert("Jana penyata (dummy). Tiada sambungan API.");

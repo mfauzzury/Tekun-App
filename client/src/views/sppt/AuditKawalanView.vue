@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   Eye,
@@ -19,23 +19,52 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 import { exportToCSV, exportToExcel } from "@/composables/useExport";
+import { fetchSpptDataset } from "@/api/sppt";
 import {
-  AUDIT_TRAIL,
-  LOG_SISTEM,
-  LOG_PERUBAHAN_DATA,
-  AMARAN_LIST,
-  HEATMAP_AKTIVITI,
-  PENGGUNA_BERISIKO,
-  ANALITIK_AUDIT,
-  AI_RISK_ITEMS,
   JENIS_TINDAKAN_LABELS,
   type AuditTrailItem,
   type AmaranItem,
+  type LogSistemItem,
+  type LogPerubahanDataItem,
+  type HeatmapCell,
+  type PenggunaBerisiko,
+  type AnalitikAuditItem,
+  type AIRiskItem,
 } from "@/data/audit-dummy";
 
 const { t, tp } = useI18n();
 
 const router = useRouter();
+
+const auditTrail = ref<AuditTrailItem[]>([]);
+const logSistem = ref<LogSistemItem[]>([]);
+const logPerubahanData = ref<LogPerubahanDataItem[]>([]);
+const amaranList = ref<AmaranItem[]>([]);
+const heatmapAktiviti = ref<HeatmapCell[]>([]);
+const penggunaBerisiko = ref<PenggunaBerisiko[]>([]);
+const analitikAudit = ref<AnalitikAuditItem[]>([]);
+const aiRiskItems = ref<AIRiskItem[]>([]);
+
+onMounted(async () => {
+  const [trailRes, sistemRes, perubahanRes, amaranRes, heatmapRes, penggunaRes, analitikRes, aiRes] = await Promise.all([
+    fetchSpptDataset("audit", "audit_trail"),
+    fetchSpptDataset("audit", "log_sistem"),
+    fetchSpptDataset("audit", "log_perubahan_data"),
+    fetchSpptDataset("audit", "amaran_list"),
+    fetchSpptDataset("audit", "heatmap_aktiviti"),
+    fetchSpptDataset("audit", "pengguna_berisiko"),
+    fetchSpptDataset("audit", "analitik_audit"),
+    fetchSpptDataset("audit", "ai_risk_items"),
+  ]);
+  auditTrail.value = trailRes.data as AuditTrailItem[];
+  logSistem.value = sistemRes.data as typeof logSistem.value;
+  logPerubahanData.value = perubahanRes.data as typeof logPerubahanData.value;
+  amaranList.value = amaranRes.data as AmaranItem[];
+  heatmapAktiviti.value = heatmapRes.data as typeof heatmapAktiviti.value;
+  penggunaBerisiko.value = penggunaRes.data as typeof penggunaBerisiko.value;
+  analitikAudit.value = analitikRes.data as typeof analitikAudit.value;
+  aiRiskItems.value = aiRes.data as typeof aiRiskItems.value;
+});
 
 // --- Tabs: 9.2 Audit Trail, 9.3 Log Sistem, 9.3 Perubahan Data, 9.5 Amaran, 9.2.6 Analytics, 9.6 AI Risk ---
 type TabId = "audit" | "sistem" | "perubahan" | "amaran" | "analitik" | "ai";
@@ -52,12 +81,12 @@ const summary = computed(() => [
   { label: "Log Audit Bulan Ini", value: "1,245" },
   { label: "Tindakan Pengguna", value: 892 },
   { label: "Log Sistem", value: 353 },
-  { label: "Amaran Aktif", value: AMARAN_LIST.filter((a) => !a.dibaca).length, alert: AMARAN_LIST.filter((a) => !a.dibaca).length > 0 ? "text-amber-600" : "" },
+  { label: "Amaran Aktif", value: amaranList.value.filter((a) => !a.dibaca).length, alert: amaranList.value.filter((a) => !a.dibaca).length > 0 ? "text-amber-600" : "" },
 ]);
 
 // --- Filtered Audit Trail (9.2.3: carian, filter, penjanaan laporan) ---
 const filteredAudit = computed(() => {
-  let list = [...AUDIT_TRAIL];
+  let list = [...auditTrail.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter(
@@ -76,7 +105,7 @@ const filteredAudit = computed(() => {
 
 // --- Filtered Log Sistem ---
 const filteredLogSistem = computed(() => {
-  let list = [...LOG_SISTEM];
+  let list = [...logSistem.value];
   if (status.value) list = list.filter((i) => i.jenis === status.value);
   if (q.value) {
     const lower = q.value.toLowerCase();
@@ -87,7 +116,7 @@ const filteredLogSistem = computed(() => {
 
 // --- Filtered Perubahan Data ---
 const filteredPerubahan = computed(() => {
-  let list = [...LOG_PERUBAHAN_DATA];
+  let list = [...logPerubahanData.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter(
@@ -103,7 +132,7 @@ const filteredPerubahan = computed(() => {
 
 // --- Filtered Amaran ---
 const filteredAmaran = computed(() => {
-  let list = [...AMARAN_LIST];
+  let list = [...amaranList.value];
   if (status.value) list = list.filter((i) => i.tahap === status.value);
   if (q.value) {
     const lower = q.value.toLowerCase();
@@ -116,7 +145,7 @@ const filteredAmaran = computed(() => {
 const heatmapByHour = computed(() => {
   const byHour: Record<number, number> = {};
   for (let h = 8; h <= 18; h++) byHour[h] = 0;
-  HEATMAP_AKTIVITI.forEach((c) => {
+  heatmapAktiviti.value.forEach((c) => {
     byHour[c.jam] = (byHour[c.jam] ?? 0) + c.nilai;
   });
   return Object.entries(byHour).map(([jam, nilai]) => ({ jam: Number(jam), nilai }));
@@ -559,7 +588,7 @@ function goToKawalanDalaman() {
             <h3 class="mb-3 text-sm font-semibold text-slate-900">Pengguna Berisiko Tinggi (9.5.5)</h3>
             <div class="space-y-2">
               <div
-                v-for="u in PENGGUNA_BERISIKO"
+                v-for="u in penggunaBerisiko"
                 :key="u.id"
                 class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 p-3"
               >
@@ -583,7 +612,7 @@ function goToKawalanDalaman() {
           <p class="mb-3 text-xs text-slate-500">Pengguna perubahan tidak konsisten, kelulusan luar norma, potensi penyalahgunaan.</p>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div
-              v-for="a in ANALITIK_AUDIT"
+              v-for="a in analitikAudit"
               :key="a.id"
               class="rounded-lg border border-slate-100 p-3"
             >
@@ -603,7 +632,7 @@ function goToKawalanDalaman() {
             <p class="mt-1 text-xs text-slate-500">9.6.1: AI Risk Scoring & Early Warning. 9.6.2: AI Anomaly Detection untuk kelakuan pengguna dan transaksi.</p>
           </div>
           <div class="divide-y divide-slate-100">
-            <div v-for="item in AI_RISK_ITEMS" :key="item.id" class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
+            <div v-for="item in aiRiskItems" :key="item.id" class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="font-mono text-slate-600">{{ item.rujukan }}</span>

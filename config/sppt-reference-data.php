@@ -23,12 +23,23 @@ return [
     ],
     'agamaOptions' => [
         ['value' => 'islam', 'label' => 'Islam'],
-        ['value' => 'bukan_islam', 'label' => 'Bukan Islam'],
+        ['value' => 'buddha', 'label' => 'Buddha'],
+        ['value' => 'hindu', 'label' => 'Hindu'],
+        ['value' => 'kristian', 'label' => 'Kristian'],
+        ['value' => 'lain_lain', 'label' => 'Lain-lain'],
     ],
     'tarafPerkahwinanOptions' => ['Bujang', 'Berkahwin', 'Duda', 'Janda'],
+    'bangsaOptions' => ['Cina', 'India', 'Melayu', 'Orang Asli', 'TIADA MAKLUMAT', 'Lain-lain'],
     'tarafPendidikanOptions' => [
         'PHD / Ijazah Sarjana', 'Ijazah Sarjana Muda', 'Diploma', 'STPM', 'SPM', 'PMR Setaraf', 'Sijil Setaraf', 'Lain-lain',
     ],
+    'statusPekerjaanOptions' => [
+        ['value' => 'bekerja', 'label' => 'Bekerja'],
+        ['value' => 'tidak_bekerja', 'label' => 'Tidak Bekerja'],
+    ],
+    'sektorPekerjaanOptions' => ['Kerajaan', 'Swasta', 'Badan Berkanun', 'Kerja Sendiri', 'Lain-Lain'],
+    'jawatanOptions' => ['Eksekutif', 'Pengurus', 'Kerani', 'Juruteknik', 'Operator', 'Pekerja Kasar', 'Lain-lain'],
+    'statusJawatanOptions' => ['Tetap', 'Kontrak', 'Sementara'],
     'statusKediamanOptions' => ['Sendiri', 'Sewa', 'Keluarga'],
     'statusPremisOptions' => ['Sendiri', 'Sewa', 'Keluarga'],
     'pemilikanPerniagaanOptions' => ['Individu', 'Pemilikan Tunggal', 'Perkongsian', 'Sendirian Berhad'],
@@ -48,5 +59,9 @@ return [
     ],
     'kategoriPembiayaanOptions' => [
         'TEKUN Niaga', 'TEMAN TEKUN', 'Kontrak', 'SPUMI', 'BPU', 'TEKUN Corp', 'Lain-lain',
+    ],
+    'mykadSampleFrontIdentity' => [
+        'ic' => '691115-12-5053',
+        'name' => 'MASRI BIN YAKOP',
     ],
 ];

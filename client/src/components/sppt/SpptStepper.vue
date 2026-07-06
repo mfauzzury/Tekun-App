@@ -6,6 +6,7 @@ defineProps<{
   currentStep: number;
   /** Indices of steps with validation errors */
   stepsWithErrors?: number[];
+  disabled?: boolean;
 }>();
 
 defineEmits<{
@@ -19,7 +20,8 @@ defineEmits<{
       <template v-for="(step, index) in steps" :key="step.id">
         <button
           type="button"
-          class="flex flex-col items-center gap-1.5 rounded-lg px-1 py-2 -m-1 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 cursor-pointer hover:opacity-90"
+          :disabled="disabled"
+          class="flex flex-col items-center gap-1.5 rounded-lg px-1 py-2 -m-1 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 cursor-pointer hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           @click="$emit('step-click', index)"
         >
           <span

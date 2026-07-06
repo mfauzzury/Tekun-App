@@ -37,17 +37,20 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
+            "@php artisan storage:link --force",
             "@php artisan migrate --force",
             "npm install",
             "npm run build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm --prefix client run dev\" --names=server,queue,logs,client --kill-others"
+            "@php artisan storage:link --force",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"sh scripts/serve-dev.sh\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm --prefix client run dev\" --names=server,queue,logs,client --kill-others"
         ],
         "dev:win": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve --port=8000\" \"php artisan queue:listen --tries=1 --timeout=0\" \"npm --prefix client run dev\" --names=server,queue,client --kill-others"
+            "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/storage-link-win.ps1",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serve-dev.ps1\" \"php artisan queue:listen --tries=1 --timeout=0\" \"npm --prefix client run dev\" --names=server,queue,client --kill-others"
         ],
         "test": [
             "@php artisan config:clear --ansi",

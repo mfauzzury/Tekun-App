@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRoute, RouterLink } from "vue-router";
 import { ArrowLeft, FileText, Calendar } from "lucide-vue-next";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { KES_LITIGASI } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { KesLitigasi } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const kesLitigasi = ref<KesLitigasi[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "kes_litigasi");
+  kesLitigasi.value = res.data as KesLitigasi[];
+});
 
 const route = useRoute();
 const kesId = computed(() => route.params.id as string);
 
-const kes = computed(() => KES_LITIGASI.find((k) => k.id === kesId.value));
+const kes = computed(() => kesLitigasi.value.find((k) => k.id === kesId.value));
 
 function statusLabel(s: string) {
   const m: Record<string, string> = {

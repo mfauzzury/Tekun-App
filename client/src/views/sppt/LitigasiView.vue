@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Eye, FileText } from "lucide-vue-next";
 import { RouterLink } from "vue-router";
 
@@ -9,9 +9,17 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { KES_LITIGASI, type KesLitigasi, type StatusKes } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import { type KesLitigasi, type StatusKes } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const kesLitigasi = ref<KesLitigasi[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "kes_litigasi");
+  kesLitigasi.value = res.data as KesLitigasi[];
+});
 
 const q = ref("");
 const status = ref("");
@@ -24,7 +32,7 @@ const summary = [
 ];
 
 const items = computed(() => {
-  let list = [...KES_LITIGASI];
+  let list = [...kesLitigasi.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((x) => x.noKes.toLowerCase().includes(lower) || x.nama.toLowerCase().includes(lower));

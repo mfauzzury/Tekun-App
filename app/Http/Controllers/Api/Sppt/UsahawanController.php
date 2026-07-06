@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUsahawanRequest;
 use App\Http\Requests\UpdateUsahawanRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\Usahawan;
+use App\Services\SpptViewTransform;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -40,6 +41,17 @@ class UsahawanController extends Controller
             ->skip(($page - 1) * $limit)
             ->take($limit)
             ->get();
+
+        if ($request->boolean('rekod')) {
+            $rows = $rows->map(fn (Usahawan $row) => SpptViewTransform::usahawanRekod([
+                'id' => $row->id,
+                'noUsahawan' => $row->no_usahawan,
+                'nama' => $row->nama,
+                'noIc' => $row->no_ic,
+                'negeri' => $row->negeri,
+                'status' => $row->status,
+            ]));
+        }
 
         return $this->sendOk($rows, [
             'page' => $page,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { Eye, Pencil } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
@@ -8,28 +8,39 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 
+import { getUsahawanSummary, listUsahawan } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
+
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
 
 const q = ref("");
 const status = ref("");
 
-const summary = [
-  { label: "Jumlah Usahawan", value: 156 },
-  { label: "Aktif", value: 142 },
-  { label: "Pembiayaan Berjalan", value: 89 },
-  { label: "Daftar Bulan Ini", value: 12 },
-];
+const summary = ref([
+  { label: "Jumlah Usahawan", value: 0 },
+  { label: "Aktif", value: 0 },
+  { label: "Pembiayaan Berjalan", value: 0 },
+  { label: "Daftar Bulan Ini", value: 0 },
+]);
 
-const items = [
-  { id: "U-001", nama: "Ahmad bin Abdullah", noIc: "850101-01-1234", negeri: "Selangor", status: "Aktif" },
-  { id: "U-002", nama: "Siti Nurhaliza binti Omar", noIc: "920315-14-5678", negeri: "Johor", status: "Aktif" },
-  { id: "U-003", nama: "Mohd Rizal bin Hassan", noIc: "880722-08-9012", negeri: "Kedah", status: "Aktif" },
-  { id: "U-004", nama: "Fatimah binti Ibrahim", noIc: "950410-10-3456", negeri: "Perak", status: "Tidak Aktif" },
-];
+const items = ref<{ id: string; nama: string; noIc: string; negeri: string; status: string }[]>([]);
 
-function statusClass(s: string) {
-  return s === "Aktif" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600";
-}
+onMounted(async () => {
+  const [listRes, summaryRes] = await Promise.all([
+    listUsahawan({ limit: 100, rekod: 1 }),
+    getUsahawanSummary(),
+  ]);
+  items.value = listRes.data as unknown as typeof items.value;
+  const s = summaryRes.data;
+  summary.value = [
+    { label: "Jumlah Usahawan", value: s.jumlah ?? 0 },
+    { label: "Aktif", value: s.aktif ?? 0 },
+    { label: "Pembiayaan Berjalan", value: s.pembiayaanBerjalan ?? 0 },
+    { label: "Daftar Bulan Ini", value: s.daftarBulanIni ?? 0 },
+  ];
+});
+
 </script>
 
 <template>
@@ -77,7 +88,7 @@ function statusClass(s: string) {
                 <td class="px-4 py-2 text-slate-600">{{ item.negeri }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">

@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { CheckCircle, FileCheck } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
+import { fetchSpptDataset } from "@/api/sppt";
 import { AKAUN_SELESAI_BAYAR } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
 
 const q = ref("");
 const statusFilter = ref("");
-const items = ref([...AKAUN_SELESAI_BAYAR]);
+const items = ref<(typeof AKAUN_SELESAI_BAYAR)[number][]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "akaun_selesai_bayar");
+  items.value = res.data as typeof items.value;
+});
 
 const filteredItems = computed(() => {
   let list = items.value;

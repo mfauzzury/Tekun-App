@@ -1,20 +1,31 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Calculator } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
-import { EARLY_SETTLEMENT_DUMMY } from "@/data/bayaran-pembiayaan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
-const noAkaun = ref(EARLY_SETTLEMENT_DUMMY.noAkaun);
-const nama = ref(EARLY_SETTLEMENT_DUMMY.nama);
-const bakiPinjaman = ref(EARLY_SETTLEMENT_DUMMY.bakiPinjaman);
-const ansuranBulanan = ref(EARLY_SETTLEMENT_DUMMY.ansuranBulanan);
-const rebatDuaBulan = ref(EARLY_SETTLEMENT_DUMMY.rebatDuaBulan);
-const amaunBersih = ref(EARLY_SETTLEMENT_DUMMY.amaunBersih);
+const noAkaun = ref("");
+const nama = ref("");
+const bakiPinjaman = ref(0);
+const ansuranBulanan = ref(0);
+const rebatDuaBulan = ref(0);
+const amaunBersih = ref(0);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("pembayaran", "early_settlement");
+  const d = res.data as { noAkaun: string; nama: string; bakiPinjaman: number; ansuranBulanan: number; rebatDuaBulan: number; amaunBersih: number };
+  noAkaun.value = d.noAkaun;
+  nama.value = d.nama;
+  bakiPinjaman.value = d.bakiPinjaman;
+  ansuranBulanan.value = d.ansuranBulanan;
+  rebatDuaBulan.value = d.rebatDuaBulan;
+  amaunBersih.value = d.amaunBersih;
+});
 
 function kiraSemula() {
   rebatDuaBulan.value = ansuranBulanan.value * 2;

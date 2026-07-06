@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Sppt;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\ApiResponse;
 use App\Models\Kutipan;
+use App\Services\SpptViewTransform;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,7 +38,8 @@ class KutipanController extends Controller
         $rows = $query->orderByDesc('created_at')
             ->skip(($page - 1) * $limit)
             ->take($limit)
-            ->get();
+            ->get()
+            ->map(fn (Kutipan $row) => SpptViewTransform::kutipan($row));
 
         return $this->sendOk($rows, [
             'page' => $page,

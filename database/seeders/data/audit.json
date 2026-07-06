@@ -1,0 +1,658 @@
+{
+  "AUDIT_TRAIL": [
+    {
+      "id": "AUD-001",
+      "userId": "admin@tekun.gov.my",
+      "nama": "Ahmad Admin",
+      "peranan": "Pentadbir Sistem",
+      "tarikh": "10 Mac 2024",
+      "masa": "14:32",
+      "ip": "192.168.1.10",
+      "jenisTindakan": "kemaskini",
+      "modul": "Permohonan",
+      "rujukan": "P-2024-001",
+      "nilaiAsal": "Status: Baru",
+      "nilaiBaharu": "Status: Dalam Semakan"
+    },
+    {
+      "id": "AUD-002",
+      "userId": "penilai@tekun.gov.my",
+      "nama": "Siti Penilai",
+      "peranan": "Pegawai Penilaian",
+      "tarikh": "10 Mac 2024",
+      "masa": "11:15",
+      "ip": "192.168.1.25",
+      "jenisTindakan": "kelulusan",
+      "modul": "Penilaian",
+      "rujukan": "P-2024-002",
+      "nilaiAsal": "Belum dinilai",
+      "nilaiBaharu": "Lulus"
+    },
+    {
+      "id": "AUD-003",
+      "userId": "admin@tekun.gov.my",
+      "nama": "Ahmad Admin",
+      "peranan": "Pentadbir Sistem",
+      "tarikh": "10 Mac 2024",
+      "masa": "09:45",
+      "ip": "192.168.1.10",
+      "jenisTindakan": "log_masuk",
+      "modul": "Sistem",
+      "rujukan": "-"
+    },
+    {
+      "id": "AUD-004",
+      "userId": "admin@tekun.gov.my",
+      "nama": "Ahmad Admin",
+      "peranan": "Pentadbir Sistem",
+      "tarikh": "9 Mac 2024",
+      "masa": "16:45",
+      "ip": "192.168.1.10",
+      "jenisTindakan": "kemaskini",
+      "modul": "Bayaran",
+      "rujukan": "B-2024-003",
+      "nilaiAsal": "Belum terima",
+      "nilaiBaharu": "Terima bayaran RM 500"
+    },
+    {
+      "id": "AUD-005",
+      "userId": "system",
+      "nama": "Sistem",
+      "peranan": "Sistem",
+      "tarikh": "9 Mac 2024",
+      "masa": "02:00",
+      "ip": "127.0.0.1",
+      "jenisTindakan": "lain",
+      "modul": "Sistem",
+      "rujukan": "Backup",
+      "nilaiBaharu": "Backup pangkalan data berjaya"
+    },
+    {
+      "id": "AUD-006",
+      "userId": "pegawai@tekun.gov.my",
+      "nama": "Rizal Pegawai",
+      "peranan": "Pegawai Disbursement",
+      "tarikh": "9 Mac 2024",
+      "masa": "14:20",
+      "ip": "192.168.1.30",
+      "jenisTindakan": "paparan",
+      "modul": "Pengeluaran Dana",
+      "rujukan": "D-2024-012",
+      "nilaiBaharu": "Paparan data sensitif"
+    },
+    {
+      "id": "AUD-007",
+      "userId": "auditor@tekun.gov.my",
+      "nama": "Fatimah Auditor",
+      "peranan": "Pegawai Audit",
+      "tarikh": "8 Mac 2024",
+      "masa": "10:30",
+      "ip": "192.168.1.50",
+      "jenisTindakan": "eksport",
+      "modul": "Laporan",
+      "rujukan": "LAP-AUDIT-001",
+      "nilaiBaharu": "Eksport laporan audit trail"
+    },
+    {
+      "id": "AUD-008",
+      "userId": "unknown",
+      "nama": "-",
+      "peranan": "-",
+      "tarikh": "8 Mac 2024",
+      "masa": "23:45",
+      "ip": "45.33.xx.xx",
+      "jenisTindakan": "log_masuk",
+      "modul": "Sistem",
+      "rujukan": "Percubaan gagal",
+      "nilaiBaharu": "Log masuk gagal - IP luar negara"
+    }
+  ],
+  "LOG_SISTEM": [
+    {
+      "id": "SYS-001",
+      "tarikh": "10 Mac 2024",
+      "masa": "14:35",
+      "jenis": "server",
+      "keterangan": "Status server normal",
+      "status": "ok",
+      "butiran": "CPU 45%, RAM 62%"
+    },
+    {
+      "id": "SYS-002",
+      "tarikh": "10 Mac 2024",
+      "masa": "14:30",
+      "jenis": "login_gagal",
+      "keterangan": "Percubaan log masuk gagal",
+      "status": "amaran",
+      "butiran": "IP: 45.33.xx.xx, user: admin@tekun.gov.my"
+    },
+    {
+      "id": "SYS-003",
+      "tarikh": "10 Mac 2024",
+      "masa": "09:00",
+      "jenis": "sesi",
+      "keterangan": "Sesi tamat - tidak aktif 30 min",
+      "status": "ok",
+      "butiran": "User: pegawai@tekun.gov.my"
+    },
+    {
+      "id": "SYS-004",
+      "tarikh": "9 Mac 2024",
+      "masa": "23:58",
+      "jenis": "api",
+      "keterangan": "Integrasi BSAS - berjaya",
+      "status": "ok",
+      "butiran": "Batch 12 transaksi"
+    },
+    {
+      "id": "SYS-005",
+      "tarikh": "9 Mac 2024",
+      "masa": "02:00",
+      "jenis": "backup",
+      "keterangan": "Backup automatik selesai",
+      "status": "ok",
+      "butiran": "Saiz: 2.4 GB"
+    },
+    {
+      "id": "SYS-006",
+      "tarikh": "8 Mac 2024",
+      "masa": "16:22",
+      "jenis": "sumber",
+      "keterangan": "Penggunaan RAM tinggi",
+      "status": "amaran",
+      "butiran": "RAM 89% - threshold 85%"
+    }
+  ],
+  "LOG_PERUBAHAN_DATA": [
+    {
+      "id": "CHG-001",
+      "tarikh": "10 Mac 2024",
+      "masa": "14:32",
+      "modul": "Permohonan",
+      "medan": "Status",
+      "rujukan": "P-2024-001",
+      "nilaiAsal": "Baru",
+      "nilaiBaharu": "Dalam Semakan",
+      "pengguna": "admin@tekun.gov.my",
+      "ip": "192.168.1.10"
+    },
+    {
+      "id": "CHG-002",
+      "tarikh": "10 Mac 2024",
+      "masa": "11:15",
+      "modul": "Penilaian",
+      "medan": "Keputusan",
+      "rujukan": "P-2024-002",
+      "nilaiAsal": "Belum dinilai",
+      "nilaiBaharu": "Lulus",
+      "pengguna": "penilai@tekun.gov.my",
+      "ip": "192.168.1.25"
+    },
+    {
+      "id": "CHG-003",
+      "tarikh": "9 Mac 2024",
+      "masa": "16:45",
+      "modul": "Akaun",
+      "medan": "Jumlah Pembiayaan",
+      "rujukan": "B-2024-003",
+      "nilaiAsal": "RM 25,000",
+      "nilaiBaharu": "RM 25,000 (terima bayaran RM 500)",
+      "pengguna": "admin@tekun.gov.my",
+      "ip": "192.168.1.10"
+    },
+    {
+      "id": "CHG-004",
+      "tarikh": "9 Mac 2024",
+      "masa": "10:20",
+      "modul": "Pengeluaran Dana",
+      "medan": "Status Disbursement",
+      "rujukan": "D-2024-015",
+      "nilaiAsal": "Menunggu kelulusan",
+      "nilaiBaharu": "Diluluskan",
+      "pengguna": "pegawai_ip@tekun.gov.my",
+      "ip": "192.168.1.40"
+    },
+    {
+      "id": "CHG-005",
+      "tarikh": "8 Mac 2024",
+      "masa": "15:00",
+      "modul": "Litigasi",
+      "medan": "Status Kes",
+      "rujukan": "LIT-2024-008",
+      "nilaiAsal": "Dalam tindakan",
+      "nilaiBaharu": "Saman difailkan",
+      "pengguna": "pegawai_lit@tekun.gov.my",
+      "ip": "192.168.1.35"
+    }
+  ],
+  "AMARAN_LIST": [
+    {
+      "id": "ALT-001",
+      "tarikh": "10 Mac 2024",
+      "masa": "23:45",
+      "tahap": "kritikal",
+      "jenis": "ip_luar",
+      "keterangan": "Percubaan log masuk dari IP luar negara (45.33.xx.xx)",
+      "ip": "45.33.xx.xx",
+      "dibaca": false
+    },
+    {
+      "id": "ALT-002",
+      "tarikh": "9 Mac 2024",
+      "masa": "22:30",
+      "tahap": "amaran",
+      "jenis": "luar_waktu",
+      "keterangan": "Akses modul Pengeluaran Dana di luar waktu pejabat",
+      "pengguna": "pegawai@tekun.gov.my",
+      "ip": "192.168.1.30",
+      "dibaca": false
+    },
+    {
+      "id": "ALT-003",
+      "tarikh": "9 Mac 2024",
+      "masa": "14:15",
+      "tahap": "amaran",
+      "jenis": "perubahan_kerap",
+      "keterangan": "Pegawai membuat 15 kemaskini dalam 10 minit - modul Akaun",
+      "pengguna": "pegawai_caw@tekun.gov.my",
+      "dibaca": true
+    },
+    {
+      "id": "ALT-004",
+      "tarikh": "8 Mac 2024",
+      "masa": "11:00",
+      "tahap": "info",
+      "jenis": "sistem",
+      "keterangan": "Penggunaan RAM melebihi 85%",
+      "dibaca": true
+    },
+    {
+      "id": "ALT-005",
+      "tarikh": "8 Mac 2024",
+      "masa": "09:45",
+      "tahap": "amaran",
+      "jenis": "kelulusan_luar_norma",
+      "keterangan": "Kelulusan pembiayaan RM 50,000 dalam masa 5 minit tanpa laluan kerja lengkap",
+      "pengguna": "penilai@tekun.gov.my",
+      "rujukan": "P-2024-099",
+      "dibaca": true
+    }
+  ],
+  "HEATMAP_AKTIVITI": [
+    {
+      "hari": "Isnin",
+      "jam": 8,
+      "nilai": 4
+    },
+    {
+      "hari": "Isnin",
+      "jam": 9,
+      "nilai": 9
+    },
+    {
+      "hari": "Isnin",
+      "jam": 10,
+      "nilai": 9
+    },
+    {
+      "hari": "Isnin",
+      "jam": 11,
+      "nilai": 9
+    },
+    {
+      "hari": "Isnin",
+      "jam": 12,
+      "nilai": 10
+    },
+    {
+      "hari": "Isnin",
+      "jam": 13,
+      "nilai": 2
+    },
+    {
+      "hari": "Isnin",
+      "jam": 14,
+      "nilai": 7
+    },
+    {
+      "hari": "Isnin",
+      "jam": 15,
+      "nilai": 6
+    },
+    {
+      "hari": "Isnin",
+      "jam": 16,
+      "nilai": 8
+    },
+    {
+      "hari": "Isnin",
+      "jam": 17,
+      "nilai": 7
+    },
+    {
+      "hari": "Isnin",
+      "jam": 18,
+      "nilai": 5
+    },
+    {
+      "hari": "Selasa",
+      "jam": 8,
+      "nilai": 5
+    },
+    {
+      "hari": "Selasa",
+      "jam": 9,
+      "nilai": 11
+    },
+    {
+      "hari": "Selasa",
+      "jam": 10,
+      "nilai": 11
+    },
+    {
+      "hari": "Selasa",
+      "jam": 11,
+      "nilai": 10
+    },
+    {
+      "hari": "Selasa",
+      "jam": 12,
+      "nilai": 9
+    },
+    {
+      "hari": "Selasa",
+      "jam": 13,
+      "nilai": 2
+    },
+    {
+      "hari": "Selasa",
+      "jam": 14,
+      "nilai": 7
+    },
+    {
+      "hari": "Selasa",
+      "jam": 15,
+      "nilai": 7
+    },
+    {
+      "hari": "Selasa",
+      "jam": 16,
+      "nilai": 7
+    },
+    {
+      "hari": "Selasa",
+      "jam": 17,
+      "nilai": 9
+    },
+    {
+      "hari": "Selasa",
+      "jam": 18,
+      "nilai": 3
+    },
+    {
+      "hari": "Rabu",
+      "jam": 8,
+      "nilai": 3
+    },
+    {
+      "hari": "Rabu",
+      "jam": 9,
+      "nilai": 11
+    },
+    {
+      "hari": "Rabu",
+      "jam": 10,
+      "nilai": 10
+    },
+    {
+      "hari": "Rabu",
+      "jam": 11,
+      "nilai": 11
+    },
+    {
+      "hari": "Rabu",
+      "jam": 12,
+      "nilai": 10
+    },
+    {
+      "hari": "Rabu",
+      "jam": 13,
+      "nilai": 5
+    },
+    {
+      "hari": "Rabu",
+      "jam": 14,
+      "nilai": 8
+    },
+    {
+      "hari": "Rabu",
+      "jam": 15,
+      "nilai": 9
+    },
+    {
+      "hari": "Rabu",
+      "jam": 16,
+      "nilai": 9
+    },
+    {
+      "hari": "Rabu",
+      "jam": 17,
+      "nilai": 8
+    },
+    {
+      "hari": "Rabu",
+      "jam": 18,
+      "nilai": 4
+    },
+    {
+      "hari": "Khamis",
+      "jam": 8,
+      "nilai": 3
+    },
+    {
+      "hari": "Khamis",
+      "jam": 9,
+      "nilai": 9
+    },
+    {
+      "hari": "Khamis",
+      "jam": 10,
+      "nilai": 10
+    },
+    {
+      "hari": "Khamis",
+      "jam": 11,
+      "nilai": 10
+    },
+    {
+      "hari": "Khamis",
+      "jam": 12,
+      "nilai": 9
+    },
+    {
+      "hari": "Khamis",
+      "jam": 13,
+      "nilai": 5
+    },
+    {
+      "hari": "Khamis",
+      "jam": 14,
+      "nilai": 8
+    },
+    {
+      "hari": "Khamis",
+      "jam": 15,
+      "nilai": 7
+    },
+    {
+      "hari": "Khamis",
+      "jam": 16,
+      "nilai": 6
+    },
+    {
+      "hari": "Khamis",
+      "jam": 17,
+      "nilai": 9
+    },
+    {
+      "hari": "Khamis",
+      "jam": 18,
+      "nilai": 5
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 8,
+      "nilai": 3
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 9,
+      "nilai": 11
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 10,
+      "nilai": 8
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 11,
+      "nilai": 9
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 12,
+      "nilai": 8
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 13,
+      "nilai": 3
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 14,
+      "nilai": 6
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 15,
+      "nilai": 6
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 16,
+      "nilai": 6
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 17,
+      "nilai": 8
+    },
+    {
+      "hari": "Jumaat",
+      "jam": 18,
+      "nilai": 4
+    }
+  ],
+  "PENGGUNA_BERISIKO": [
+    {
+      "id": "U1",
+      "pengguna": "pegawai_caw@tekun.gov.my",
+      "nama": "Rizal Cawangan",
+      "skorRisiko": 72,
+      "bilAmaran": 3,
+      "bilAktivitiLuarWaktu": 2,
+      "bilPerubahanData": 45,
+      "status": "tinggi"
+    },
+    {
+      "id": "U2",
+      "pengguna": "penilai@tekun.gov.my",
+      "nama": "Siti Penilai",
+      "skorRisiko": 58,
+      "bilAmaran": 1,
+      "bilAktivitiLuarWaktu": 0,
+      "bilPerubahanData": 28,
+      "status": "sederhana"
+    },
+    {
+      "id": "U3",
+      "pengguna": "pegawai_ip@tekun.gov.my",
+      "nama": "Ahmad IP",
+      "skorRisiko": 35,
+      "bilAmaran": 0,
+      "bilAktivitiLuarWaktu": 0,
+      "bilPerubahanData": 15,
+      "status": "rendah"
+    }
+  ],
+  "ANALITIK_AUDIT": [
+    {
+      "id": "A1",
+      "metrik": "Pengguna dengan perubahan tidak konsisten",
+      "nilai": 2,
+      "trend": "turun",
+      "perbandingan": "Bulan lepas: 4"
+    },
+    {
+      "id": "A2",
+      "metrik": "Kelulusan luar norma (cepat)",
+      "nilai": 1,
+      "trend": "stabil",
+      "perbandingan": "Bulan lepas: 1"
+    },
+    {
+      "id": "A3",
+      "metrik": "Percubaan akses tidak dibenarkan",
+      "nilai": 3,
+      "trend": "naik",
+      "perbandingan": "Bulan lepas: 1"
+    },
+    {
+      "id": "A4",
+      "metrik": "Log masuk luar waktu pejabat",
+      "nilai": 5,
+      "trend": "turun",
+      "perbandingan": "Bulan lepas: 8"
+    }
+  ],
+  "AI_RISK_ITEMS": [
+    {
+      "id": "AI-001",
+      "rujukan": "P-2024-088",
+      "jenis": "npf_risk",
+      "skorRisiko": 78,
+      "keterangan": "AI mengesan pola pembayaran tidak normal - 3 bayaran lewat berturut-turut",
+      "tarikh": "10 Mac 2024",
+      "cadangan": "Susulan pemantauan disyorkan"
+    },
+    {
+      "id": "AI-002",
+      "rujukan": "B-2024-045",
+      "jenis": "anomali_transaksi",
+      "skorRisiko": 65,
+      "keterangan": "Pengeluaran dana melebihi had biasa untuk produk",
+      "tarikh": "9 Mac 2024",
+      "cadangan": "Semak kelulusan dan justifikasi"
+    },
+    {
+      "id": "AI-003",
+      "rujukan": "pegawai_caw@tekun.gov.my",
+      "jenis": "anomali_pengguna",
+      "skorRisiko": 72,
+      "keterangan": "Perubahan data yang mencurigakan - 15 kemaskini dalam 10 minit",
+      "tarikh": "9 Mac 2024",
+      "cadangan": "Notifikasi kepada penyelia"
+    },
+    {
+      "id": "AI-004",
+      "rujukan": "P-2024-102",
+      "jenis": "early_warning",
+      "skorRisiko": 55,
+      "keterangan": "Early warning: Prestasi perniagaan merosot berdasarkan maklumat terkini",
+      "tarikh": "8 Mac 2024",
+      "cadangan": "Lawatan pemantauan disyorkan"
+    }
+  ]
+}

@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { PANEL_PEGUAM } from "@/data/litigasi-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
+import type { PanelPeguam } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
+
+const rawItems = ref<PanelPeguam[]>([]);
+
+onMounted(async () => {
+  const res = await fetchSpptDataset("litigasi", "panel_peguam");
+  rawItems.value = res.data as PanelPeguam[];
+});
 
 const q = ref("");
 const status = ref("");
 
 const items = computed(() => {
-  let list = [...PANEL_PEGUAM];
+  let list = [...rawItems.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
     list = list.filter((x) => x.namaFirma.toLowerCase().includes(lower) || x.pegawaiUtama.toLowerCase().includes(lower));

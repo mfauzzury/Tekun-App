@@ -60,10 +60,13 @@ class SpptSetupController extends Controller
             return $this->sendError(404, 'NOT_FOUND', 'Setup category not found');
         }
 
+        $isKnowledge = ($meta['type'] ?? null) === 'knowledge';
+        $labelMax = $isKnowledge ? 2000 : 200;
+
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.value' => ['required', 'string', 'max:100'],
-            'items.*.label' => ['required', 'string', 'max:200'],
+            'items.*.label' => ['required', 'string', "max:{$labelMax}"],
             'items.*.color' => ['nullable', 'string', 'max:30'],
             'items.*.active' => ['nullable', 'boolean'],
             'items.*.sort' => ['nullable', 'integer', 'min:0'],

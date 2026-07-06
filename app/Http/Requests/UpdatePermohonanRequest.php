@@ -13,14 +13,16 @@ class UpdatePermohonanRequest extends BaseFormRequest
     {
         $id = $this->route('permohonan');
 
+        $isDraft = $this->input('status') === 'Draf';
+
         return [
-            'noRujukan' => 'nullable|string|max:30|unique:permohonan,no_rujukan,'.$id,
-            'usahawanId' => 'nullable|integer|exists:usahawan,id',
-            'nama' => 'sometimes|required|string|min:1',
-            'kategoriPembiayaan' => 'nullable|string|max:50',
-            'status' => 'nullable|string|max:50',
-            'jumlahPermohonan' => 'nullable|numeric|min:0',
-            'tarikhPermohonan' => 'nullable|date',
+            'no_rujukan' => 'nullable|string|max:30|unique:permohonan,no_rujukan,'.$id,
+            'usahawan_id' => 'nullable|integer|exists:usahawan,id',
+            'nama' => ($isDraft ? 'nullable' : 'sometimes|required').'|string|min:1',
+            'kategori_pembiayaan' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:50|in:Draf,Dalam Proses,Menunggu Dokumen,Lengkap',
+            'jumlah_permohonan' => 'nullable|numeric|min:0',
+            'tarikh_permohonan' => 'nullable|date',
             'details' => 'nullable|array',
         ];
     }

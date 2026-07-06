@@ -21,6 +21,7 @@ class Jaminan extends Model
         'no_pinjaman',
         'tarikh_mula',
         'tarikh_tamat',
+        'deskripsi',
         'dokumen',
     ];
 
@@ -30,6 +31,7 @@ class Jaminan extends Model
             'nilai' => 'decimal:2',
             'tarikh_mula' => 'date',
             'tarikh_tamat' => 'date',
+            'dokumen' => 'array',
         ];
     }
 }

@@ -205,6 +205,43 @@ export type Usahawan = UsahawanInput & {
   updatedAt: string;
 };
 
+export type DocumentVerification = {
+  status: "verified" | "failed" | "pending" | "skipped";
+  documentType: "ic_front" | "ic_back" | "ic_combined" | "other";
+  confidence: number;
+  message: string;
+  icMatched?: boolean | null;
+  identityMatched?: boolean | null;
+  subject?: "applicant" | "spouse" | null;
+};
+
+export type DocumentClassification = {
+  suggestedClass: string;
+  confidence: number;
+  message: string;
+};
+
+export type PermohonanFormOcrResult = {
+  fields: Record<string, unknown>;
+  confidence: number;
+  populatedCount: number;
+  fieldConfidence: Record<string, number>;
+  message: string;
+};
+
+export type PermohonanAttachment = {
+  id: string;
+  name: string;
+  size: number;
+  url: string;
+  mimeType?: string;
+  documentClass?: string;
+  documentClassLabel?: string;
+  documentClassOther?: string;
+  verification?: DocumentVerification;
+  verifying?: boolean;
+};
+
 export type PermohonanInput = {
   noRujukan?: string;
   usahawanId?: number;
@@ -267,5 +304,6 @@ export type SpptSetupCategory = {
   label: string;
   labelEn?: string;
   description?: string;
+  type?: "knowledge" | "status";
   items: SpptSetupStatusItem[];
 };

@@ -1,20 +1,53 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { AlertTriangle, TrendingUp, Activity } from "lucide-vue-next";
 import {
-  earlyWarningList,
-  aiForecastData,
-  usahawanList,
-  getSummary,
+  type AIForecastItem,
+  type UsahawanItem,
 } from "@/data/pemantauan-usahawan-dummy";
+import { fetchSpptDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
+const usahawanList = ref<UsahawanItem[]>([]);
+const aiForecastData = ref<AIForecastItem[]>([]);
+const lawatanList = ref<{ tarikh: string }[]>([]);
+
+onMounted(async () => {
+  const [usahawanRes, forecastRes, lawatanRes] = await Promise.all([
+    fetchSpptDataset("pemantauan", "usahawan_list"),
+    fetchSpptDataset("pemantauan", "ai_forecast"),
+    fetchSpptDataset("pemantauan", "lawatan_list"),
+  ]);
+  usahawanList.value = usahawanRes.data as UsahawanItem[];
+  aiForecastData.value = forecastRes.data as AIForecastItem[];
+  lawatanList.value = lawatanRes.data as typeof lawatanList.value;
+});
+
 const activeSub = ref<"ews" | "risiko" | "forecast" | "anomaly">("ews");
 
+const earlyWarningList = computed(() => usahawanList.value.filter((u) => u.earlyWarning));
+
+const summaryCards = computed(() => {
+  const aktif = usahawanList.value.filter((u) => u.statusPerniagaan === "aktif_berkembang" || u.statusPerniagaan === "stabil").length;
+  const lawatanBulanIni = lawatanList.value.filter((l) => {
+    const d = new Date(l.tarikh);
+    const n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }).length;
+  const prestasiBaik = usahawanList.value.filter((u) => u.skorPrestasi >= 3).length;
+  const perluPerhatian = usahawanList.value.filter((u) => u.earlyWarning || u.skorPrestasi < 3).length;
+  return [
+    { label: "Usahawan Aktif", value: aktif },
+    { label: "Lawatan Bulan Ini", value: lawatanBulanIni },
+    { label: "Prestasi Baik", value: prestasiBaik },
+    { label: "Perlu Perhatian", value: perluPerhatian },
+  ];
+});
+
 function getUsahawanName(id: string) {
-  return usahawanList.find((u) => u.id === id)?.nama ?? id;
+  return usahawanList.value.find((u) => u.id === id)?.nama ?? id;
 }
 
 function fmtRm(n: number) {
@@ -82,7 +115,7 @@ function fmtRm(n: number) {
         <p class="mt-1 text-xs text-slate-500">Penilaian prestasi perniagaan dan pengesanan risiko NPF secara automatik.</p>
       </div>
       <div class="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="s in getSummary()" :key="s.label" class="rounded-lg border border-slate-200 p-4">
+        <div v-for="s in summaryCards" :key="s.label" class="rounded-lg border border-slate-200 p-4">
           <p class="text-xs font-medium text-slate-500">{{ s.label }}</p>
           <p class="mt-1 text-2xl font-semibold text-slate-900">{{ s.value }}</p>
         </div>

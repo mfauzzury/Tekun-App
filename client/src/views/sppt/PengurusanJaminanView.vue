@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import { Eye, Pencil, Download, FileText, X, Bell, FileSignature, History } from "lucide-vue-next";
 
@@ -8,17 +8,46 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
+import { fetchSpptDataset, listJaminan } from "@/api/sppt";
+import { useSpptStatus } from "@/composables/useSpptStatus";
 import {
-  items as rawItems,
   getSummaryFromItems,
-  getAuditLogsForJaminan,
-  getUnreadNotifikasi,
-  notifikasi,
   type JaminanItem,
+  type AuditLog,
+  type NotifikasiJaminan,
 } from "@/data/pengurusan-jaminan-dummy";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/composables/useExport";
 
 const { t, tp } = useI18n();
+const { statusLabel, statusClass } = useSpptStatus();
+
+const rawItems = ref<JaminanItem[]>([]);
+const auditLogs = ref<AuditLog[]>([]);
+const notifikasi = ref<NotifikasiJaminan[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const [jaminanRes, auditRes, notifRes] = await Promise.all([
+      listJaminan({ limit: 100 }),
+      fetchSpptDataset("jaminan", "audit_logs"),
+      fetchSpptDataset("jaminan", "notifikasi"),
+    ]);
+    rawItems.value = jaminanRes.data as unknown as JaminanItem[];
+    auditLogs.value = auditRes.data as AuditLog[];
+    notifikasi.value = notifRes.data as NotifikasiJaminan[];
+  } finally {
+    loading.value = false;
+  }
+});
+
+function getAuditLogsForJaminan(jaminanId: string): AuditLog[] {
+  return auditLogs.value.filter((a) => a.jaminanId === jaminanId);
+}
+
+function getUnreadNotifikasi(): NotifikasiJaminan[] {
+  return notifikasi.value.filter((n) => !n.dibaca);
+}
 
 const q = ref("");
 const status = ref("");
@@ -40,7 +69,7 @@ const filterOptions = [
 const filteredItems = computed(() => {
   const query = q.value.trim().toLowerCase();
   const statusVal = status.value.toLowerCase();
-  let list = [...rawItems];
+  let list = [...rawItems.value];
 
   if (query) {
     list = list.filter(
@@ -80,17 +109,6 @@ const totalPages = computed(() => Math.ceil(filteredItems.value.length / perPage
 const summary = computed(() => getSummaryFromItems(filteredItems.value));
 
 const unreadNotifikasi = computed(() => getUnreadNotifikasi().filter((n) => !notifikasiDismissed.value.has(n.id)));
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    Aktif: "bg-emerald-100 text-emerald-700",
-    "Perlu Semakan": "bg-amber-100 text-amber-700",
-    "Tamat Tempoh": "bg-red-100 text-red-700",
-    Dilepaskan: "bg-slate-100 text-slate-600",
-    Ditolak: "bg-slate-100 text-slate-500",
-  };
-  return map[s] ?? "bg-slate-100 text-slate-600";
-}
 
 function risikoClass(r: string) {
   return r === "Tinggi" ? "bg-amber-500" : "bg-emerald-500";
@@ -180,7 +198,7 @@ function dismissNotifikasi(id: string) {
 }
 
 function dismissAllNotifikasi() {
-  notifikasi.forEach((n) => notifikasiDismissed.value.add(n.id));
+  notifikasi.value.forEach((n) => notifikasiDismissed.value.add(n.id));
   notifikasiDismissed.value = new Set(notifikasiDismissed.value);
   showNotifikasi.value = false;
 }
@@ -299,7 +317,7 @@ const exportTableData = computed(() => filteredItems.value);
                 <td class="px-4 py-2 text-slate-600">{{ item.tarikhTamat }}</td>
                 <td class="px-4 py-2">
                   <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
-                    {{ item.status }}
+                    {{ statusLabel(item.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-2 text-right">
@@ -373,7 +391,7 @@ const exportTableData = computed(() => filteredItems.value);
               <td>{{ i.nama }}</td>
               <td>{{ i.jenis }}</td>
               <td>{{ fmtRm(i.nilai) }}</td>
-              <td>{{ i.status }}</td>
+              <td>{{ statusLabel(i.status) }}</td>
               <td>{{ i.noPinjaman }}</td>
               <td>{{ i.tarikhTamat }}</td>
             </tr>
@@ -408,7 +426,7 @@ const exportTableData = computed(() => filteredItems.value);
               <div>
                 <p class="text-xs text-slate-500">Status</p>
                 <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusClass(selectedItem.status)">
-                  {{ selectedItem.status }}
+                  {{ statusLabel(selectedItem.status) }}
                 </span>
               </div>
               <div>
