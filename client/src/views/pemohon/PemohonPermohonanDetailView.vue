@@ -35,10 +35,10 @@ function docStatusClass(status: string) {
     </div>
 
     <div v-else class="mx-auto max-w-5xl space-y-5">
-      <div class="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">{{ application.id }}</p>
-        <h1 class="mt-2 text-xl font-semibold text-slate-900">{{ application.produk }}</h1>
-        <p class="mt-1 text-sm text-slate-500">{{ application.jumlah }} · Dimohon pada {{ application.tarikh }}</p>
+      <div class="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">{{ application.id }}</p>
+        <h1 class="mt-2 text-xl font-semibold text-white">{{ application.produk }}</h1>
+        <p class="mt-1 text-sm text-blue-100">{{ application.jumlah }} · Dimohon pada {{ application.tarikh }}</p>
       </div>
 
       <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -63,17 +63,17 @@ function docStatusClass(status: string) {
             </ul>
           </div>
 
-          <div v-if="temuduga" class="rounded-xl border border-violet-200 bg-violet-50 p-5">
+          <div v-if="temuduga" class="rounded-xl border border-blue-200 bg-blue-50 p-5">
             <div class="flex items-center gap-2">
-              <CalendarClock class="h-4 w-4 text-violet-600" />
-              <h2 class="text-sm font-semibold text-violet-900">Temuduga Dijadualkan</h2>
+              <CalendarClock class="h-4 w-4 text-blue-600" />
+              <h2 class="text-sm font-semibold text-blue-900">Temuduga Dijadualkan</h2>
             </div>
-            <p class="mt-2 text-sm text-violet-800">{{ temuduga.tarikh }}, {{ temuduga.masa }}</p>
-            <p class="mt-1 flex items-center gap-1 text-xs text-violet-700">
+            <p class="mt-2 text-sm text-blue-800">{{ temuduga.tarikh }}, {{ temuduga.masa }}</p>
+            <p class="mt-1 flex items-center gap-1 text-xs text-blue-700">
               <MapPin class="h-3 w-3" />
               {{ temuduga.lokasi }} ({{ temuduga.jenis }})
             </p>
-            <span class="mt-2 inline-block rounded-full bg-violet-200 px-2 py-0.5 text-xs font-medium text-violet-800">{{ temuduga.status }}</span>
+            <span class="mt-2 inline-block rounded-full bg-blue-200 px-2 py-0.5 text-xs font-medium text-blue-800">{{ temuduga.status }}</span>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { AlertTriangle, ArrowRight, CheckCircle2, Shield, XCircle } from "lucide-vue-next";
+import { AlertTriangle, ArrowRight, CheckCircle2, XCircle } from "lucide-vue-next";
 import AppToastRegion from "@/components/AppToastRegion.vue";
 import { usePemohonStore } from "@/stores/pemohon";
 import { ELIGIBILITY_RULES, type EligibilityResult } from "@/data/portal-dummy";
@@ -37,9 +37,7 @@ function proceed() {
   <div class="flex min-h-screen flex-col items-center justify-center bg-[#f6f9fc] px-4 py-10">
     <div class="w-full max-w-[480px]">
       <div class="mb-6 flex justify-center">
-        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-          <Shield class="h-4 w-4 text-white" />
-        </div>
+        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
       </div>
 
       <div class="rounded-lg border border-[#e3e8ee] bg-white px-8 pb-8 pt-6 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.06)]">
@@ -56,7 +54,7 @@ function proceed() {
               type="number"
               min="1"
               max="120"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
             <p class="text-[12px] text-slate-400">Kelayakan: {{ ELIGIBILITY_RULES.minAge }}–{{ ELIGIBILITY_RULES.maxAge }} tahun</p>
           </div>
@@ -65,7 +63,7 @@ function proceed() {
             <input
               v-model="form.noKp"
               type="text"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               placeholder="850101-14-5678"
             />
           </div>
@@ -76,7 +74,7 @@ function proceed() {
                 v-model.number="form.pendapatanBulanan"
                 type="number"
                 min="0"
-                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
             <div class="space-y-1.5">
@@ -85,14 +83,14 @@ function proceed() {
                 v-model.number="form.jumlahKomitmenSediaAda"
                 type="number"
                 min="0"
-                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700 disabled:opacity-60"
+            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
             :disabled="checking"
           >
             {{ checking ? "Menyemak..." : "Semak Kelayakan" }}
@@ -125,7 +123,7 @@ function proceed() {
           <button
             v-if="result.eligible"
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-violet-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700"
+            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
             @click="proceed"
           >
             Teruskan ke Pengesahan Identiti

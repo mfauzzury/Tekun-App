@@ -30,14 +30,14 @@ function statusBadgeClass(statusKey: string) {
 <template>
   <PemohonLayout>
     <div class="mx-auto max-w-5xl space-y-5">
-      <div class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-3 rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-xl font-semibold text-slate-900">Permohonan Saya</h1>
-          <p class="mt-1 text-sm text-slate-500">Senarai dan status permohonan pembiayaan anda.</p>
+          <h1 class="text-xl font-semibold text-white">Permohonan Saya</h1>
+          <p class="mt-1 text-sm text-blue-100">Senarai dan status permohonan pembiayaan anda.</p>
         </div>
         <router-link
           to="/pemohon/permohonan/baru"
-          class="flex shrink-0 items-center gap-1.5 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+          class="flex shrink-0 items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50"
         >
           <PlusCircle class="h-4 w-4" />
           Mohon Baharu
@@ -51,12 +51,12 @@ function statusBadgeClass(statusKey: string) {
             v-model="search"
             type="text"
             placeholder="Cari mengikut rujukan atau produk..."
-            class="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+            class="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
           />
         </div>
         <select
           v-model="statusFilter"
-          class="rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+          class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
         >
           <option v-for="opt in STATUS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </select>
@@ -68,18 +68,16 @@ function statusBadgeClass(statusKey: string) {
           v-for="item in filtered"
           :key="item.id"
           :to="`/pemohon/permohonan/${item.id}`"
-          class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-slate-50"
+          class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 transition-colors last:border-b-0 hover:bg-slate-50"
         >
-          <div>
+          <div class="flex items-center justify-between gap-2">
             <p class="text-sm font-semibold text-slate-900">{{ item.id }}</p>
-            <p class="mt-0.5 text-sm text-slate-500">{{ item.produk }} · {{ item.jumlah }} · {{ item.tarikh }}</p>
+            <ChevronRight class="h-4 w-4 shrink-0 text-slate-400" />
           </div>
-          <div class="flex items-center gap-3">
-            <span class="rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusBadgeClass(item.statusKey)">
-              {{ item.status }}
-            </span>
-            <ChevronRight class="h-4 w-4 text-slate-400" />
-          </div>
+          <p class="text-sm text-slate-500">{{ item.produk }} · {{ item.jumlah }} · {{ item.tarikh }}</p>
+          <span class="w-fit rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusBadgeClass(item.statusKey)">
+            {{ item.status }}
+          </span>
         </router-link>
       </div>
     </div>

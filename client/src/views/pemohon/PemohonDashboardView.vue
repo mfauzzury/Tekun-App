@@ -19,10 +19,10 @@ const onboardingIncomplete = computed(
 <template>
   <PemohonLayout>
     <div class="mx-auto max-w-5xl space-y-5">
-      <div class="rounded-2xl border border-slate-200 bg-gradient-to-r from-violet-50 to-white p-6 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Selamat Datang</p>
-        <h1 class="mt-2 text-2xl font-semibold text-slate-900">{{ pemohon.profil.nama }}</h1>
-        <p class="mt-1 text-sm text-slate-500">{{ pemohon.profil.perniagaan }}</p>
+      <div class="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">Selamat Datang</p>
+        <h1 class="mt-2 text-2xl font-semibold text-white">{{ pemohon.profil.nama }}</h1>
+        <p class="mt-1 text-sm text-blue-100">{{ pemohon.profil.perniagaan }}</p>
       </div>
 
       <div v-if="onboardingIncomplete" class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -42,7 +42,7 @@ const onboardingIncomplete = computed(
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-center gap-2">
-            <FileText class="h-4 w-4 text-violet-600" />
+            <FileText class="h-4 w-4 text-blue-600" />
             <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Jumlah Permohonan</p>
           </div>
           <p class="mt-2 text-2xl font-semibold text-slate-900">{{ pemohon.permohonanList.length }}</p>
@@ -70,13 +70,13 @@ const onboardingIncomplete = computed(
         <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <router-link
             to="/pemohon/permohonan/baru"
-            class="flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50 p-4 transition-colors hover:bg-violet-100"
+            class="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4 transition-colors hover:bg-blue-100"
           >
             <div class="flex items-center gap-3">
-              <PlusCircle class="h-5 w-5 text-violet-600" />
-              <span class="text-sm font-medium text-violet-900">Mohon Pembiayaan Baharu</span>
+              <PlusCircle class="h-5 w-5 text-blue-600" />
+              <span class="text-sm font-medium text-blue-900">Mohon Pembiayaan Baharu</span>
             </div>
-            <ArrowRight class="h-4 w-4 text-violet-600" />
+            <ArrowRight class="h-4 w-4 text-blue-600" />
           </router-link>
           <router-link
             to="/pemohon/permohonan"

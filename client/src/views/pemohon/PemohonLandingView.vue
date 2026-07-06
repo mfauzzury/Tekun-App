@@ -14,11 +14,9 @@ const features = [
   <div class="min-h-screen bg-slate-50">
     <header class="border-b border-slate-200 bg-white">
       <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
-        <div class="flex items-center gap-2">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600">
-            <span class="text-xs font-bold text-white">TN</span>
-          </div>
-          <span class="text-base font-semibold text-slate-900">Portal Pemohon SPPT</span>
+        <div class="flex items-center gap-2.5">
+          <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-8 w-auto" />
+          <span class="hidden text-base font-semibold text-slate-900 sm:inline">Portal Pemohon SPPT</span>
         </div>
         <div class="flex items-center gap-2">
           <router-link
@@ -29,7 +27,7 @@ const features = [
           </router-link>
           <router-link
             to="/pemohon/daftar"
-            class="flex items-center gap-1.5 rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+            class="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Daftar Akaun
             <ArrowRight class="h-4 w-4" />
@@ -40,7 +38,7 @@ const features = [
 
     <main>
       <section class="mx-auto w-full max-w-6xl px-4 py-16 text-center">
-        <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-violet-600">Sistem Pengurusan Pembiayaan TEKUN</p>
+        <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-blue-600">Sistem Pengurusan Pembiayaan TEKUN</p>
         <h1 class="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           Permohonan Pembiayaan Perniagaan Yang Mudah &amp; Pantas
         </h1>
@@ -50,7 +48,7 @@ const features = [
         <div class="mt-8 flex items-center justify-center gap-3">
           <router-link
             to="/pemohon/daftar"
-            class="flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700"
+            class="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
           >
             Mohon Sekarang
             <ArrowRight class="h-4 w-4" />
@@ -67,8 +65,8 @@ const features = [
       <section class="mx-auto w-full max-w-6xl px-4 pb-16">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div v-for="feature in features" :key="feature.title" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50">
-              <component :is="feature.icon" class="h-5 w-5 text-violet-600" />
+            <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+              <component :is="feature.icon" class="h-5 w-5 text-blue-600" />
             </div>
             <h3 class="text-sm font-semibold text-slate-900">{{ feature.title }}</h3>
             <p class="mt-1 text-sm text-slate-500">{{ feature.desc }}</p>
@@ -83,7 +81,7 @@ const features = [
             <div
               v-for="produk in PRODUK_OPTIONS"
               :key="produk.value"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center transition-colors hover:border-violet-300 hover:bg-violet-50"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center transition-colors hover:border-blue-300 hover:bg-blue-50"
             >
               <p class="text-sm font-semibold text-slate-900">{{ produk.label }}</p>
             </div>
@@ -100,7 +98,7 @@ const features = [
           </details>
         </div>
         <div class="mt-4 text-center">
-          <router-link to="/pemohon/bantuan" class="text-sm font-medium text-violet-600 hover:text-violet-700">
+          <router-link to="/pemohon/bantuan" class="text-sm font-medium text-blue-600 hover:text-blue-700">
             Lihat semua soalan lazim →
           </router-link>
         </div>

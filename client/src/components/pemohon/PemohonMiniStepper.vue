@@ -15,7 +15,7 @@ defineProps<{
           class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors"
           :class="[
             index < currentStep && 'bg-emerald-600 text-white',
-            index === currentStep && 'border-2 border-violet-600 text-violet-600',
+            index === currentStep && 'border-2 border-blue-600 text-blue-600',
             index > currentStep && 'border border-slate-200 text-slate-400',
           ]"
         >

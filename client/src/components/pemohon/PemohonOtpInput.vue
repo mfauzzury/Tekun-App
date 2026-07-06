@@ -67,7 +67,7 @@ function onPaste(event: ClipboardEvent) {
       type="text"
       inputmode="numeric"
       maxlength="1"
-      class="h-12 w-10 rounded-lg border border-slate-300 text-center text-lg font-semibold text-slate-900 shadow-sm transition-colors focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+      class="h-12 w-10 rounded-lg border border-slate-300 text-center text-lg font-semibold text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
       @input="onInput(index, $event)"
       @keydown="onKeydown(index, $event)"
     />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeft, ArrowRight, Save, Send, Upload } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Save, Send, Upload, X } from "lucide-vue-next";
 
 import PemohonLayout from "@/layouts/PemohonLayout.vue";
 import SpptStepper from "@/components/sppt/SpptStepper.vue";
@@ -14,7 +14,7 @@ const pemohon = usePemohonStore();
 const toast = useToast();
 
 const currentStep = ref(0);
-const inputClass = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200";
+const inputClass = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200";
 
 const form = reactive({
   kategoriPembiayaan: "",
@@ -64,6 +64,10 @@ function onDocSelected(event: Event, key: string) {
   documents[key] = file.name;
 }
 
+function removeDoc(key: string) {
+  documents[key] = null;
+}
+
 function saveDraft() {
   pemohon.saveDraft({ ...form });
   toast.success("Draf Disimpan", "Anda boleh menyambung permohonan ini kemudian.");
@@ -88,13 +92,26 @@ function submit() {
 <template>
   <PemohonLayout>
     <div class="mx-auto max-w-5xl space-y-5">
-      <div class="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
-        <h1 class="text-xl font-semibold text-slate-900">Borang Permohonan Pembiayaan</h1>
-        <p class="mt-1 text-sm text-slate-500">Isi maklumat berikut untuk memohon pembiayaan baharu.</p>
+      <div class="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm">
+        <h1 class="text-xl font-semibold text-white">Borang Permohonan Pembiayaan</h1>
+        <p class="mt-1 text-sm text-blue-100">Isi maklumat berikut untuk memohon pembiayaan baharu.</p>
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="mb-6 flex justify-center overflow-x-hidden">
+        <div class="mb-6 md:hidden">
+          <div class="mb-2 flex items-center justify-between text-sm">
+            <span class="font-medium text-slate-500">Langkah {{ currentStep + 1 }} / {{ PERMOHONAN_BARU_STEPS.length }}</span>
+            <span class="font-semibold text-blue-700">{{ PERMOHONAN_BARU_STEPS[currentStep].label }}</span>
+          </div>
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              class="h-full rounded-full bg-blue-600 transition-all"
+              :style="{ width: `${((currentStep + 1) / PERMOHONAN_BARU_STEPS.length) * 100}%` }"
+            />
+          </div>
+        </div>
+
+        <div class="mb-6 hidden justify-center md:flex">
           <SpptStepper :steps="[...PERMOHONAN_BARU_STEPS]" :current-step="currentStep" @step-click="(i) => (currentStep = i)" />
         </div>
 
@@ -217,61 +234,133 @@ function submit() {
 
         <!-- Dokumen -->
         <div v-else class="space-y-3">
-          <p class="text-sm text-slate-500">Muat naik dokumen sokongan yang diperlukan (format PDF/JPG/PNG).</p>
-          <label
+          <p class="text-sm text-slate-500">Muat naik dokumen sokongan yang diperlukan (format PDF/JPG/PNG, maks 5MB).</p>
+
+          <div
             v-for="(label, key) in docLabels"
             :key="key"
-            class="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-slate-300 px-4 py-3 transition-colors hover:border-violet-400 hover:bg-violet-50"
+            class="rounded-lg border p-3 transition-colors"
+            :class="documents[key] ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200'"
           >
-            <div class="flex items-center gap-2">
-              <Upload class="h-4 w-4 text-slate-400" />
-              <span class="text-sm font-medium text-slate-700">{{ label }}</span>
+            <div class="flex min-w-0 items-center gap-2">
+              <CheckCircle2 v-if="documents[key]" class="h-4 w-4 shrink-0 text-emerald-600" />
+              <Upload v-else class="h-4 w-4 shrink-0 text-slate-400" />
+              <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{{ label }}</span>
             </div>
-            <span class="text-xs" :class="documents[key] ? 'text-emerald-600' : 'text-slate-400'">
-              {{ documents[key] || "Belum dimuat naik" }}
-            </span>
-            <input type="file" accept=".pdf,image/*" class="hidden" @change="onDocSelected($event, key)" />
-          </label>
+
+            <div
+              v-if="documents[key]"
+              class="mt-2 flex min-w-0 items-center gap-2 rounded-md border border-emerald-200 bg-white px-2.5 py-1.5"
+            >
+              <FileText class="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+              <span class="min-w-0 flex-1 truncate text-xs text-slate-600" :title="documents[key]">
+                {{ documents[key] }}
+              </span>
+              <button
+                type="button"
+                class="shrink-0 text-slate-400 transition-colors hover:text-rose-600"
+                @click="removeDoc(key)"
+              >
+                <X class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <label
+              v-else
+              class="mt-2 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <Upload class="h-3.5 w-3.5" />
+              Pilih Fail
+              <input type="file" accept=".pdf,image/*" class="hidden" @change="onDocSelected($event, key)" />
+            </label>
+          </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
-            :disabled="currentStep === 0"
-            @click="back"
-          >
-            <ArrowLeft class="h-4 w-4" />
-            Kembali
-          </button>
+        <div class="mt-6 border-t border-slate-100 pt-4">
+          <!-- Mobile: Simpan Draf full-width on top, Kembali + Seterusnya as 2 columns below -->
+          <div class="space-y-2 sm:hidden">
+            <button
+              type="button"
+              class="flex w-full items-center justify-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              @click="saveDraft"
+            >
+              <Save class="h-4 w-4" />
+              Simpan Draf
+            </button>
 
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            @click="saveDraft"
-          >
-            <Save class="h-4 w-4" />
-            Simpan Draf
-          </button>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="flex items-center justify-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+                :disabled="currentStep === 0"
+                @click="back"
+              >
+                <ArrowLeft class="h-4 w-4" />
+                Kembali
+              </button>
 
-          <button
-            v-if="currentStep < PERMOHONAN_BARU_STEPS.length - 1"
-            type="button"
-            class="flex items-center gap-1.5 rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-violet-700"
-            @click="next"
-          >
-            Seterusnya
-            <ArrowRight class="h-4 w-4" />
-          </button>
-          <button
-            v-else
-            type="button"
-            class="flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-            @click="submit"
-          >
-            Hantar Permohonan
-            <Send class="h-4 w-4" />
-          </button>
+              <button
+                v-if="currentStep < PERMOHONAN_BARU_STEPS.length - 1"
+                type="button"
+                class="flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                @click="next"
+              >
+                Seterusnya
+                <ArrowRight class="h-4 w-4" />
+              </button>
+              <button
+                v-else
+                type="button"
+                class="flex items-center justify-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                @click="submit"
+              >
+                Hantar
+                <Send class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Desktop: single row -->
+          <div class="hidden sm:flex sm:items-center sm:justify-between">
+            <button
+              type="button"
+              class="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40"
+              :disabled="currentStep === 0"
+              @click="back"
+            >
+              <ArrowLeft class="h-4 w-4" />
+              Kembali
+            </button>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                @click="saveDraft"
+              >
+                <Save class="h-4 w-4" />
+                Simpan Draf
+              </button>
+
+              <button
+                v-if="currentStep < PERMOHONAN_BARU_STEPS.length - 1"
+                type="button"
+                class="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                @click="next"
+              >
+                Seterusnya
+                <ArrowRight class="h-4 w-4" />
+              </button>
+              <button
+                v-else
+                type="button"
+                class="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                @click="submit"
+              >
+                Hantar Permohonan
+                <Send class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
         </div>
       </div>
