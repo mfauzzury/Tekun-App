@@ -47,6 +47,8 @@ Route::prefix('public')->group(function () {
         Route::get('/hard-rules', [HardRuleCheckController::class, 'show']);
         Route::post('/hard-rules/check', [HardRuleCheckController::class, 'check'])->middleware('throttle:60,1');
         Route::post('/risk-scoring/score', [AiRiskScoringController::class, 'score'])->middleware('throttle:30,1');
+    });
+
     Route::post('/pemohon/chat', [PemohonChatController::class, 'send'])->middleware('throttle:pemohon-chat');
 
     Route::prefix('pemohon')->middleware('throttle:pemohon-permohonan')->group(function () {
