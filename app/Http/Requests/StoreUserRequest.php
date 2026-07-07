@@ -25,6 +25,7 @@ class StoreUserRequest extends BaseFormRequest
             'password' => 'required|string|min:6',
             'role' => 'nullable|string|min:1',
             'is_active' => 'nullable|boolean',
+            'sppt_cawangan_id' => 'nullable|integer|exists:sppt_cawangan,id',
         ];
     }
 }

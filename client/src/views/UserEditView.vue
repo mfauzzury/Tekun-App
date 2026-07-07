@@ -14,11 +14,11 @@ import {
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import { useAuthStore } from "@/stores/auth";
-import { getUser, createUser, updateUser, listRoles } from "@/api/cms";
+import { getUser, createUser, updateUser, listRoles, listUserCawanganOptions } from "@/api/cms";
 import { useConfirmDialog } from "@/composables/useConfirmDialog";
 import { useToast } from "@/composables/useToast";
 import { API_BASE_URL } from "@/env";
-import type { Role } from "@/types";
+import type { Role, UserCawangan } from "@/types";
 
 const route = useRoute();
 const router = useRouter();
@@ -26,13 +26,20 @@ const auth = useAuthStore();
 const toast = useToast();
 const confirmDialog = useConfirmDialog();
 
-const isNew = computed(() => route.params.id === "new");
-const userId = computed(() => (isNew.value ? null : Number(route.params.id)));
+const isNew = computed(
+  () => route.name === "platform-user-create" || route.params.id === "new",
+);
+const userId = computed(() => {
+  if (isNew.value) return null;
+  const id = Number(route.params.id);
+  return Number.isFinite(id) ? id : null;
+});
 const isSelf = computed(() => userId.value !== null && userId.value === auth.user?.id);
 
-const profileForm = ref({ name: "", email: "", role: "admin", isActive: true });
+const profileForm = ref({ name: "", email: "", role: "admin", isActive: true, spptCawanganId: null as number | null });
 const passwordForm = ref({ currentPassword: "", newPassword: "", confirmPassword: "" });
 const roles = ref<Role[]>([]);
+const cawanganOptions = ref<UserCawangan[]>([]);
 
 const loading = ref(true);
 const savingProfile = ref(false);
@@ -72,14 +79,31 @@ function resolveUrl(url: string) {
 
 async function load() {
   loading.value = true;
+  profileError.value = "";
   try {
     const rolesRes = await listRoles();
     roles.value = rolesRes.data;
 
-    if (!isNew.value && userId.value) {
+    const cawanganRes = await listUserCawanganOptions();
+    cawanganOptions.value = cawanganRes.data;
+
+    if (isNew.value) {
+      profileForm.value = { name: "", email: "", role: "admin", isActive: true, spptCawanganId: null };
+      passwordForm.value = { currentPassword: "", newPassword: "", confirmPassword: "" };
+      userPhotoUrl.value = null;
+      return;
+    }
+
+    if (userId.value) {
       const res = await getUser(userId.value);
       const u = res.data;
-      profileForm.value = { name: u.name, email: u.email, role: u.role, isActive: u.isActive };
+      profileForm.value = {
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+        spptCawanganId: u.spptCawanganId ?? null,
+      };
 
       // For self, use auth store's photoUrl (more up-to-date)
       if (isSelf.value) {
@@ -115,9 +139,10 @@ async function saveProfile() {
         password: passwordForm.value.newPassword,
         role: profileForm.value.role,
         isActive: profileForm.value.isActive,
+        spptCawanganId: profileForm.value.spptCawanganId,
       });
       toast.success("User created");
-      router.push("/admin/settings/users");
+      router.push("/admin/platform/identity/users");
       return;
     }
 
@@ -129,6 +154,7 @@ async function saveProfile() {
         email: profileForm.value.email,
         role: profileForm.value.role,
         isActive: profileForm.value.isActive,
+        spptCawanganId: profileForm.value.spptCawanganId,
       });
     }
     profileSaved.value = true;
@@ -176,6 +202,7 @@ async function savePassword() {
         password: passwordForm.value.newPassword,
         role: profileForm.value.role,
         isActive: profileForm.value.isActive,
+        spptCawanganId: profileForm.value.spptCawanganId,
       });
     }
     passwordChanged.value = true;
@@ -227,7 +254,7 @@ async function onRemoveAvatar() {
   }
 }
 
-watch(() => route.params.id, load);
+watch(() => [route.name, route.params.id], load);
 onMounted(load);
 </script>
 
@@ -238,7 +265,7 @@ onMounted(load);
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <router-link
-            to="/admin/settings/users"
+            to="/admin/platform/identity/users"
             class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             v-if="!isSelf"
           >
@@ -294,6 +321,26 @@ onMounted(load);
                     <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.name }}</option>
                     <option v-if="roles.length === 0" value="admin">admin</option>
                   </select>
+                </div>
+                <div v-if="!isSelf || isNew" class="space-y-1.5">
+                  <label class="text-sm font-medium text-slate-700">Cawangan</label>
+                  <select
+                    v-model="profileForm.spptCawanganId"
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  >
+                    <option :value="null">— Tiada / HQ —</option>
+                    <option v-for="c in cawanganOptions" :key="c.id" :value="c.id">
+                      {{ c.name }}{{ c.negeri ? ` (${c.negeri})` : "" }}
+                    </option>
+                  </select>
+                  <p class="text-xs text-slate-500">Digunakan untuk penugasan aliran kerja mengikut cawangan.</p>
+                </div>
+                <div v-else-if="auth.user?.cawangan" class="space-y-1.5">
+                  <label class="text-sm font-medium text-slate-700">Cawangan</label>
+                  <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    {{ auth.user.cawangan.name }}
+                    <span v-if="auth.user.cawangan.negeri" class="text-slate-500">({{ auth.user.cawangan.negeri }})</span>
+                  </p>
                 </div>
                 <div v-if="!isSelf || isNew" class="flex items-end pb-1">
                   <label class="relative inline-flex cursor-pointer items-center gap-3">

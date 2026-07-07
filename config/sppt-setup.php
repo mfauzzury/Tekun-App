@@ -48,15 +48,24 @@ return [
             'description' => 'Siapa yang layak untuk memohon skim pembiayaan TEKUN Niaga',
             'type' => 'knowledge',
         ],
+        'saringan_auto_kelayakan' => [
+            'label' => 'Saringan Auto-Kelayakan',
+            'labelEn' => 'Hard Rules Check',
+            'description' => 'Peraturan mandatori untuk penolakan automatik (auto-reject) permohonan',
+            'type' => 'hard_rules',
+        ],
     ],
 
     'defaults' => [
         'status_permohonan' => [
             ['value' => 'dalam-proses', 'label' => 'Dalam Proses', 'color' => 'amber', 'active' => true, 'sort' => 1],
             ['value' => 'menunggu-dokumen', 'label' => 'Menunggu Dokumen', 'color' => 'slate', 'active' => true, 'sort' => 2],
-            ['value' => 'lengkap', 'label' => 'Lengkap', 'color' => 'emerald', 'active' => true, 'sort' => 3],
-            ['value' => 'ditolak', 'label' => 'Ditolak', 'color' => 'rose', 'active' => true, 'sort' => 4],
-            ['value' => 'dibatalkan', 'label' => 'Dibatalkan', 'color' => 'slate', 'active' => true, 'sort' => 5],
+            ['value' => 'disemak', 'label' => 'Disemak', 'color' => 'blue', 'active' => true, 'sort' => 3],
+            ['value' => 'disokong', 'label' => 'Disokong', 'color' => 'indigo', 'active' => true, 'sort' => 4],
+            ['value' => 'diluluskan', 'label' => 'Diluluskan', 'color' => 'emerald', 'active' => true, 'sort' => 5],
+            ['value' => 'lengkap', 'label' => 'Lengkap', 'color' => 'emerald', 'active' => true, 'sort' => 6],
+            ['value' => 'ditolak', 'label' => 'Ditolak', 'color' => 'rose', 'active' => true, 'sort' => 7],
+            ['value' => 'dibatalkan', 'label' => 'Dibatalkan', 'color' => 'slate', 'active' => true, 'sort' => 8],
         ],
         'status_penilaian' => [
             ['value' => 'menunggu-penilaian', 'label' => 'Menunggu Penilaian', 'color' => 'amber', 'active' => true, 'sort' => 1],
@@ -198,6 +207,59 @@ return [
                 'color' => 'slate',
                 'active' => true,
                 'sort' => 13,
+            ],
+        ],
+    ],
+
+    'hard_rules_defaults' => [
+        'saringan_auto_kelayakan' => [
+            'active' => true,
+            'rules' => [
+                [
+                    'code' => 'age_limit',
+                    'label' => 'Had umur pemohon',
+                    'active' => true,
+                    'sort' => 1,
+                    'config' => [
+                        'min_age' => 18,
+                        'max_age' => 65,
+                    ],
+                ],
+                [
+                    'code' => 'blacklist',
+                    'label' => 'Rekod senarai hitam (No. KP)',
+                    'active' => true,
+                    'sort' => 2,
+                    'config' => [
+                        'ics' => ['800101-01-0001', '900202-02-0002'],
+                    ],
+                ],
+                [
+                    'code' => 'commitment_ratio',
+                    'label' => 'Komitmen kewangan melebihi had berbanding pendapatan',
+                    'active' => true,
+                    'sort' => 3,
+                    'config' => [
+                        'max_ratio' => 0.7,
+                    ],
+                ],
+                [
+                    'code' => 'active_financing_limit',
+                    'label' => 'Pembiayaan aktif sedia ada melebihi had maksimum',
+                    'active' => true,
+                    'sort' => 4,
+                    'config' => [
+                        'max_active_count' => 1,
+                        'max_total_amount' => 300000,
+                    ],
+                ],
+                [
+                    'code' => 'bankruptcy',
+                    'label' => 'Pemohon muflis / insolvensi',
+                    'active' => true,
+                    'sort' => 5,
+                    'config' => [],
+                ],
             ],
         ],
     ],

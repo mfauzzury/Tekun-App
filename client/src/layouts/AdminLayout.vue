@@ -17,6 +17,14 @@ import { useUiLocaleStore } from "@/stores/uiLocale";
 import { useUiThemeStore } from "@/stores/uiTheme";
 import { API_BASE_URL } from "@/env";
 
+const props = withDefaults(
+  defineProps<{
+    /** Full-viewport shell only (no header/sidebar) — for ?embed=1 iframe integration */
+    embedMode?: boolean;
+  }>(),
+  { embedMode: false },
+);
+
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -202,6 +210,14 @@ watch(
 
 <template>
   <div class="min-h-screen bg-[#f8f9fb]">
+    <main
+      v-if="props.embedMode"
+      class="fixed inset-0 z-50 h-[100dvh] w-full overflow-hidden bg-gray-50 p-0"
+    >
+      <slot />
+    </main>
+
+    <template v-else>
     <header class="sticky top-0 z-40 flex h-10 items-center justify-between border-b border-slate-200 bg-white px-5">
       <div class="flex items-center gap-1">
         <div v-if="site.siteIconUrl" class="flex h-[18px] shrink-0 items-center justify-center overflow-hidden">
@@ -503,5 +519,6 @@ watch(
         <slot />
       </main>
     </div>
+    </template>
   </div>
 </template>

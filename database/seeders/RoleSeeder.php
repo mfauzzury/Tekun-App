@@ -25,6 +25,38 @@ class RoleSeeder extends Seeder
                     'settings.view', 'settings.edit',
                     'menus.view', 'menus.edit',
                     'sppt.view', 'sppt.create', 'sppt.edit', 'sppt.delete',
+                    'sppt.semakan', 'sppt.sokongan', 'sppt.kelulusan',
+                    'chat.use',
+                ],
+            ]
+        );
+
+        Role::updateOrCreate(
+            ['name' => 'penyemak'],
+            [
+                'description' => 'Pegawai penyemak permohonan (cawangan)',
+                'permissions' => [
+                    'sppt.view', 'sppt.edit', 'sppt.semakan',
+                ],
+            ]
+        );
+
+        Role::updateOrCreate(
+            ['name' => 'penyokong'],
+            [
+                'description' => 'Pegawai penyokong permohonan (cawangan)',
+                'permissions' => [
+                    'sppt.view', 'sppt.edit', 'sppt.sokongan',
+                ],
+            ]
+        );
+
+        Role::updateOrCreate(
+            ['name' => 'pelulus'],
+            [
+                'description' => 'Pegawai pelulus permohonan (semua cawangan)',
+                'permissions' => [
+                    'sppt.view', 'sppt.edit', 'sppt.kelulusan',
                 ],
             ]
         );

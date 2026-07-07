@@ -5,7 +5,7 @@ import { CreditCard, Smartphone, RefreshCw, Banknote } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import { PAYMENT_CHANNELS, BAYARAN_ITEMS } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
@@ -14,12 +14,9 @@ const paymentChannels = ref<(typeof PAYMENT_CHANNELS)[number][]>([]);
 const bayaranItems = ref<(typeof BAYARAN_ITEMS)[number][]>([]);
 
 onMounted(async () => {
-  const [channelsRes, itemsRes] = await Promise.all([
-    fetchSpptDataset("pembayaran", "payment_channels"),
-    fetchSpptDataset("pembayaran", "bayaran_items"),
-  ]);
-  paymentChannels.value = channelsRes.data as typeof paymentChannels.value;
-  bayaranItems.value = itemsRes.data as typeof bayaranItems.value;
+  const data = await fetchSpptModuleDatasets("pembayaran");
+  paymentChannels.value = pickSpptModuleDataset(data, "payment_channels", [] as typeof paymentChannels.value);
+  bayaranItems.value = pickSpptModuleDataset(data, "bayaran_items", [] as typeof bayaranItems.value);
 });
 
 const activeChannel = ref<"fpx" | "ewallet" | "auto-debit" | "kaunter">("fpx");

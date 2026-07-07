@@ -18,6 +18,10 @@ class Permohonan extends Model
         'nama',
         'kategori_pembiayaan',
         'status',
+        'negeri',
+        'cawangan',
+        'wf_workflow_code',
+        'wf_current_process_id',
         'jumlah_permohonan',
         'tarikh_permohonan',
         'details',
@@ -38,5 +42,10 @@ class Permohonan extends Model
     public function usahawan(): BelongsTo
     {
         return $this->belongsTo(Usahawan::class);
+    }
+
+    public function currentWorkflowProcess(): BelongsTo
+    {
+        return $this->belongsTo(WfProcess::class, 'wf_current_process_id', 'wfp_process_id');
     }
 }

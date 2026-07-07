@@ -13,7 +13,7 @@ import ProgramLatihanTab from "@/components/sppt/pemantauan/ProgramLatihanTab.vu
 import HeatmapTab from "@/components/sppt/pemantauan/HeatmapTab.vue";
 import AITab from "@/components/sppt/pemantauan/AITab.vue";
 
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import {
   type UsahawanItem,
   KATEGORI_COLORS,
@@ -26,12 +26,9 @@ const usahawanList = ref<UsahawanItem[]>([]);
 const lawatanList = ref<{ id: string; usahawanId: string; tarikh: string }[]>([]);
 
 onMounted(async () => {
-  const [usahawanRes, lawatanRes] = await Promise.all([
-    fetchSpptDataset("pemantauan", "usahawan_list"),
-    fetchSpptDataset("pemantauan", "lawatan_list"),
-  ]);
-  usahawanList.value = usahawanRes.data as UsahawanItem[];
-  lawatanList.value = lawatanRes.data as typeof lawatanList.value;
+  const data = await fetchSpptModuleDatasets("pemantauan");
+  usahawanList.value = pickSpptModuleDataset(data, "usahawan_list", [] as UsahawanItem[]);
+  lawatanList.value = pickSpptModuleDataset(data, "lawatan_list", [] as typeof lawatanList.value);
 });
 
 const q = ref("");

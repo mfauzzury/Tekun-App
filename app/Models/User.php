@@ -27,6 +27,7 @@ class User extends Authenticatable
         'photo_url',
         'role',
         'role_id',
+        'sppt_cawangan_id',
         'is_active',
     ];
 
@@ -60,6 +61,11 @@ class User extends Authenticatable
     public function roleModel(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function cawangan(): BelongsTo
+    {
+        return $this->belongsTo(SpptCawangan::class, 'sppt_cawangan_id');
     }
 
     /**

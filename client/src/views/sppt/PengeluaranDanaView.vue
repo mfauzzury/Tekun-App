@@ -24,7 +24,7 @@ import {
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
-import { fetchSpptDataset, listPengeluaranDana } from "@/api/sppt";
+import { fetchSpptModuleDatasets, listPengeluaranDana, pickSpptModuleDataset } from "@/api/sppt";
 import {
   BANK_OPTIONS,
   RBAC_ROLES,
@@ -52,20 +52,16 @@ const dataLoading = ref(true);
 
 onMounted(async () => {
   try {
-    const [listRes, auditRes, batchRes, legalRes, excRes, intRes] = await Promise.all([
+    const [listRes, datasets] = await Promise.all([
       listPengeluaranDana({ limit: 100 }),
-      fetchSpptDataset("pengeluaran", "audit_trail"),
-      fetchSpptDataset("pengeluaran", "batches"),
-      fetchSpptDataset("pengeluaran", "legal_docs"),
-      fetchSpptDataset("pengeluaran", "exceptions"),
-      fetchSpptDataset("pengeluaran", "integration_statuses"),
+      fetchSpptModuleDatasets("pengeluaran"),
     ]);
     items.value = listRes.data as PengeluaranItem[];
-    auditTrail.value = auditRes.data as AuditTrailEntry[];
-    batchesData.value = batchRes.data as BatchDisbursement[];
-    legalDocsTemplate.value = legalRes.data as LegalDocument[];
-    exceptions.value = excRes.data as ExceptionReport[];
-    integrationStatuses.value = intRes.data as IntegrationStatus[];
+    auditTrail.value = pickSpptModuleDataset(datasets, "audit_trail", [] as AuditTrailEntry[]);
+    batchesData.value = pickSpptModuleDataset(datasets, "batches", [] as BatchDisbursement[]);
+    legalDocsTemplate.value = pickSpptModuleDataset(datasets, "legal_docs", [] as LegalDocument[]);
+    exceptions.value = pickSpptModuleDataset(datasets, "exceptions", [] as ExceptionReport[]);
+    integrationStatuses.value = pickSpptModuleDataset(datasets, "integration_statuses", [] as IntegrationStatus[]);
   } finally {
     dataLoading.value = false;
   }

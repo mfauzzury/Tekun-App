@@ -20,7 +20,7 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 import { exportToExcel, exportToPDF } from "@/composables/useExport";
-import { fetchSpptDataset, listKutipan } from "@/api/sppt";
+import { fetchSpptModuleDatasets, listKutipan, pickSpptModuleDataset } from "@/api/sppt";
 import {
   type KutipanItem,
   type SkhItem,
@@ -51,22 +51,17 @@ const auditLogItems = ref<AuditLogItem[]>([]);
 const kpiPegawai = ref<KpiPegawai[]>([]);
 
 onMounted(async () => {
-  const [listRes, skhRes, callRes, psatRes, skmRes, auditRes, kpiRes] = await Promise.all([
+  const [listRes, datasets] = await Promise.all([
     listKutipan({ limit: 100 }),
-    fetchSpptDataset("kutipan", "skh_items"),
-    fetchSpptDataset("kutipan", "call_center_items"),
-    fetchSpptDataset("kutipan", "psat_items"),
-    fetchSpptDataset("kutipan", "skm_mingguan"),
-    fetchSpptDataset("kutipan", "audit_log_items"),
-    fetchSpptDataset("kutipan", "kpi_pegawai"),
+    fetchSpptModuleDatasets("kutipan"),
   ]);
   kutipanItems.value = listRes.data as KutipanItem[];
-  skhItems.value = skhRes.data as SkhItem[];
-  callCenterItems.value = callRes.data as CallCenterItem[];
-  psatItems.value = psatRes.data as PsatItem[];
-  skmMingguan.value = skmRes.data as typeof skmMingguan.value;
-  auditLogItems.value = auditRes.data as AuditLogItem[];
-  kpiPegawai.value = kpiRes.data as KpiPegawai[];
+  skhItems.value = pickSpptModuleDataset(datasets, "skh_items", [] as SkhItem[]);
+  callCenterItems.value = pickSpptModuleDataset(datasets, "call_center_items", [] as CallCenterItem[]);
+  psatItems.value = pickSpptModuleDataset(datasets, "psat_items", [] as PsatItem[]);
+  skmMingguan.value = pickSpptModuleDataset(datasets, "skm_mingguan", [] as typeof skmMingguan.value);
+  auditLogItems.value = pickSpptModuleDataset(datasets, "audit_log_items", [] as AuditLogItem[]);
+  kpiPegawai.value = pickSpptModuleDataset(datasets, "kpi_pegawai", [] as KpiPegawai[]);
 });
 
 const activeTab = ref<"senarai" | "skh" | "call-center" | "psat" | "kpi" | "audit">("senarai");

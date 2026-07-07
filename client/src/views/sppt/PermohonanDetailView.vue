@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, FileText } from "lucide-vue-next";
 
-import { getPermohonan, openPermohonanDocument } from "@/api/sppt";
+import { getPermohonan, isApprovedPermohonanStatus, openPermohonanDocument, openPermohonanOfferLetter } from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import { documentClassLabel } from "@/config/sppt-document-classes";
@@ -33,10 +33,15 @@ const router = useRouter();
 const permohonanId = computed(() => Number(route.params.id) || 0);
 
 const loading = ref(true);
+const downloadingOfferLetter = ref(false);
 const permohonan = ref<Permohonan | null>(null);
 const form = ref<Record<string, unknown>>({});
 
 const displayTitle = computed(() => permohonan.value?.noRujukan ?? `Permohonan #${permohonanId.value}`);
+
+const canDownloadOfferLetter = computed(
+  () => Boolean(permohonan.value?.status && isApprovedPermohonanStatus(permohonan.value.status)),
+);
 
 const attachments = computed(() => {
   const saved = form.value.attachments;
@@ -131,6 +136,18 @@ async function viewAttachment(item: PermohonanAttachment) {
   }
 }
 
+async function downloadOfferLetter() {
+  if (!permohonanId.value) return;
+  downloadingOfferLetter.value = true;
+  try {
+    await openPermohonanOfferLetter(permohonanId.value);
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Gagal menjana surat tawaran.");
+  } finally {
+    downloadingOfferLetter.value = false;
+  }
+}
+
 function batal() {
   router.push("/admin/permohonan");
 }
@@ -156,7 +173,7 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
       </div>
 
       <div v-else class="space-y-6">
-        <div v-if="permohonan?.status" class="flex items-center gap-2">
+        <div v-if="permohonan?.status" class="flex flex-wrap items-center gap-3">
           <span class="text-xs font-medium text-slate-500">Status:</span>
           <span
             class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -164,7 +181,27 @@ const valueClass = "rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 tex
           >
             {{ statusLabel(permohonan.status) }}
           </span>
+          <button
+            v-if="canDownloadOfferLetter"
+            type="button"
+            class="ml-auto flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-60"
+            :disabled="downloadingOfferLetter"
+            @click="downloadOfferLetter"
+          >
+            <FileText class="h-3.5 w-3.5" />
+            {{ downloadingOfferLetter ? "Menjana PDF..." : "Surat Tawaran PDF" }}
+          </button>
         </div>
+
+        <div
+          v-if="permohonan?.negeri || permohonan?.cawangan"
+          class="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+        >
+          <span class="font-medium text-slate-900">Pejabat Pendaftaran:</span>
+          <span v-if="permohonan?.negeri"><span class="text-slate-500">Negeri:</span> {{ permohonan.negeri }}</span>
+          <span v-if="permohonan?.cawangan"><span class="text-slate-500">Cawangan:</span> {{ permohonan.cawangan }}</span>
+        </div>
+
         <!-- Maklumat Asas -->
         <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 bg-slate-50/80 px-4 py-3">

@@ -1,4 +1,116 @@
 export type PublishStatus = "draft" | "published" | "archived";
+
+// ─── Workflow Configuration ──────────────────────────────────────────────────
+
+export type WfWorkflow = {
+  wfaWorkflowCode: string;
+  wfaWorkflowTitle: string | null;
+  wfaPreventSelfProcess: number | null;
+  wfaInvolvePosting: number | null;
+};
+
+export type WfWorkflowInput = {
+  wfaWorkflowCode: string;
+  wfaWorkflowTitle: string;
+  wfaPreventSelfProcess: number | null;
+  wfaInvolvePosting: number;
+};
+
+export type WfWorkflowUpdateInput = {
+  wfaWorkflowTitle: string;
+  wfaPreventSelfProcess: number | null;
+  wfaInvolvePosting: number;
+};
+
+export type WfProcess = {
+  wfpProcessId: number;
+  wfpWorkflowCode: string;
+  wfpProcessName: string;
+  wfpProcessDescBm: string | null;
+  wfpSequence: number;
+  wfpStatus: string;
+  wfpDurationKpi: number | null;
+  wfpIsEmailNotification: number | null;
+  wfpIsTodoNotification: number | null;
+  wfpIsByPtj: number | null;
+  wfpExtendedField?: Record<string, unknown> | null;
+  wfpProcessDetailsCount?: number;
+};
+
+export type WfProcessInput = {
+  wfpWorkflowCode: string;
+  wfpProcessName: string;
+  wfpProcessDescBm?: string | null;
+  wfpSequence: number;
+  wfpDurationKpi?: number | null;
+  wfpDurationKpiWithquery?: null;
+  wfpStatus: string;
+  wfpIsEmailNotification: number;
+  wfpIsTodoNotification: number;
+  wfpIsByUnit?: null;
+  wfpIsByPtj: number | null;
+  wfpIsAllowQuery?: null;
+};
+
+export type WfProcessUpdateInput = Partial<Omit<WfProcessInput, "wfpWorkflowCode">>;
+
+export type WfProcessDetail = {
+  wpdProcessDetailsId: number;
+  wpdProcessId: number;
+  wpdStatusCode: string;
+  wpdStatusDesc?: string | null;
+  wpdRerouteProcess: number | null;
+  wpdRerouteUrl: string | null;
+  wpdOrder: number;
+  wflIsPositive?: number | string | null;
+};
+
+export type WfProcessDetailInput = {
+  wpdProcessId: number;
+  wpdStatusCode: string;
+  wpdStatusDesc: string;
+  wpdRerouteProcess: number | null;
+  wpdRerouteUrl: string | null;
+  wpdOrder: number;
+};
+
+export type WfProcessDetailUpdateInput = Omit<WfProcessDetailInput, "wpdProcessId">;
+
+export type WfAuthorizedRole = {
+  warAuthorizedRoleId: number;
+  warProcessId: number;
+  warGroupCode: string;
+  warGroupName?: string | null;
+  warLimitMin: number | null;
+  warLimitMax: number | null;
+};
+
+export type WfAuthorizedRoleInput = {
+  warProcessId: number;
+  warGroupCode: string;
+  warLimitMin: number | null;
+  warLimitMax: number | null;
+};
+
+export type WfAuthorizedRoleUpdateInput = Omit<WfAuthorizedRoleInput, "warProcessId">;
+
+export type WfLookupOption = {
+  kod: string;
+  keterangan: string;
+  wflIsPositive?: number | string | null;
+};
+
+export type WfRerouteProcessOption = {
+  id: number;
+  description: string;
+  wfpWorkflowCode: string;
+};
+
+export type WfRoleReferenceOption = {
+  code: string;
+  description: string;
+};
+
 export type ThemeColor = "violet" | "blue" | "green" | "red" | "black-white" | "grey";
 export type AppLanguage = "bm" | "bi";
 
@@ -6,12 +118,22 @@ export type ApiError = { error: { code: string; message: string; details?: unkno
 
 export type ApiResponse<T> = { data: T; meta?: Record<string, unknown> };
 
+export type UserCawangan = {
+  id: number;
+  code: string;
+  name: string;
+  negeri?: string | null;
+  branchType?: SpptCawanganBranchType | null;
+};
+
 export type User = {
   id: number;
   email: string;
   name: string;
   photoUrl?: string;
   role?: string;
+  spptCawanganId?: number | null;
+  cawangan?: UserCawangan | null;
 };
 
 export type PostInput = {
@@ -144,6 +266,8 @@ export type UserDetail = {
   email: string;
   role: string;
   isActive: boolean;
+  spptCawanganId?: number | null;
+  cawangan?: UserCawangan | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -154,6 +278,7 @@ export type UserInput = {
   password?: string;
   role: string;
   isActive: boolean;
+  spptCawanganId?: number | null;
 };
 
 export type AuditLog = {
@@ -248,6 +373,10 @@ export type PermohonanInput = {
   nama: string;
   kategoriPembiayaan?: string;
   status?: string;
+  negeri?: string;
+  cawangan?: string;
+  wfWorkflowCode?: string | null;
+  wfCurrentProcessId?: number | null;
   jumlahPermohonan?: number;
   tarikhPermohonan?: string;
   details?: Record<string, unknown>;
@@ -310,6 +439,30 @@ export type AkaunPembiayaan = {
   updatedAt: string;
 };
 
+export type SpptCawanganBranchType = "negeri" | "cawangan" | "ibu_pejabat";
+
+export type SpptCawanganInput = {
+  code: string;
+  name: string;
+  branchType?: SpptCawanganBranchType;
+  negeri?: string | null;
+  locality?: string | null;
+  postalCode?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  fax?: string | null;
+  contactPerson?: string | null;
+  externalId?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+export type SpptCawangan = SpptCawanganInput & {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type SpptSetupStatusItem = {
   value: string;
   label: string;
@@ -323,6 +476,165 @@ export type SpptSetupCategory = {
   label: string;
   labelEn?: string;
   description?: string;
-  type?: "knowledge" | "status";
+  type?: "knowledge" | "status" | "hard_rules";
   items: SpptSetupStatusItem[];
+  hardRules?: SpptHardRulesConfig;
+};
+
+export type SpptHardRuleConfig = {
+  minAge?: number;
+  maxAge?: number;
+  ics?: string[];
+  maxRatio?: number;
+  maxActiveCount?: number;
+  maxTotalAmount?: number;
+};
+
+export type SpptHardRuleItem = {
+  code: string;
+  label: string;
+  active: boolean;
+  sort: number;
+  config: SpptHardRuleConfig;
+};
+
+export type SpptHardRulesConfig = {
+  active: boolean;
+  rules: SpptHardRuleItem[];
+};
+
+export type HardRuleCheckInput = {
+  umur?: number;
+  noKp?: string;
+  pendapatanBulanan?: number;
+  jumlahKomitmenSediaAda?: number;
+  jumlahPembiayaanAktif?: number;
+  jumlahPembiayaanAktifRm?: number;
+  muflis?: boolean;
+};
+
+export type HardRuleCheckResult = {
+  eligible: boolean;
+  autoReject: boolean;
+  reasons: string[];
+  failedRules: string[];
+};
+
+export type HardRulePublicSummary = {
+  active: boolean;
+  rules: Array<{ code: string; label: string; hint: string }>;
+};
+
+export type AiRiskScoringFactor = {
+  factor: string;
+  impact: "positif" | "negatif" | "neutral" | string;
+  description: string;
+};
+
+export type AiRiskScoringInput = {
+  umur?: number;
+  noKp?: string;
+  kategoriPembiayaan?: string;
+  sektorPerniagaan?: string;
+  tempohPerniagaanTahun?: number;
+  pendapatanBulanan?: number;
+  jumlahKomitmenSediaAda?: number;
+  jumlahPermohonan?: number;
+  negeri?: string;
+  muflis?: boolean;
+  permohonanId?: number;
+};
+
+export type AiRiskScoringResult = {
+  riskScore: number;
+  riskCategory: "Risiko Rendah" | "Risiko Sederhana" | "Risiko Tinggi" | string;
+  recommendedLimit: number;
+  factors: AiRiskScoringFactor[];
+  confidence: number;
+  source: "ai" | "heuristic" | string;
+  scoredAt: string;
+  message: string;
+};
+
+export type ApkCreditData = {
+  source: string;
+  enrichedAt: string;
+  ccris: {
+    score: number;
+    totalFacilities: number;
+    totalOutstandingRm: number;
+    monthlyCommitmentRm: number;
+    specialAttention: boolean;
+    legalActions: number;
+    npfAccounts: number;
+  };
+  ctos: {
+    score: number;
+    litigation: boolean;
+    tradeReferenceNegative: boolean;
+  };
+  experian: {
+    score: number;
+    delinquency: boolean;
+  };
+  flags: string[];
+};
+
+export type AiCreditScoringInput = AiRiskScoringInput & {
+  noSsm?: string;
+};
+
+export type AiCreditScoringResult = {
+  creditScore: number;
+  creditCategory: string;
+  recommendedLimit: number;
+  riskBand: "low" | "medium" | "high" | string;
+  riskBandColor: "green" | "amber" | "red" | string;
+  recommendedAction: "auto_approve" | "officer_review" | "reject_escalate" | string;
+  decisionLabel: string;
+  decisionDescription: string;
+  factors: AiRiskScoringFactor[];
+  adverseActionReasons: string[];
+  apk: ApkCreditData;
+  confidence: number;
+  source: string;
+  scoredAt: string;
+  message: string;
+};
+
+// AINA User Chat
+export type ChatMessage = {
+  id: number;
+  chatSessionId: number;
+  role: "user" | "assistant";
+  content: string;
+  citations: string[];
+  replyToMessageId?: number | null;
+  replyToUserId?: number | null;
+  createdAt: string;
+  replyToMessage?: ChatMessage | null;
+  replyToUser?: { id: number; name: string } | null;
+};
+
+export type ChatSession = {
+  id: number;
+  openaiThreadId: string;
+  title: string;
+  moduleFilter: string | null;
+  userId: number | null;
+  sessionType?: "solo" | "group";
+  chatType?: string;
+  messages?: ChatMessage[];
+  isFavorited?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChatSuggestion = { id: string; label: string; module: string };
+
+export type ChatFavoriteItem = {
+  id: number;
+  message: ChatMessage;
+  session: ChatSession | null;
+  createdAt: string;
 };

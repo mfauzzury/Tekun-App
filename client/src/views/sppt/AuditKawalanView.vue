@@ -19,7 +19,7 @@ import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
 import { exportToCSV, exportToExcel } from "@/composables/useExport";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import {
   JENIS_TINDAKAN_LABELS,
   type AuditTrailItem,
@@ -46,24 +46,15 @@ const analitikAudit = ref<AnalitikAuditItem[]>([]);
 const aiRiskItems = ref<AIRiskItem[]>([]);
 
 onMounted(async () => {
-  const [trailRes, sistemRes, perubahanRes, amaranRes, heatmapRes, penggunaRes, analitikRes, aiRes] = await Promise.all([
-    fetchSpptDataset("audit", "audit_trail"),
-    fetchSpptDataset("audit", "log_sistem"),
-    fetchSpptDataset("audit", "log_perubahan_data"),
-    fetchSpptDataset("audit", "amaran_list"),
-    fetchSpptDataset("audit", "heatmap_aktiviti"),
-    fetchSpptDataset("audit", "pengguna_berisiko"),
-    fetchSpptDataset("audit", "analitik_audit"),
-    fetchSpptDataset("audit", "ai_risk_items"),
-  ]);
-  auditTrail.value = trailRes.data as AuditTrailItem[];
-  logSistem.value = sistemRes.data as typeof logSistem.value;
-  logPerubahanData.value = perubahanRes.data as typeof logPerubahanData.value;
-  amaranList.value = amaranRes.data as AmaranItem[];
-  heatmapAktiviti.value = heatmapRes.data as typeof heatmapAktiviti.value;
-  penggunaBerisiko.value = penggunaRes.data as typeof penggunaBerisiko.value;
-  analitikAudit.value = analitikRes.data as typeof analitikAudit.value;
-  aiRiskItems.value = aiRes.data as typeof aiRiskItems.value;
+  const data = await fetchSpptModuleDatasets("audit");
+  auditTrail.value = pickSpptModuleDataset(data, "audit_trail", [] as AuditTrailItem[]);
+  logSistem.value = pickSpptModuleDataset(data, "log_sistem", [] as typeof logSistem.value);
+  logPerubahanData.value = pickSpptModuleDataset(data, "log_perubahan_data", [] as typeof logPerubahanData.value);
+  amaranList.value = pickSpptModuleDataset(data, "amaran_list", [] as AmaranItem[]);
+  heatmapAktiviti.value = pickSpptModuleDataset(data, "heatmap_aktiviti", [] as typeof heatmapAktiviti.value);
+  penggunaBerisiko.value = pickSpptModuleDataset(data, "pengguna_berisiko", [] as typeof penggunaBerisiko.value);
+  analitikAudit.value = pickSpptModuleDataset(data, "analitik_audit", [] as typeof analitikAudit.value);
+  aiRiskItems.value = pickSpptModuleDataset(data, "ai_risk_items", [] as typeof aiRiskItems.value);
 });
 
 // --- Tabs: 9.2 Audit Trail, 9.3 Log Sistem, 9.3 Perubahan Data, 9.5 Amaran, 9.2.6 Analytics, 9.6 AI Risk ---

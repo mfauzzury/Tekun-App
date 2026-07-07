@@ -8,7 +8,7 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import SpptSummaryCards from "@/components/sppt/SpptSummaryCards.vue";
-import { fetchSpptDataset, listJaminan } from "@/api/sppt";
+import { fetchSpptModuleDatasets, listJaminan, pickSpptModuleDataset } from "@/api/sppt";
 import { useSpptStatus } from "@/composables/useSpptStatus";
 import {
   getSummaryFromItems,
@@ -28,14 +28,13 @@ const loading = ref(true);
 
 onMounted(async () => {
   try {
-    const [jaminanRes, auditRes, notifRes] = await Promise.all([
+    const [jaminanRes, datasets] = await Promise.all([
       listJaminan({ limit: 100 }),
-      fetchSpptDataset("jaminan", "audit_logs"),
-      fetchSpptDataset("jaminan", "notifikasi"),
+      fetchSpptModuleDatasets("jaminan"),
     ]);
     rawItems.value = jaminanRes.data as unknown as JaminanItem[];
-    auditLogs.value = auditRes.data as AuditLog[];
-    notifikasi.value = notifRes.data as NotifikasiJaminan[];
+    auditLogs.value = pickSpptModuleDataset(datasets, "audit_logs", [] as AuditLog[]);
+    notifikasi.value = pickSpptModuleDataset(datasets, "notifikasi", [] as NotifikasiJaminan[]);
   } finally {
     loading.value = false;
   }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { evaluateHardRulesForPermohonanForm } from "@/composables/useHardRuleCheck";
 import { useI18n } from "@/composables/useI18n";
 import { useToast } from "@/composables/useToast";
 import { computed, onMounted, ref, watch } from "vue";
@@ -7,6 +8,7 @@ import { ArrowLeft, ArrowRight, FileText, Info, Paperclip, Save, Scan, Trash2, U
 
 import { createPermohonan, classifyPermohonanDocument, deletePermohonanDocument, extractPermohonanFormOcr, getPermohonan, openPermohonanDocument, updatePermohonan, updatePermohonanDocumentClass, uploadPermohonanDocument, verifyPermohonanDocument } from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
+import { useAuthStore } from "@/stores/auth";
 import SpptDateInput from "@/components/sppt/SpptDateInput.vue";
 import SpptTimeInput from "@/components/sppt/SpptTimeInput.vue";
 import SpptDocumentClassModal from "@/components/sppt/SpptDocumentClassModal.vue";
@@ -53,11 +55,22 @@ import {
 
 const { t, tp } = useI18n();
 const toast = useToast();
+const authStore = useAuthStore();
+
+const officerOffice = computed(() => {
+  const branch = authStore.user?.cawangan;
+  if (!branch) return null;
+  return {
+    negeri: branch.negeri ?? "—",
+    cawangan: branch.name,
+  };
+});
 
 const router = useRouter();
 const route = useRoute();
 const saving = ref(false);
 const draftSaving = ref(false);
+const hardRuleChecking = ref(false);
 const loading = ref(false);
 const saved = ref(false);
 const draftId = ref<number | null>(null);
@@ -643,8 +656,123 @@ const currentStep = ref(0);
 const totalSteps = STEPS.length;
 const validationErrors = ref<{ stepIndex: number; stepLabel: string; messages: string[] }[]>([]);
 
+type ApiValidationError = Error & {
+  details?: Record<string, string[] | string> | null;
+};
+
+function collectApiValidationMessages(details: Record<string, unknown> | null | undefined): string[] {
+  if (!details) {
+    return [];
+  }
+
+  const messages: string[] = [];
+  const nested = details.details;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    for (const value of Object.values(nested as Record<string, unknown>)) {
+      if (Array.isArray(value)) {
+        messages.push(...value.map(String));
+      } else if (value) {
+        messages.push(String(value));
+      }
+    }
+  }
+
+  for (const [key, value] of Object.entries(details)) {
+    if (key === "details") {
+      continue;
+    }
+    const normalizedKey = key.toLowerCase();
+    if (
+      normalizedKey.includes("noic")
+      || normalizedKey.includes("notelefon")
+      || normalizedKey.includes("email")
+    ) {
+      if (Array.isArray(value)) {
+        messages.push(...value.map(String));
+      } else if (value) {
+        messages.push(String(value));
+      }
+    }
+  }
+
+  return messages;
+}
+
+function applyDuplicateValidationErrors(err: ApiValidationError): boolean {
+  const messages = collectApiValidationMessages(err.details as Record<string, unknown> | null | undefined);
+  if (messages.length === 0) {
+    return false;
+  }
+
+  const stepErrors: { stepIndex: number; stepLabel: string; messages: string[] }[] = [];
+  const pemohonMsgs = messages.filter((message) => message.includes("Kad Pengenalan"));
+  const contactMsgs = messages.filter((message) => message.includes("telefon") || message.includes("E-mel"));
+
+  if (pemohonMsgs.length > 0) {
+    stepErrors.push({ stepIndex: 1, stepLabel: "Pemohon", messages: pemohonMsgs });
+  }
+  if (contactMsgs.length > 0) {
+    stepErrors.push({ stepIndex: 2, stepLabel: "Alamat", messages: contactMsgs });
+  }
+  if (stepErrors.length === 0) {
+    stepErrors.push({ stepIndex: 1, stepLabel: "Pemohon", messages });
+  }
+
+  validationErrors.value = stepErrors;
+  currentStep.value = stepErrors[0]?.stepIndex ?? currentStep.value;
+  toast.error(messages.join(" "));
+  return true;
+}
+
+function applyApiValidationErrors(err: ApiValidationError): boolean {
+  if (applyDuplicateValidationErrors(err)) {
+    return true;
+  }
+
+  const messages = collectApiValidationMessages(err.details as Record<string, unknown> | null | undefined);
+  if (messages.length > 0) {
+    validationErrors.value = [{
+      stepIndex: currentStep.value,
+      stepLabel: STEPS[currentStep.value]?.label ?? "Borang",
+      messages,
+    }];
+    toast.error(messages.join(" "));
+    return true;
+  }
+
+  if (err.message && err.message !== "Request failed" && err.message !== "Validation failed") {
+    toast.error(err.message);
+    return true;
+  }
+
+  return false;
+}
+
+async function applyHardRuleGate(): Promise<boolean> {
+  hardRuleChecking.value = true;
+  try {
+    const result = await evaluateHardRulesForPermohonanForm(form.value);
+    if (result && !result.eligible) {
+      validationErrors.value = [{
+        stepIndex: currentStep.value,
+        stepLabel: "Saringan Auto-Kelayakan",
+        messages: result.reasons,
+      }];
+      toast.error("Syarat mandatori tidak dipenuhi. Permohonan tidak boleh diteruskan (auto-reject).");
+      return false;
+    }
+    return true;
+  } finally {
+    hardRuleChecking.value = false;
+  }
+}
+
 async function goNext() {
-  if (currentStep.value >= totalSteps - 1 || draftSaving.value) {
+  if (currentStep.value >= totalSteps - 1 || draftSaving.value || hardRuleChecking.value) {
+    return;
+  }
+
+  if (!(await applyHardRuleGate())) {
     return;
   }
 
@@ -653,7 +781,11 @@ async function goNext() {
 
   const draftSaved = await saveDraft({ silent: true });
   if (!draftSaved) {
-    currentStep.value -= 1;
+    if (validationErrors.value.length > 0) {
+      currentStep.value = validationErrors.value[0]?.stepIndex ?? currentStep.value;
+    } else {
+      currentStep.value -= 1;
+    }
   }
 }
 
@@ -665,7 +797,11 @@ function goPrev() {
 }
 
 async function goToStep(index: number) {
-  if (index < 0 || index >= totalSteps || index === currentStep.value || draftSaving.value) {
+  if (index < 0 || index >= totalSteps || index === currentStep.value || draftSaving.value || hardRuleChecking.value) {
+    return;
+  }
+
+  if (index > currentStep.value && !(await applyHardRuleGate())) {
     return;
   }
 
@@ -675,7 +811,11 @@ async function goToStep(index: number) {
 
   const draftSaved = await saveDraft({ silent: true });
   if (!draftSaved) {
-    currentStep.value = previousStep;
+    if (validationErrors.value.length > 0) {
+      currentStep.value = validationErrors.value[0]?.stepIndex ?? currentStep.value;
+    } else {
+      currentStep.value = previousStep;
+    }
   }
 }
 
@@ -1132,6 +1272,10 @@ async function saveDraft(options?: { silent?: boolean }): Promise<boolean> {
     }
     return true;
   } catch (err) {
+    const apiErr = err as ApiValidationError;
+    if (applyApiValidationErrors(apiErr)) {
+      return false;
+    }
     const uploadFailures = (err as Error & { uploadFailures?: string[] }).uploadFailures;
     if (uploadFailures?.length) {
       toast.error(`Muat naik fail gagal: ${uploadFailures.join("; ")}`);
@@ -1153,6 +1297,9 @@ async function simpan() {
   if (!draftSaved) {
     return;
   }
+  if (!(await applyHardRuleGate())) {
+    return;
+  }
   if (!validateForm()) {
     currentStep.value = validationErrors.value[0]?.stepIndex ?? currentStep.value;
     return;
@@ -1169,7 +1316,10 @@ async function simpan() {
     toast.success(`Permohonan ${data.noRujukan ?? ""} berjaya dihantar.`);
     setTimeout(() => router.push("/admin/permohonan"), 1500);
   } catch (err) {
-    const apiErr = err as Error & { details?: Record<string, string[] | string> | null };
+    const apiErr = err as ApiValidationError;
+    if (applyApiValidationErrors(apiErr)) {
+      return;
+    }
     const attachmentErrors = apiErr.details?.attachments;
     if (Array.isArray(attachmentErrors) && attachmentErrors.length > 0) {
       validationErrors.value = [{
@@ -1314,6 +1464,18 @@ const readonlyClass =
           { label: draftId ? 'Kemaskini Draf' : 'Daftar Baru' },
         ]"
       />
+
+      <div
+        v-if="officerOffice"
+        class="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+      >
+        <span class="font-medium text-slate-900">Pejabat Pegawai:</span>
+        <span><span class="text-slate-500">Negeri:</span> {{ officerOffice.negeri }}</span>
+        <span><span class="text-slate-500">Cawangan:</span> {{ officerOffice.cawangan }}</span>
+      </div>
+      <p v-else class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        Akaun anda belum ditetapkan dengan cawangan. Negeri dan cawangan permohonan tidak akan direkod sehingga tetapan pengguna dikemaskini.
+      </p>
 
       <!-- Spec 1.7.2: AI-OCR auto-populate from filled BPP-BORANG-01 -->
       <article class="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50/80 to-white shadow-sm">
@@ -2380,7 +2542,9 @@ const readonlyClass =
           v-if="validationErrors.length > 0"
           class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3"
         >
-          <p class="text-sm font-semibold text-rose-800">Sila lengkapkan maklumat wajib:</p>
+          <p class="text-sm font-semibold text-rose-800">
+            {{ validationErrors.some((e) => e.stepLabel === "Saringan Auto-Kelayakan") ? "Saringan Auto-Kelayakan gagal (auto-reject):" : "Sila lengkapkan maklumat wajib:" }}
+          </p>
           <ul class="mt-2 space-y-1">
             <li
               v-for="err in validationErrors"
@@ -2425,12 +2589,12 @@ const readonlyClass =
             <button
               v-if="currentStep < totalSteps - 1"
               type="button"
-              :disabled="draftSaving || saving"
+              :disabled="draftSaving || saving || hardRuleChecking"
               class="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60"
               @click="goNext"
             >
-              {{ draftSaving ? "Menyimpan draf..." : "Seterusnya" }}
-              <ArrowRight v-if="!draftSaving" class="h-4 w-4" />
+              {{ hardRuleChecking ? "Menyemak kelayakan..." : draftSaving ? "Menyimpan draf..." : "Seterusnya" }}
+              <ArrowRight v-if="!draftSaving && !hardRuleChecking" class="h-4 w-4" />
             </button>
             <button
               v-if="currentStep === totalSteps - 1"

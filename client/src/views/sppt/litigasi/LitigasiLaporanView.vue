@@ -4,7 +4,7 @@ import { ref, onMounted } from "vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import { LAPORAN_KES_AKTIF, LAPORAN_KEPUTUSAN_BULANAN } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
@@ -13,12 +13,9 @@ const kesAktif = ref<(typeof LAPORAN_KES_AKTIF)[number][]>([]);
 const keputusanBulanan = ref<(typeof LAPORAN_KEPUTUSAN_BULANAN)[number][]>([]);
 
 onMounted(async () => {
-  const [aktifRes, bulananRes] = await Promise.all([
-    fetchSpptDataset("litigasi", "laporan_kes_aktif"),
-    fetchSpptDataset("litigasi", "laporan_keputusan_bulanan"),
-  ]);
-  kesAktif.value = aktifRes.data as typeof kesAktif.value;
-  keputusanBulanan.value = bulananRes.data as typeof keputusanBulanan.value;
+  const data = await fetchSpptModuleDatasets("litigasi");
+  kesAktif.value = pickSpptModuleDataset(data, "laporan_kes_aktif", [] as typeof kesAktif.value);
+  keputusanBulanan.value = pickSpptModuleDataset(data, "laporan_keputusan_bulanan", [] as typeof keputusanBulanan.value);
 });
 </script>
 

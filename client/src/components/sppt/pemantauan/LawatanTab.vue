@@ -3,7 +3,7 @@ import { useI18n } from "@/composables/useI18n";
 import { ref, computed, onMounted } from "vue";
 import { Calendar, FileText, MapPin } from "lucide-vue-next";
 import type { LawatanItem, UsahawanItem } from "@/data/pemantauan-usahawan-dummy";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
@@ -11,12 +11,9 @@ const lawatanList = ref<LawatanItem[]>([]);
 const usahawanList = ref<UsahawanItem[]>([]);
 
 onMounted(async () => {
-  const [lawatanRes, usahawanRes] = await Promise.all([
-    fetchSpptDataset("pemantauan", "lawatan_list"),
-    fetchSpptDataset("pemantauan", "usahawan_list"),
-  ]);
-  lawatanList.value = lawatanRes.data as LawatanItem[];
-  usahawanList.value = usahawanRes.data as UsahawanItem[];
+  const data = await fetchSpptModuleDatasets("pemantauan");
+  lawatanList.value = pickSpptModuleDataset(data, "lawatan_list", [] as LawatanItem[]);
+  usahawanList.value = pickSpptModuleDataset(data, "usahawan_list", [] as UsahawanItem[]);
 });
 
 const activeSub = ref<"kalendar" | "form" | "laporan">("kalendar");

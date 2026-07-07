@@ -6,7 +6,7 @@ import {
   type AIForecastItem,
   type UsahawanItem,
 } from "@/data/pemantauan-usahawan-dummy";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
@@ -15,14 +15,10 @@ const aiForecastData = ref<AIForecastItem[]>([]);
 const lawatanList = ref<{ tarikh: string }[]>([]);
 
 onMounted(async () => {
-  const [usahawanRes, forecastRes, lawatanRes] = await Promise.all([
-    fetchSpptDataset("pemantauan", "usahawan_list"),
-    fetchSpptDataset("pemantauan", "ai_forecast"),
-    fetchSpptDataset("pemantauan", "lawatan_list"),
-  ]);
-  usahawanList.value = usahawanRes.data as UsahawanItem[];
-  aiForecastData.value = forecastRes.data as AIForecastItem[];
-  lawatanList.value = lawatanRes.data as typeof lawatanList.value;
+  const data = await fetchSpptModuleDatasets("pemantauan");
+  usahawanList.value = pickSpptModuleDataset(data, "usahawan_list", [] as UsahawanItem[]);
+  aiForecastData.value = pickSpptModuleDataset(data, "ai_forecast", [] as AIForecastItem[]);
+  lawatanList.value = pickSpptModuleDataset(data, "lawatan_list", [] as typeof lawatanList.value);
 });
 
 const activeSub = ref<"ews" | "risiko" | "forecast" | "anomaly">("ews");

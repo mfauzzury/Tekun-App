@@ -1,34 +1,45 @@
 <script setup lang="ts">
+import {
+  applyCreditScoreToForm,
+  decisionActionClass,
+  formatRecommendedLimit,
+  riskBandClass,
+} from "@/composables/useAiCreditScoring";
+import { mapPermohonanPenilaianRow } from "@/composables/usePermohonanPenilaian";
 import { useI18n } from "@/composables/useI18n";
-import { ref, computed } from "vue";
+import { useToast } from "@/composables/useToast";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeft, Save, Sparkles, Search, User, FileCheck, Handshake, Eye } from "lucide-vue-next";
+import { ArrowLeft, Save, Sparkles, Search, User, FileCheck, Handshake, Eye, Loader2, Gauge, FileText } from "lucide-vue-next";
 
+import { isApprovedPermohonanStatus, listPermohonan, openPermohonanOfferLetter, scorePermohonanCredit } from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
+import CreditScoreSpeedometer from "@/components/sppt/CreditScoreSpeedometer.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
+import type { AiCreditScoringResult } from "@/types";
 
 const { t, tp } = useI18n();
+const toast = useToast();
 
 const router = useRouter();
 const saving = ref(false);
 const saved = ref(false);
+const downloadingOfferLetter = ref(false);
 const searchQuery = ref("");
+const loadingList = ref(false);
+const scoring = ref(false);
+const aiCredit = ref<AiCreditScoringResult | null>(null);
 
-interface Permohonan {
-  id: string;
+interface PermohonanItem {
+  id: number;
+  noRujukan: string;
   nama: string;
   jumlah: string;
   status: string;
   jenisPermohonan: string;
 }
 
-const permohonanList: Permohonan[] = [
-  { id: "P-2024-001", nama: "Ahmad bin Abdullah", jumlah: "RM 50,000", status: "Menunggu", jenisPermohonan: "Pembiayaan Pertama - Tekun Niaga" },
-  { id: "P-2024-002", nama: "Siti Nurhaliza binti Omar", jumlah: "RM 30,000", status: "Dalam Penilaian", jenisPermohonan: "Pembiayaan Ulangan - Teman Tekun" },
-  { id: "P-2024-003", nama: "Mohd Rizal bin Hassan", jumlah: "RM 75,000", status: "Menunggu", jenisPermohonan: "Pembiayaan Pertama - Tekun Niaga" },
-  { id: "P-2024-004", nama: "Fatimah binti Kassim", jumlah: "RM 25,000", status: "Menunggu", jenisPermohonan: "Pembiayaan Pertama - Qard" },
-  { id: "P-2024-005", nama: "Lee Wei Ming", jumlah: "RM 60,000", status: "Menunggu", jenisPermohonan: "Pembiayaan Ulangan - Tekun Niaga" },
-];
+const permohonanList = ref<PermohonanItem[]>([]);
 
 const JENIS_PEMBIAYAAN_OPTIONS = [
   "Pembiayaan Pertama",
@@ -39,29 +50,29 @@ const JENIS_PEMBIAYAAN_OPTIONS = [
   "Lain-lain",
 ];
 
-/** Dummy AI Loan Risk Scoring – tiada sambungan ke AI sebenar */
-const aiRiskDummy: Record<
-  string,
-  { riskScore: number; riskCategory: string; riskCategoryClass: string; recommendedLimit: string }
-> = {
-  "P-2024-001": { riskScore: 72, riskCategory: "Risiko Sederhana", riskCategoryClass: "bg-amber-100 text-amber-700", recommendedLimit: "RM 40,000" },
-  "P-2024-002": { riskScore: 85, riskCategory: "Risiko Rendah", riskCategoryClass: "bg-emerald-100 text-emerald-700", recommendedLimit: "RM 30,000" },
-  "P-2024-003": { riskScore: 58, riskCategory: "Risiko Tinggi", riskCategoryClass: "bg-rose-100 text-rose-700", recommendedLimit: "RM 25,000" },
-  "P-2024-004": { riskScore: 91, riskCategory: "Risiko Rendah", riskCategoryClass: "bg-emerald-100 text-emerald-700", recommendedLimit: "RM 25,000" },
-  "P-2024-005": { riskScore: 65, riskCategory: "Risiko Sederhana", riskCategoryClass: "bg-amber-100 text-amber-700", recommendedLimit: "RM 45,000" },
-};
+onMounted(async () => {
+  loadingList.value = true;
+  try {
+    const res = await listPermohonan({ limit: 100, penilaian: 1 });
+    permohonanList.value = (res.data as Array<Record<string, unknown>>).map((row) =>
+      mapPermohonanPenilaianRow(row),
+    );
+  } finally {
+    loadingList.value = false;
+  }
+});
 
 const filteredPermohonan = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return permohonanList;
-  return permohonanList.filter(
+  if (!q) return permohonanList.value;
+  return permohonanList.value.filter(
     (p) =>
       p.nama.toLowerCase().includes(q) ||
-      p.id.toLowerCase().includes(q)
+      p.noRujukan.toLowerCase().includes(q),
   );
 });
 
-const selectedPermohonan = ref<Permohonan | null>(null);
+const selectedPermohonan = ref<PermohonanItem | null>(null);
 
 const form = ref({
   keputusan: "",
@@ -71,25 +82,43 @@ const form = ref({
   catatan: "",
 });
 
-function selectPermohonan(p: Permohonan) {
+async function selectPermohonan(p: PermohonanItem) {
   selectedPermohonan.value = p;
-  const ai = aiRiskDummy[p.id];
-  if (ai) {
-    form.value.skorKredit = String(ai.riskScore);
-    form.value.cadanganPembiayaan = ai.recommendedLimit;
-  } else {
-    form.value.skorKredit = "";
-    form.value.cadanganPembiayaan = "";
-  }
+  aiCredit.value = null;
   form.value.cadanganJenisPembiayaan = "";
   form.value.keputusan = "";
   form.value.catatan = "";
+  form.value.skorKredit = "";
+  form.value.cadanganPembiayaan = "";
+
+  if (!p.id) {
+    toast.error("ID permohonan tidak sah. Sila muat semula senarai.");
+    return;
+  }
+
+  scoring.value = true;
+  try {
+    const res = await scorePermohonanCredit(p.id);
+    aiCredit.value = res.data;
+    const applied = applyCreditScoreToForm(res.data);
+    form.value.skorKredit = applied.skorKredit;
+    form.value.cadanganPembiayaan = applied.cadanganPembiayaan;
+    if (applied.keputusan) form.value.keputusan = applied.keputusan;
+  } catch (err) {
+    aiCredit.value = null;
+    const message = err instanceof Error ? err.message : "Gagal mengira skor kredit AI.";
+    toast.error(message);
+  } finally {
+    scoring.value = false;
+  }
 }
 
 function gunakanCadanganAI() {
-  if (!selectedPermohonan.value) return;
-  const ai = aiRiskDummy[selectedPermohonan.value.id];
-  if (ai) form.value.cadanganPembiayaan = ai.recommendedLimit;
+  if (!aiCredit.value) return;
+  const applied = applyCreditScoreToForm(aiCredit.value);
+  form.value.cadanganPembiayaan = applied.cadanganPembiayaan;
+  form.value.skorKredit = applied.skorKredit;
+  if (applied.keputusan) form.value.keputusan = applied.keputusan;
 }
 
 function simpan() {
@@ -103,6 +132,18 @@ function simpan() {
 
 function batal() {
   router.push("/admin/pembiayaan/penilaian");
+}
+
+async function downloadOfferLetter() {
+  if (!selectedPermohonan.value?.id) return;
+  downloadingOfferLetter.value = true;
+  try {
+    await openPermohonanOfferLetter(selectedPermohonan.value.id);
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Gagal menjana surat tawaran.");
+  } finally {
+    downloadingOfferLetter.value = false;
+  }
 }
 </script>
 
@@ -150,7 +191,7 @@ function batal() {
               @click="selectPermohonan(p)"
             >
               <p class="font-semibold uppercase tracking-wide text-slate-900">{{ p.nama }}</p>
-              <p class="mt-1 font-mono text-xs text-slate-500">{{ p.id }}</p>
+              <p class="mt-1 font-mono text-xs text-slate-500">{{ p.noRujukan }}</p>
               <p class="mt-1 text-xs text-slate-600">{{ p.jenisPermohonan }}</p>
               <div class="mt-2 flex flex-wrap gap-1.5">
                 <span
@@ -167,7 +208,8 @@ function batal() {
                 </span>
               </div>
             </button>
-            <p v-if="filteredPermohonan.length === 0" class="py-8 text-center text-sm text-slate-500">
+            <p v-if="loadingList" class="py-8 text-center text-sm text-slate-500">Memuatkan senarai...</p>
+            <p v-else-if="filteredPermohonan.length === 0" class="py-8 text-center text-sm text-slate-500">
               {{ tp("Tiada permohonan dijumpai.") }}
             </p>
           </div>
@@ -188,7 +230,7 @@ function batal() {
             <div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/50 px-6 py-4">
               <div>
                 <h3 class="font-semibold uppercase tracking-wide text-slate-900">{{ selectedPermohonan.nama }}</h3>
-                <p class="mt-0.5 font-mono text-sm text-slate-500">{{ selectedPermohonan.id }}</p>
+                <p class="mt-0.5 font-mono text-sm text-slate-500">{{ selectedPermohonan.noRujukan }}</p>
                 <p class="text-sm text-slate-600">{{ selectedPermohonan.jenisPermohonan }}</p>
               </div>
               <button type="button" class="shrink-0 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-200/60 hover:text-slate-700" :title="t('common.view')">
@@ -206,7 +248,7 @@ function batal() {
                 <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
                   <div>
                     <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">No. Permohonan</p>
-                    <p class="mt-0.5 font-mono text-sm font-medium text-slate-900">{{ selectedPermohonan.id }}</p>
+                    <p class="mt-0.5 font-mono text-sm font-medium text-slate-900">{{ selectedPermohonan.noRujukan }}</p>
                   </div>
                   <div>
                     <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Nama Pemohon</p>
@@ -223,44 +265,97 @@ function batal() {
                 </div>
               </section>
 
-              <!-- AI Loan Risk -->
-              <section
-                v-if="selectedPermohonan && aiRiskDummy[selectedPermohonan.id]"
-                class="rounded-lg border border-violet-200 bg-violet-50/50 shadow-sm"
-              >
+              <!-- AI Credit Scoring + Decision Engine (Spec 2.1.1) -->
+              <section class="rounded-lg border border-violet-200 bg-violet-50/50 shadow-sm">
                 <div class="flex items-center gap-2 border-b border-violet-200/50 px-4 py-3">
                   <Sparkles class="h-4 w-4 text-violet-600" />
-                  <h4 class="text-sm font-semibold text-violet-900">AI Loan Risk Scoring</h4>
-                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium text-violet-600 bg-violet-100">Sokongan Keputusan</span>
+                  <h4 class="text-sm font-semibold text-violet-900">AI Credit Scoring</h4>
+                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium text-violet-600 bg-violet-100">Risk & Amount Analysis</span>
                 </div>
                 <div class="p-4">
-                  <p class="text-xs text-violet-600/90">Dummy data – tiada sambungan ke AI sebenar.</p>
-                  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div class="rounded-lg bg-white/80 px-3 py-2 shadow-sm">
-                      <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Skor Risiko</p>
-                      <p class="mt-0.5 text-lg font-bold text-slate-900">{{ aiRiskDummy[selectedPermohonan.id].riskScore }}/100</p>
-                    </div>
-                    <div class="rounded-lg bg-white/80 px-3 py-2 shadow-sm">
-                      <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Kategori Risiko</p>
-                      <span
-                        class="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        :class="aiRiskDummy[selectedPermohonan.id].riskCategoryClass"
-                      >
-                        {{ aiRiskDummy[selectedPermohonan.id].riskCategory }}
-                      </span>
-                    </div>
-                    <div class="rounded-lg bg-white/80 px-3 py-2 shadow-sm">
-                      <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Had Pembiayaan Dicadangkan</p>
-                      <p class="mt-0.5 text-lg font-bold text-slate-900">{{ aiRiskDummy[selectedPermohonan.id].recommendedLimit }}</p>
-                      <button
-                        type="button"
-                        class="mt-1.5 text-xs font-medium text-violet-600 hover:text-violet-700"
-                        @click="gunakanCadanganAI"
-                      >
-                        Guna sebagai cadangan →
-                      </button>
-                    </div>
+                  <div v-if="scoring" class="flex items-center gap-2 text-sm text-violet-700">
+                    <Loader2 class="h-4 w-4 animate-spin" />
+                    Mengira skor kredit AI (APK + rekod dalaman)...
                   </div>
+                  <template v-else-if="aiCredit">
+                    <!-- Decision Engine -->
+                    <div
+                      class="mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3"
+                      :class="decisionActionClass(aiCredit.recommendedAction)"
+                    >
+                      <div class="flex items-center gap-2">
+                        <Gauge class="h-5 w-5 shrink-0" />
+                        <div>
+                          <p class="text-xs font-semibold uppercase tracking-wide">Decision Engine</p>
+                          <p class="text-sm font-bold">{{ aiCredit.decisionLabel }}</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="h-3 w-3 rounded-full" :class="riskBandClass(aiCredit.riskBandColor)" />
+                        <span class="text-xs">{{ aiCredit.decisionDescription }}</span>
+                      </div>
+                    </div>
+
+                    <p class="text-xs text-violet-600/90">{{ aiCredit.message }}</p>
+
+                    <div class="mt-4 flex flex-col items-center gap-4 rounded-xl border border-violet-100 bg-white/80 p-4 sm:flex-row sm:items-start sm:justify-between">
+                      <CreditScoreSpeedometer
+                        :score="aiCredit.creditScore"
+                        :category="aiCredit.creditCategory"
+                        :band-color="aiCredit.riskBandColor"
+                        :size="240"
+                      />
+                      <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="rounded-lg bg-slate-50 px-3 py-2 shadow-sm">
+                          <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Had Pembiayaan Dicadangkan</p>
+                          <p class="mt-0.5 text-lg font-bold text-slate-900">{{ formatRecommendedLimit(aiCredit.recommendedLimit) }}</p>
+                          <button
+                            type="button"
+                            class="mt-1.5 text-xs font-medium text-violet-600 hover:text-violet-700"
+                            @click="gunakanCadanganAI"
+                          >
+                            Guna sebagai cadangan →
+                          </button>
+                        </div>
+                        <div class="rounded-lg bg-slate-50 px-3 py-2 shadow-sm">
+                          <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Keputusan AI</p>
+                          <p class="mt-0.5 text-sm font-bold text-slate-900">{{ aiCredit.decisionLabel }}</p>
+                          <p class="mt-1 text-xs text-slate-500">Keyakinan model: {{ aiCredit.confidence }}%</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- APK enrichment summary -->
+                    <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
+                        <p class="font-semibold text-slate-700">CCRIS</p>
+                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.ccris.score }}</p>
+                        <p class="text-slate-500">Facilities: {{ aiCredit.apk.ccris.totalFacilities }}</p>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
+                        <p class="font-semibold text-slate-700">CTOS</p>
+                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.ctos.score }}</p>
+                        <p class="text-slate-500">{{ aiCredit.apk.ctos.litigation ? "Litigasi: Ya" : "Litigasi: Tiada" }}</p>
+                      </div>
+                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
+                        <p class="font-semibold text-slate-700">EXPERIAN</p>
+                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.experian.score }}</p>
+                        <p class="text-slate-500">{{ aiCredit.apk.experian.delinquency ? "Tunggakan: Ya" : "Tunggakan: Tiada" }}</p>
+                      </div>
+                    </div>
+
+                    <ul v-if="aiCredit.factors.length" class="mt-4 space-y-1.5 rounded-lg border border-violet-100 bg-white/60 p-3">
+                      <li v-for="(factor, idx) in aiCredit.factors" :key="idx" class="text-xs text-slate-600">
+                        <span class="font-medium text-slate-700">{{ factor.factor }}:</span> {{ factor.description }}
+                      </li>
+                    </ul>
+
+                    <ul v-if="aiCredit.adverseActionReasons.length" class="mt-3 space-y-1 rounded-lg border border-rose-100 bg-rose-50/80 p-3">
+                      <li class="text-xs font-semibold text-rose-800">Sebab Penolakan / Kelewatan (Adverse Action)</li>
+                      <li v-for="(reason, idx) in aiCredit.adverseActionReasons" :key="idx" class="text-xs text-rose-700">• {{ reason }}</li>
+                    </ul>
+                  </template>
+                  <p v-else class="text-sm text-slate-500">Skor kredit AI tidak tersedia untuk permohonan ini.</p>
                 </div>
               </section>
 
@@ -337,6 +432,16 @@ function batal() {
                 >
                   <Save class="h-4 w-4" />
                   {{ saving ? "Menyimpan..." : "Simpan Penilaian" }}
+                </button>
+                <button
+                  v-if="selectedPermohonan && isApprovedPermohonanStatus(selectedPermohonan.status)"
+                  type="button"
+                  class="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 disabled:opacity-60"
+                  :disabled="downloadingOfferLetter"
+                  @click="downloadOfferLetter"
+                >
+                  <FileText class="h-4 w-4" />
+                  {{ downloadingOfferLetter ? "Menjana PDF..." : "Surat Tawaran PDF" }}
                 </button>
                 <button
                   type="button"
