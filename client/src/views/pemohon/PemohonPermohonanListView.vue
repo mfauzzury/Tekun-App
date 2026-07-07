@@ -30,7 +30,7 @@ function statusBadgeClass(statusKey: string) {
 <template>
   <PemohonLayout>
     <div class="mx-auto max-w-5xl space-y-5">
-      <div class="flex flex-col gap-3 rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div class="pemohon-hero flex flex-col gap-3 rounded-b-2xl p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-xl font-semibold text-white">Permohonan Saya</h1>
           <p class="mt-1 text-sm text-blue-100">Senarai dan status permohonan pembiayaan anda.</p>

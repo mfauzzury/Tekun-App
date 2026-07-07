@@ -31,6 +31,14 @@ return Application::configure(basePath: dirname(__DIR__))
         RateLimiter::for('otp', function (Request $request) {
             return Limit::perMinutes(10, 5)->by($request->ip());
         });
+
+        RateLimiter::for('pemohon-chat', function (Request $request) {
+            return Limit::perMinutes(10, 20)->by($request->ip());
+        });
+
+        RateLimiter::for('pemohon-permohonan', function (Request $request) {
+            return Limit::perMinutes(10, 60)->by($request->ip());
+        });
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();

@@ -65,12 +65,15 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   }
 
   if (!response.ok) {
-    const error = new Error(payload?.error?.message || "Request failed") as Error & {
+    const errorPayload = payload?.error as
+      | { message?: string; code?: string; details?: Record<string, string[] | string> | null }
+      | undefined;
+    const error = new Error(errorPayload?.message || "Request failed") as Error & {
       code?: string;
       details?: Record<string, string[] | string> | null;
     };
-    error.code = payload?.error?.code;
-    error.details = payload?.error?.details ?? null;
+    error.code = errorPayload?.code;
+    error.details = errorPayload?.details ?? null;
     throw error;
   }
 

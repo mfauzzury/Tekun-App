@@ -95,6 +95,11 @@ import PemohonDashboardView from "@/views/pemohon/PemohonDashboardView.vue";
 import PemohonPermohonanListView from "@/views/pemohon/PemohonPermohonanListView.vue";
 import PemohonPermohonanBaruView from "@/views/pemohon/PemohonPermohonanBaruView.vue";
 import PemohonPermohonanDetailView from "@/views/pemohon/PemohonPermohonanDetailView.vue";
+import PemohonPembiayaanListView from "@/views/pemohon/PemohonPembiayaanListView.vue";
+import PemohonPembiayaanDetailView from "@/views/pemohon/PemohonPembiayaanDetailView.vue";
+import PemohonBayaranView from "@/views/pemohon/PemohonBayaranView.vue";
+import PemohonPenstrukturanView from "@/views/pemohon/PemohonPenstrukturanView.vue";
+import PemohonPenyelesaianView from "@/views/pemohon/PemohonPenyelesaianView.vue";
 import PemohonProfilView from "@/views/pemohon/PemohonProfilView.vue";
 import PemohonBantuanView from "@/views/pemohon/PemohonBantuanView.vue";
 
@@ -339,6 +344,11 @@ const router = createRouter({
     { path: "/pemohon/permohonan", name: "pemohon-permohonan", component: PemohonPermohonanListView, meta: { requiresPemohonAuth: true, title: "Permohonan Saya" } },
     { path: "/pemohon/permohonan/baru", name: "pemohon-permohonan-baru", component: PemohonPermohonanBaruView, meta: { requiresPemohonAuth: true, title: "Permohonan Baharu" } },
     { path: "/pemohon/permohonan/:id", name: "pemohon-permohonan-detail", component: PemohonPermohonanDetailView, meta: { requiresPemohonAuth: true, title: "Butiran Permohonan" } },
+    { path: "/pemohon/pembiayaan", name: "pemohon-pembiayaan", component: PemohonPembiayaanListView, meta: { requiresPemohonAuth: true, title: "Pembiayaan Saya" } },
+    { path: "/pemohon/pembiayaan/:id", name: "pemohon-pembiayaan-detail", component: PemohonPembiayaanDetailView, meta: { requiresPemohonAuth: true, title: "Butiran Pembiayaan" } },
+    { path: "/pemohon/pembiayaan/:id/bayar", name: "pemohon-pembiayaan-bayar", component: PemohonBayaranView, meta: { requiresPemohonAuth: true, title: "Buat Bayaran" } },
+    { path: "/pemohon/pembiayaan/:id/penstrukturan", name: "pemohon-pembiayaan-penstrukturan", component: PemohonPenstrukturanView, meta: { requiresPemohonAuth: true, title: "Penstrukturan Semula" } },
+    { path: "/pemohon/pembiayaan/:id/penyelesaian", name: "pemohon-pembiayaan-penyelesaian", component: PemohonPenyelesaianView, meta: { requiresPemohonAuth: true, title: "Penyelesaian Awal" } },
     { path: "/pemohon/profil", name: "pemohon-profil", component: PemohonProfilView, meta: { requiresPemohonAuth: true, title: "Profil Saya" } },
     { path: "/pemohon/bantuan", name: "pemohon-bantuan", component: PemohonBantuanView, meta: { title: "Bantuan & Soalan Lazim" } },
 

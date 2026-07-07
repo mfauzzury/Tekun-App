@@ -25,6 +25,9 @@ class Permohonan extends Model
         'jumlah_permohonan',
         'tarikh_permohonan',
         'details',
+        'pemohon_email',
+        'pemohon_telefon',
+        'pemohon_access_token',
     ];
 
     protected function casts(): array

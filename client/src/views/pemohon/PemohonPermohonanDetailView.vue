@@ -35,7 +35,7 @@ function docStatusClass(status: string) {
     </div>
 
     <div v-else class="mx-auto max-w-5xl space-y-5">
-      <div class="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 p-6 shadow-sm">
+      <div class="pemohon-hero rounded-b-2xl p-6 shadow-sm">
         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">{{ application.id }}</p>
         <h1 class="mt-2 text-xl font-semibold text-white">{{ application.produk }}</h1>
         <p class="mt-1 text-sm text-blue-100">{{ application.jumlah }} · Dimohon pada {{ application.tarikh }}</p>
