@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\DevelopersGuideController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\OtpController;
 use App\Http\Controllers\Api\PageController;
+use App\Http\Controllers\Api\PemohonChatController;
+use App\Http\Controllers\Api\PemohonPermohonanController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\RoleController;
@@ -33,6 +35,19 @@ Route::prefix('public')->group(function () {
 
     Route::post('/otp/request', [OtpController::class, 'request'])->middleware('throttle:otp');
     Route::post('/otp/verify', [OtpController::class, 'verify'])->middleware('throttle:otp');
+
+    Route::post('/pemohon/chat', [PemohonChatController::class, 'send'])->middleware('throttle:pemohon-chat');
+
+    Route::prefix('pemohon')->middleware('throttle:pemohon-permohonan')->group(function () {
+        Route::post('/permohonan', [PemohonPermohonanController::class, 'store']);
+        Route::get('/permohonan/{permohonan}', [PemohonPermohonanController::class, 'show']);
+        Route::put('/permohonan/{permohonan}', [PemohonPermohonanController::class, 'update']);
+        Route::post('/permohonan/{permohonan}/dokumen', [PemohonPermohonanController::class, 'uploadDocument']);
+        Route::patch('/permohonan/{permohonan}/dokumen/{attachmentId}', [PemohonPermohonanController::class, 'updateDocumentClass']);
+        Route::delete('/permohonan/{permohonan}/dokumen/{attachmentId}', [PemohonPermohonanController::class, 'deleteDocument']);
+        Route::post('/permohonan/dokumen/classify', [PemohonPermohonanController::class, 'classifyDocument']);
+        Route::post('/permohonan/dokumen/verify', [PemohonPermohonanController::class, 'verifyDocument']);
+    });
 });
 
 if (app()->environment('local')) {

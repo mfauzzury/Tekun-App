@@ -9,12 +9,20 @@ import {
   type EkycSimulationInput,
   type EligibilityInput,
 } from "@/data/portal-dummy";
+import {
+  PEMBIAYAAN_DUMMY,
+  TRANSAKSI_DUMMY,
+  computeRestructure,
+  computeSettlement,
+  type PembiayaanAkaun,
+  type TransaksiItem,
+} from "@/data/pembiayaan-dummy";
 import { requestOtp as requestOtpApi, verifyOtp as verifyOtpApi, type OtpChannel } from "@/api/otp";
 
-const SESSION_KEY = "pemohon.session";
+const SESSION_KEY = "pemohon.session.v2";
 
 const DEMO_ACCOUNT = {
-  nama: "Ahmad bin Abdullah",
+  nama: "Mohd Fauzy Mat Yusop",
   email: "demo@pemohon.my",
   telefon: "012-3456789",
   password: "demo1234",
@@ -37,6 +45,7 @@ export interface PemohonProfil {
   noSsm: string;
   sektor: string;
   statusSyariah: string;
+  foto: string;
 }
 
 export interface PermohonanItem {
@@ -71,6 +80,11 @@ export const usePemohonStore = defineStore("pemohon", () => {
   const permohonanList = ref<PermohonanItem[]>([...PERMOHONAN_DUMMY]);
   const draftPermohonan = ref<Record<string, unknown> | null>(null);
 
+  const pembiayaanList = ref<PembiayaanAkaun[]>(PEMBIAYAAN_DUMMY.map((a) => ({ ...a })));
+  const transaksiMap = ref<Record<string, TransaksiItem[]>>(
+    Object.fromEntries(Object.entries(TRANSAKSI_DUMMY).map(([k, v]) => [k, v.map((t) => ({ ...t }))])),
+  );
+
   let restoring = false;
 
   function persist() {
@@ -83,6 +97,8 @@ export const usePemohonStore = defineStore("pemohon", () => {
       otp: otp.value,
       permohonanList: permohonanList.value,
       draftPermohonan: draftPermohonan.value,
+      pembiayaanList: pembiayaanList.value,
+      transaksiMap: transaksiMap.value,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
   }
@@ -102,6 +118,9 @@ export const usePemohonStore = defineStore("pemohon", () => {
       otp.value = snapshot.otp ?? otp.value;
       permohonanList.value = snapshot.permohonanList ?? [...PERMOHONAN_DUMMY];
       draftPermohonan.value = snapshot.draftPermohonan ?? null;
+      pembiayaanList.value = snapshot.pembiayaanList ?? PEMBIAYAAN_DUMMY.map((a) => ({ ...a }));
+      transaksiMap.value = snapshot.transaksiMap
+        ?? Object.fromEntries(Object.entries(TRANSAKSI_DUMMY).map(([k, v]) => [k, v.map((t) => ({ ...t }))]));
     } catch {
       // Corrupt/old snapshot shape — ignore and keep defaults.
     } finally {
@@ -153,6 +172,23 @@ export const usePemohonStore = defineStore("pemohon", () => {
     return false;
   }
 
+  function loginWithMyDigitalId() {
+    if (!account.value) {
+      account.value = { ...DEMO_ACCOUNT };
+      profil.value = { ...profil.value, nama: DEMO_ACCOUNT.nama, email: DEMO_ACCOUNT.email, telefon: DEMO_ACCOUNT.telefon };
+    }
+    isLoggedIn.value = true;
+  }
+
+  function registerWithMyDigitalId() {
+    if (!account.value) {
+      account.value = { ...DEMO_ACCOUNT };
+      profil.value = { ...profil.value, nama: DEMO_ACCOUNT.nama, email: DEMO_ACCOUNT.email, telefon: DEMO_ACCOUNT.telefon };
+    }
+    otp.value.verified = true;
+    isLoggedIn.value = true;
+  }
+
   function logout() {
     isLoggedIn.value = false;
   }
@@ -200,8 +236,115 @@ export const usePemohonStore = defineStore("pemohon", () => {
     return item;
   }
 
+  function getPembiayaan(id: string): PembiayaanAkaun | undefined {
+    return pembiayaanList.value.find((a) => a.id === id);
+  }
+
+  function prependTransaksi(akaunId: string, trx: TransaksiItem) {
+    const existing = transaksiMap.value[akaunId] ?? [];
+    transaksiMap.value = { ...transaksiMap.value, [akaunId]: [trx, ...existing] };
+  }
+
+  function refCode(prefix: string): string {
+    return `${prefix}${Math.floor(1000000 + Math.random() * 9000000)}`;
+  }
+
+  function todayLabel(): string {
+    return new Date().toLocaleDateString("ms-MY", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function makePayment(akaunId: string, amount: number, kaedah: string) {
+    const akaun = getPembiayaan(akaunId);
+    if (!akaun) throw new Error("Akaun pembiayaan tidak dijumpai.");
+
+    // Clear arrears first, then reduce outstanding principal/profit.
+    const tunggakanCleared = Math.min(akaun.tunggakan, amount);
+    akaun.tunggakan = Math.max(0, akaun.tunggakan - amount);
+    akaun.bakiAkhir = Math.max(0, akaun.bakiAkhir - amount);
+    const pokokShare = Math.min(akaun.bakiPokok, Math.round(amount * 0.9));
+    akaun.bakiPokok = Math.max(0, akaun.bakiPokok - pokokShare);
+    akaun.bakiKeuntungan = Math.max(0, akaun.bakiAkhir - akaun.bakiPokok);
+    if (amount > tunggakanCleared) {
+      akaun.ansuranDibayar = Math.min(akaun.jumlahAnsuran, akaun.ansuranDibayar + 1);
+    }
+
+    if (akaun.bakiAkhir <= 0) {
+      akaun.status = "Selesai";
+      akaun.statusKey = "selesai";
+    } else if (akaun.tunggakan <= 0) {
+      akaun.status = "Aktif";
+      akaun.statusKey = "aktif";
+    }
+
+    const tarikh = todayLabel();
+    const rujukan = refCode(kaedah.toLowerCase().includes("wallet") ? "EW-" : "FPX");
+    prependTransaksi(akaunId, {
+      id: refCode("TRX-"),
+      tarikh,
+      jenis: "bayaran",
+      keterangan: "Bayaran ansuran (dalam talian)",
+      jumlah: amount,
+      kaedah,
+      status: "Berjaya",
+      rujukan,
+    });
+
+    return { rujukan, tarikh, jumlah: amount, kaedah, bakiBaru: akaun.bakiAkhir };
+  }
+
+  function applyRestructure(akaunId: string, tempohBaharu: number, sebab: string) {
+    const akaun = getPembiayaan(akaunId);
+    if (!akaun) throw new Error("Akaun pembiayaan tidak dijumpai.");
+
+    const quote = computeRestructure(akaun, tempohBaharu);
+    akaun.tempohBulan = tempohBaharu;
+    akaun.bayaranBulanan = quote.bayaranBaharu;
+    akaun.jumlahAnsuran = akaun.ansuranDibayar + tempohBaharu;
+
+    prependTransaksi(akaunId, {
+      id: refCode("TRX-"),
+      tarikh: todayLabel(),
+      jenis: "bayaran",
+      keterangan: `Penstrukturan semula pembiayaan (${tempohBaharu} bulan)${sebab ? ` — ${sebab}` : ""}`,
+      jumlah: 0,
+      status: "Diluluskan",
+      rujukan: refCode("RST-"),
+    });
+
+    return quote;
+  }
+
+  function settleEarly(akaunId: string, kaedah: string) {
+    const akaun = getPembiayaan(akaunId);
+    if (!akaun) throw new Error("Akaun pembiayaan tidak dijumpai.");
+
+    const quote = computeSettlement(akaun);
+    akaun.bakiAkhir = 0;
+    akaun.bakiPokok = 0;
+    akaun.bakiKeuntungan = 0;
+    akaun.tunggakan = 0;
+    akaun.ansuranDibayar = akaun.jumlahAnsuran;
+    akaun.status = "Selesai";
+    akaun.statusKey = "selesai";
+
+    const tarikh = todayLabel();
+    const rujukan = refCode("STL-");
+    prependTransaksi(akaunId, {
+      id: refCode("TRX-"),
+      tarikh,
+      jenis: "bayaran",
+      keterangan: "Penyelesaian awal pembiayaan",
+      jumlah: quote.amaunBersih,
+      kaedah,
+      status: "Berjaya",
+      rujukan,
+    });
+
+    return { ...quote, rujukan, tarikh, kaedah };
+  }
+
   watch(
-    [isLoggedIn, account, profil, onboarding, otp, permohonanList, draftPermohonan],
+    [isLoggedIn, account, profil, onboarding, otp, permohonanList, draftPermohonan, pembiayaanList, transaksiMap],
     persist,
     { deep: true },
   );
@@ -214,11 +357,15 @@ export const usePemohonStore = defineStore("pemohon", () => {
     otp,
     permohonanList,
     draftPermohonan,
+    pembiayaanList,
+    transaksiMap,
     initFromStorage,
     register,
     requestOtp,
     verifyOtp,
     login,
+    loginWithMyDigitalId,
+    registerWithMyDigitalId,
     logout,
     runEligibilityCheck,
     runEkyc,
@@ -226,5 +373,9 @@ export const usePemohonStore = defineStore("pemohon", () => {
     loadDraft,
     clearDraft,
     createPermohonan,
+    getPembiayaan,
+    makePayment,
+    applyRestructure,
+    settleEarly,
   };
 });

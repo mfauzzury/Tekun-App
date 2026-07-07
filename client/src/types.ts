@@ -260,6 +260,25 @@ export type Permohonan = PermohonanInput & {
   usahawan?: Usahawan | null;
 };
 
+/** Self-service counterpart to Permohonan — includes the once-issued ownership token. */
+export type PemohonPermohonanInput = {
+  nama?: string;
+  kategoriPembiayaan?: string;
+  status?: "Draf" | "Dalam Semakan";
+  jumlahPermohonan?: number;
+  pemohonEmail?: string;
+  pemohonTelefon?: string;
+  details?: Record<string, unknown>;
+};
+
+export type PemohonPermohonan = PemohonPermohonanInput & {
+  id: number;
+  noRujukan: string;
+  pemohonAccessToken: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AkaunPembiayaan = {
   id: number;
   noAkaun: string;
