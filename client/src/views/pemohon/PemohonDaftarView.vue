@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Mail, MessageSquare } from "lucide-vue-next";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Mail, MessageSquare } from "lucide-vue-next";
 
 import PemohonMiniStepper from "@/components/pemohon/PemohonMiniStepper.vue";
 import PemohonOtpInput from "@/components/pemohon/PemohonOtpInput.vue";
@@ -29,6 +29,7 @@ const otpError = ref("");
 const submittingAccount = ref(false);
 const verifying = ref(false);
 const resending = ref(false);
+const loadingMyDigitalId = ref(false);
 
 const otpDestination = computed(() => (channel.value === "sms" ? form.value.telefon : form.value.email));
 const channelLabel = computed(() => (channel.value === "sms" ? "SMS" : "emel"));
@@ -68,6 +69,14 @@ async function verifyOtp() {
   } finally {
     verifying.value = false;
   }
+}
+
+async function registerWithMyDigitalId() {
+  loadingMyDigitalId.value = true;
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  pemohon.registerWithMyDigitalId();
+  toast.success("Pendaftaran Berjaya", "Akaun anda telah disahkan melalui MyDigital ID.");
+  router.push({ name: "pemohon-semakan-kelayakan" });
 }
 
 async function resendOtp() {
@@ -178,6 +187,26 @@ async function resendOtp() {
           >
             {{ submittingAccount ? "Menghantar OTP..." : "Seterusnya" }}
             <ArrowRight v-if="!submittingAccount" class="h-4 w-4" />
+          </button>
+
+          <div class="relative my-2">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-[#e3e8ee]" />
+            </div>
+            <div class="relative flex justify-center">
+              <span class="bg-white px-3 text-[12px] text-[#8792a2]">Atau</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-md border border-[#d8dee4] bg-white px-4 py-[9px] text-sm font-medium text-[#1a1f36] shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60"
+            :disabled="loadingMyDigitalId"
+            @click="registerWithMyDigitalId"
+          >
+            <Loader2 v-if="loadingMyDigitalId" class="h-6 w-6 animate-spin" />
+            <img v-else src="/mydigital-id-logo.png" alt="" class="h-6 w-6 rounded-sm" />
+            {{ loadingMyDigitalId ? "Menyambung..." : "Daftar dengan MyDigital ID" }}
           </button>
         </form>
 

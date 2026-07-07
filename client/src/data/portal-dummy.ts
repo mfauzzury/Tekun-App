@@ -1,5 +1,39 @@
 /** Dummy data for Portal Pemohon - no API/tables yet */
 
+/** Real promotional banners sourced from tekun.gov.my's official scheme campaigns. */
+export const HEBAHAN_DUMMY = [
+  {
+    id: "hebahan-kontrak-i",
+    image: "/hebahan/hebahan-kontrak-i.jpg",
+    title: "Skim Pembiayaan Kontrak-i",
+  },
+  {
+    id: "hebahan-mobilepreneur",
+    image: "/hebahan/hebahan-mobilepreneur.jpg",
+    title: "Skim Pembiayaan TEKUN Mobilepreneur 4.0",
+  },
+  {
+    id: "hebahan-spot",
+    image: "/hebahan/hebahan-spot.jpg",
+    title: "Skim Pembiayaan Online TEKUN SPOT",
+  },
+  {
+    id: "hebahan-spak",
+    image: "/hebahan/hebahan-spak.jpg",
+    title: "Skim Pembiayaan Usahawan Kraf SPAK",
+  },
+  {
+    id: "hebahan-spora",
+    image: "/hebahan/hebahan-spora.jpg",
+    title: "Skim Pembiayaan Masyarakat Orang Asli SPORA",
+  },
+  {
+    id: "hebahan-sput",
+    image: "/hebahan/hebahan-sput.jpg",
+    title: "Skim Pembiayaan Usahawan Tamu SPUT",
+  },
+];
+
 export const STATUS_OPTIONS = [
   { value: "semua", label: "Semua Status" },
   { value: "diterima", label: "Diterima" },
@@ -44,13 +78,31 @@ export const PERMOHONAN_DUMMY = [
   },
 ];
 
+/** Real financing scheme list sourced from tekun.gov.my (PEMBIAYAAN menu). */
 export const PRODUK_OPTIONS = [
+  { value: "tekun_niaga", label: "TEKUN Niaga" },
   { value: "spumi", label: "SPUMI" },
-  { value: "kontrak_i", label: "Kontrak-i" },
-  { value: "tekun_niaga", label: "Tekun Niaga" },
-  { value: "tawarruq", label: "Tawarruq" },
+  { value: "mobilepreneur", label: "TEKUN Mobilepreneur 4.0" },
+  { value: "spot", label: "SPOT" },
+  { value: "young_professional", label: "Usahawan Profesional Muda Bumiputera" },
+  { value: "sp_oku", label: "SP-OKU" },
+  { value: "spora", label: "SPORA" },
+  { value: "spak", label: "SPAK" },
+  { value: "tvet_tunas", label: "TVET TUNAS" },
+  { value: "tvet_mekar", label: "TVET MEKAR" },
   { value: "teman_tekun", label: "Teman TEKUN" },
+  { value: "plus", label: "PLUS" },
+  { value: "sput", label: "SPUT" },
+  { value: "kontrak_i", label: "Kontrak-i" },
 ];
+
+/** Real HQ contact details sourced from tekun.gov.my (Hubungi Kami). */
+export const HUBUNGI_TEKUN = {
+  alamat: "Menara TEKUN, T5-01-01, Maju Link, Jalan Lingkaran Tengah 2, 57000 Bandar Tasik Selatan, Kuala Lumpur",
+  telefon: "03-9059 8888",
+  emel: "mailbox@tekun.gov.my",
+  waktuOperasi: ["Isnin - Khamis: 8:30 pagi - 5:30 petang", "Jumaat: 8:30 pagi - 5:00 petang"],
+};
 
 export const TEMUDUGA_DUMMY = [
   {
@@ -90,15 +142,16 @@ export const DOKUMEN_CHECKLIST_DUMMY = [
 ];
 
 export const PROFIL_USAHAWAN_DUMMY = {
-  nama: "Ahmad bin Abdullah",
+  nama: "Mohd Fauzy Mat Yusop",
   noKp: "850101-14-5678",
   email: "ahmad.abdullah@email.com",
   telefon: "012-3456789",
   alamat: "No. 12, Jalan Merdeka, Taman Sri Raya, 43000 Kajang, Selangor",
-  perniagaan: "Kedai Runcit Sri Raya",
+  perniagaan: "Sains Data Technology",
   noSsm: "SA1234567",
   sektor: "Peruncitan",
   statusSyariah: "Patuh Syariah",
+  foto: "",
 };
 
 export const FAQ_DUMMY = [
@@ -229,15 +282,21 @@ export const STATUS_TIMELINE: Record<string, StatusMilestone[]> = {
 };
 
 /**
- * Trimmed copy of the step taxonomy from views/sppt/PermohonanBaruView.vue (staff-side form),
- * dropping staff-only fields marked "(diisi TEKUN)" there (e.g. PERKESO sektor/kelas).
+ * Full step taxonomy matching views/sppt/PermohonanBaruView.vue (staff-side form),
+ * dropping only staff-only fields marked "(diisi TEKUN)" within steps (e.g. PERKESO sektor/kelas,
+ * wasiat nama syarikat) — the step set itself now has full parity.
  */
 export const PERMOHONAN_BARU_STEPS = [
   { id: "asas", label: "Asas" },
   { id: "pemohon", label: "Pemohon" },
   { id: "alamat", label: "Alamat" },
   { id: "pekerjaan", label: "Pekerjaan" },
+  { id: "pasangan", label: "Pasangan" },
   { id: "perniagaan", label: "Perniagaan" },
   { id: "pembiayaan", label: "Pembiayaan" },
+  { id: "sokongan", label: "Sokongan" },
+  { id: "takaful", label: "Takaful" },
+  { id: "wasiat", label: "Wasiat" },
+  { id: "kebenaran", label: "Kebenaran" },
   { id: "dokumen", label: "Dokumen" },
 ] as const;
