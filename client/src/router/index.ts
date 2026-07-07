@@ -27,6 +27,7 @@ import PlaceholderView from "@/views/PlaceholderView.vue";
 import PermohonanListView from "@/views/sppt/PermohonanListView.vue";
 import PermohonanBaruView from "@/views/sppt/PermohonanBaruView.vue";
 import PermohonanDetailView from "@/views/sppt/PermohonanDetailView.vue";
+import PermohonanWorkflowView from "@/views/sppt/PermohonanWorkflowView.vue";
 import RekodUsahawanView from "@/views/sppt/RekodUsahawanView.vue";
 import DaftarUsahawanBaruView from "@/views/sppt/DaftarUsahawanBaruView.vue";
 import PenilaianKelulusanView from "@/views/sppt/PenilaianKelulusanView.vue";
@@ -68,11 +69,14 @@ import LaporanAnalitikView from "@/views/sppt/LaporanAnalitikView.vue";
 import AuditKawalanView from "@/views/sppt/AuditKawalanView.vue";
 import IntegrasiView from "@/views/sppt/IntegrasiView.vue";
 import TetapanView from "@/views/sppt/TetapanView.vue";
+import CawanganSetupView from "@/views/sppt/CawanganSetupView.vue";
+import AinaUserChatView from "@/views/sppt/AinaUserChatView.vue";
 import RolesView from "@/views/RolesView.vue";
 import SettingsView from "@/views/SettingsView.vue";
 import SystemInfoView from "@/views/SystemInfoView.vue";
 import UsersView from "@/views/UsersView.vue";
 import UserEditView from "@/views/UserEditView.vue";
+import WorkflowConfigurationView from "@/views/WorkflowConfigurationView.vue";
 import StorefrontHomeView from "@/views/StorefrontHomeView.vue";
 import StorefrontPageView from "@/views/StorefrontPageView.vue";
 import { useAuthStore } from "@/stores/auth";
@@ -181,12 +185,16 @@ const router = createRouter({
     { path: "/admin/settings", name: "settings", component: SettingsView, meta: { requiresAuth: true, title: "Settings" } },
     { path: "/admin/settings/system", name: "settings-system", component: SystemInfoView, meta: { requiresAuth: true, title: "System Info" } },
     { path: "/admin/settings/integrasi", name: "settings-integrasi", component: IntegrasiView, meta: { requiresAuth: true, title: "Integrasi" } },
+    { path: "/admin/workflow-configuration", name: "workflow-configuration", component: WorkflowConfigurationView, meta: { requiresAuth: true, title: "Workflow Configuration" } },
 
     // ── SPPT: PENGURUSAN PEMBIAYAAN ──
     { path: "/admin/permohonan", name: "permohonan", component: PermohonanListView, meta: { requiresAuth: true, title: "Pendaftaran Permohonan" } },
     { path: "/admin/permohonan/baru/:id?", name: "permohonan-baru", component: PermohonanBaruView, meta: { requiresAuth: true, title: "Daftar Permohonan Baru" } },
     { path: "/admin/permohonan/usahawan/daftar", name: "daftar-usahawan", component: DaftarUsahawanBaruView, meta: { requiresAuth: true, title: "Daftar Usahawan Baru" } },
     { path: "/admin/permohonan/usahawan", name: "rekod-usahawan", component: RekodUsahawanView, meta: { requiresAuth: true, title: "Rekod Usahawan" } },
+    { path: "/admin/permohonan/semakan", name: "permohonan-semakan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Semakan Permohonan" } },
+    { path: "/admin/permohonan/sokongan", name: "permohonan-sokongan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Sokongan Permohonan" } },
+    { path: "/admin/permohonan/kelulusan", name: "permohonan-kelulusan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Kelulusan Permohonan" } },
     { path: "/admin/permohonan/:id", name: "permohonan-detail", component: PermohonanDetailView, meta: { requiresAuth: true, title: "Butiran Permohonan" } },
     { path: "/admin/pembiayaan/penilaian", name: "penilaian-kelulusan", component: PenilaianKelulusanView, meta: { requiresAuth: true, title: "Penilaian & Kelulusan" } },
     { path: "/admin/pembiayaan/penilaian/baru", name: "penilaian-baru", component: PenilaianBaruView, meta: { requiresAuth: true, title: "Penilaian Baru" } },
@@ -243,6 +251,8 @@ const router = createRouter({
     { path: "/admin/laporan/audit", name: "audit-kawalan", component: AuditKawalanView, meta: { requiresAuth: true, title: "Audit & Kawalan" } },
     { path: "/admin/laporan/audit/kawalan", name: "kawalan-dalaman", component: PlaceholderView, meta: { requiresAuth: true, title: "Kawalan Dalaman" } },
     { path: "/admin/pembiayaan/tetapan", name: "tetapan", component: TetapanView, meta: { requiresAuth: true, title: "Tetapan (Setup)" } },
+    { path: "/admin/pembiayaan/tetapan/cawangan", name: "tetapan-cawangan", component: CawanganSetupView, meta: { requiresAuth: true, title: "Tetapan Cawangan" } },
+    { path: "/admin/pembiayaan/aina-user", name: "aina-user", component: AinaUserChatView, meta: { requiresAuth: true, title: "AINA — User" } },
 
     // ── Core Platform: Identity & Access ──
     { path: "/admin/platform/identity", redirect: "/admin/platform/identity/users" },

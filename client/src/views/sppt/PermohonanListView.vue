@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "@/composables/useI18n";
 import { computed, onMounted, ref } from "vue";
-import { Eye, Pencil } from "lucide-vue-next";
+import { Eye, Pencil, Trash2 } from "lucide-vue-next";
 
-import { getPermohonanSummary, listPermohonan } from "@/api/sppt";
+import { deletePermohonan, listPermohonan } from "@/api/sppt";
+import { useConfirmDialog } from "@/composables/useConfirmDialog";
 import { useSpptStatus } from "@/composables/useSpptStatus";
+import { useToast } from "@/composables/useToast";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
@@ -13,6 +15,8 @@ import type { Permohonan } from "@/types";
 
 const { t, tp } = useI18n();
 const { statusLabel, statusClass } = useSpptStatus();
+const confirmDialog = useConfirmDialog();
+const toast = useToast();
 
 const q = ref("");
 const status = ref("");
@@ -34,36 +38,32 @@ const statusMap: Record<string, string> = {
 };
 
 const summary = computed(() => [
-  { label: t("sppt.totalApplications"), value: summaryData.value.jumlah },
-  { label: t("sppt.status.draf"), value: summaryData.value.draf },
-  { label: t("sppt.inProgress"), value: summaryData.value.dalamProses },
-  { label: t("sppt.awaitingDocuments"), value: summaryData.value.menungguDokumen },
+  { label: t("sppt.totalApplications"), value: loading.value ? "—" : summaryData.value.jumlah },
+  { label: t("sppt.status.draf"), value: loading.value ? "—" : summaryData.value.draf },
+  { label: t("sppt.inProgress"), value: loading.value ? "—" : summaryData.value.dalamProses },
+  { label: t("sppt.awaitingDocuments"), value: loading.value ? "—" : summaryData.value.menungguDokumen },
 ]);
-
-async function loadSummary() {
-  try {
-    const res = await getPermohonanSummary();
-    summaryData.value = {
-      jumlah: res.data.jumlah ?? 0,
-      draf: res.data.draf ?? 0,
-      dalamProses: res.data.dalamProses ?? 0,
-      menungguDokumen: res.data.menungguDokumen ?? 0,
-      selesaiBulanIni: res.data.selesaiBulanIni ?? 0,
-    };
-  } catch {
-    // keep previous values
-  }
-}
 
 async function loadItems() {
   loading.value = true;
   try {
     const res = await listPermohonan({
       limit: 100,
+      include_summary: 1,
       q: q.value.trim() || undefined,
       status: statusMap[status.value] ?? undefined,
     });
     items.value = res.data;
+    const summary = res.meta?.summary as Record<string, number> | undefined;
+    if (summary) {
+      summaryData.value = {
+        jumlah: summary.jumlah ?? 0,
+        draf: summary.draf ?? 0,
+        dalamProses: summary.dalamProses ?? 0,
+        menungguDokumen: summary.menungguDokumen ?? 0,
+        selesaiBulanIni: summary.selesaiBulanIni ?? 0,
+      };
+    }
   } catch {
     items.value = [];
   } finally {
@@ -72,7 +72,7 @@ async function loadItems() {
 }
 
 async function reload() {
-  await Promise.all([loadSummary(), loadItems()]);
+  await loadItems();
 }
 
 onMounted(reload);
@@ -101,6 +101,24 @@ function editTo(item: Permohonan) {
 
 function viewTo(item: Permohonan) {
   return item.status === "Draf" ? `/admin/permohonan/baru/${item.id}` : `/admin/permohonan/${item.id}`;
+}
+
+async function remove(item: Permohonan) {
+  const allowed = await confirmDialog.confirm({
+    title: tp("Padam permohonan draf?"),
+    message: tp(`Permohonan ${displayNo(item)} akan dipadam secara kekal.`),
+    confirmText: t("common.delete"),
+    destructive: true,
+  });
+  if (!allowed) return;
+
+  try {
+    await deletePermohonan(item.id);
+    await reload();
+    toast.success(tp("Permohonan draf dipadam."));
+  } catch (e) {
+    toast.error(tp("Gagal memadam permohonan."), e instanceof Error ? e.message : undefined);
+  }
 }
 </script>
 
@@ -138,6 +156,8 @@ function viewTo(item: Permohonan) {
               <tr class="border-b border-slate-100 text-left">
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("sppt.applicationNo") }}</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.name") }}</th>
+                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Negeri</th>
+                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Cawangan</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.amount") }}</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.date") }}</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.status") }}</th>
@@ -146,11 +166,13 @@ function viewTo(item: Permohonan) {
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="loading">
-                <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-400">{{ tp("Memuatkan...") }}</td>
+                <td colspan="8" class="px-4 py-6 text-center text-sm text-slate-400">{{ tp("Memuatkan...") }}</td>
               </tr>
               <tr v-for="item in items" v-else :key="item.id" class="transition-colors hover:bg-slate-50">
                 <td class="px-4 py-2 font-mono text-slate-600">{{ displayNo(item) }}</td>
                 <td class="px-4 py-2 font-medium text-slate-900">{{ item.nama || "—" }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ item.negeri || "—" }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ item.cawangan || "—" }}</td>
                 <td class="px-4 py-2 text-slate-600">{{ fmtRm(item.jumlahPermohonan) }}</td>
                 <td class="px-4 py-2 text-slate-600">{{ fmtDate(item.tarikhPermohonan ?? item.createdAt) }}</td>
                 <td class="px-4 py-2">
@@ -175,6 +197,15 @@ function viewTo(item: Permohonan) {
                       <Pencil class="h-3.5 w-3.5" />
                       <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t("common.edit") }}</span>
                     </router-link>
+                    <button
+                      v-if="item.status === 'Draf'"
+                      type="button"
+                      class="group relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                      @click="remove(item)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                      <span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{{ t("common.delete") }}</span>
+                    </button>
                   </div>
                 </td>
               </tr>

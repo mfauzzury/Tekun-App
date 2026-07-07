@@ -179,12 +179,24 @@ class AuthController extends Controller
      */
     protected function userPayload($user): array
     {
+        $user->loadMissing('cawangan');
+
+        $cawangan = $user->cawangan;
+
         return [
             'id' => $user->id,
             'email' => $user->email,
             'name' => $user->name,
             'photo_url' => $user->photo_url,
             'role' => $user->role,
+            'sppt_cawangan_id' => $user->sppt_cawangan_id,
+            'cawangan' => $cawangan ? [
+                'id' => $cawangan->id,
+                'code' => $cawangan->code,
+                'name' => $cawangan->name,
+                'negeri' => $cawangan->negeri,
+                'branch_type' => $cawangan->branch_type,
+            ] : null,
         ];
     }
 }

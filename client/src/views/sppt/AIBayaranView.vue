@@ -5,7 +5,7 @@ import { Scan, BarChart3, MessageCircle, Send } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import { AI_OCR_RESULTS, AI_ANALYTICS, CHATBOT_SAMPLE_QA } from "@/data/bayaran-pembiayaan-dummy";
 
 const { t, tp } = useI18n();
@@ -19,14 +19,10 @@ const analytics = ref<(typeof AI_ANALYTICS)[number][]>([]);
 const sampleQA = ref<(typeof CHATBOT_SAMPLE_QA)[number][]>([]);
 
 onMounted(async () => {
-  const [ocrRes, analyticsRes, qaRes] = await Promise.all([
-    fetchSpptDataset("pembayaran", "ai_ocr_results"),
-    fetchSpptDataset("pembayaran", "ai_analytics"),
-    fetchSpptDataset("pembayaran", "chatbot_sample_qa"),
-  ]);
-  ocrResults.value = ocrRes.data as typeof ocrResults.value;
-  analytics.value = analyticsRes.data as typeof analytics.value;
-  sampleQA.value = qaRes.data as typeof sampleQA.value;
+  const data = await fetchSpptModuleDatasets("pembayaran");
+  ocrResults.value = pickSpptModuleDataset(data, "ai_ocr_results", [] as typeof ocrResults.value);
+  analytics.value = pickSpptModuleDataset(data, "ai_analytics", [] as typeof analytics.value);
+  sampleQA.value = pickSpptModuleDataset(data, "chatbot_sample_qa", [] as typeof sampleQA.value);
 });
 
 function uploadOCR() {

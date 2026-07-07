@@ -3,7 +3,7 @@ import { useI18n } from "@/composables/useI18n";
 import { ref, onMounted } from "vue";
 import { Calendar, Users, Award } from "lucide-vue-next";
 import type { ProgramLatihan, UsahawanItem, KehadiranLatihan } from "@/data/pemantauan-usahawan-dummy";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 
 const { t, tp } = useI18n();
 
@@ -12,14 +12,10 @@ const kehadiranLatihanList = ref<KehadiranLatihan[]>([]);
 const usahawanList = ref<UsahawanItem[]>([]);
 
 onMounted(async () => {
-  const [programRes, kehadiranRes, usahawanRes] = await Promise.all([
-    fetchSpptDataset("pemantauan", "program_latihan"),
-    fetchSpptDataset("pemantauan", "kehadiran_latihan"),
-    fetchSpptDataset("pemantauan", "usahawan_list"),
-  ]);
-  programLatihanList.value = programRes.data as ProgramLatihan[];
-  kehadiranLatihanList.value = kehadiranRes.data as typeof kehadiranLatihanList.value;
-  usahawanList.value = usahawanRes.data as UsahawanItem[];
+  const data = await fetchSpptModuleDatasets("pemantauan");
+  programLatihanList.value = pickSpptModuleDataset(data, "program_latihan", [] as ProgramLatihan[]);
+  kehadiranLatihanList.value = pickSpptModuleDataset(data, "kehadiran_latihan", [] as typeof kehadiranLatihanList.value);
+  usahawanList.value = pickSpptModuleDataset(data, "usahawan_list", [] as UsahawanItem[]);
 });
 
 const activeSub = ref<"takwim" | "kehadiran" | "laporan">("takwim");

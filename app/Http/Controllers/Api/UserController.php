@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\Role;
+use App\Models\SpptCawangan;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,17 +17,47 @@ class UserController extends Controller
 {
     use ApiResponse;
 
+    private function formatCawangan(?SpptCawangan $cawangan): ?array
+    {
+        if (! $cawangan) {
+            return null;
+        }
+
+        return [
+            'id' => $cawangan->id,
+            'code' => $cawangan->code,
+            'name' => $cawangan->name,
+            'negeri' => $cawangan->negeri,
+            'branch_type' => $cawangan->branch_type,
+        ];
+    }
+
     private function formatUser(User $user): array
     {
+        $user->loadMissing('cawangan');
+
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
             'is_active' => $user->is_active,
+            'sppt_cawangan_id' => $user->sppt_cawangan_id,
+            'cawangan' => $this->formatCawangan($user->cawangan),
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];
+    }
+
+    public function cawanganOptions(): JsonResponse
+    {
+        $rows = SpptCawangan::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'negeri', 'branch_type']);
+
+        return $this->sendOk($rows);
     }
 
     public function index(Request $request): JsonResponse
@@ -37,7 +68,7 @@ class UserController extends Controller
         $sortBy = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
 
-        $query = User::query();
+        $query = User::query()->with('cawangan');
 
         if ($q) {
             $query->where(function ($builder) use ($q) {
@@ -66,7 +97,6 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // Resolve role_id from role name
         $roleId = null;
         if (! empty($data['role'])) {
             $role = Role::where('name', $data['role'])->first();
@@ -79,6 +109,7 @@ class UserController extends Controller
             'password' => Hash::make($data['password']),
             'role' => $data['role'] ?? 'admin',
             'role_id' => $roleId,
+            'sppt_cawangan_id' => $data['sppt_cawangan_id'] ?? null,
             'is_active' => $data['is_active'] ?? true,
         ]);
 
@@ -87,7 +118,7 @@ class UserController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $user = User::find($id);
+        $user = User::with('cawangan')->find($id);
 
         if (! $user) {
             return $this->sendError(404, 'NOT_FOUND', 'User not found');
@@ -119,8 +150,11 @@ class UserController extends Controller
             $role = Role::where('name', $data['role'])->first();
             $updateData['role_id'] = $role?->id;
         }
-        if (isset($data['is_active'])) {
+        if (array_key_exists('is_active', $data)) {
             $updateData['is_active'] = $data['is_active'];
+        }
+        if (array_key_exists('sppt_cawangan_id', $data)) {
+            $updateData['sppt_cawangan_id'] = $data['sppt_cawangan_id'];
         }
         if (! empty($data['password'])) {
             $updateData['password'] = Hash::make($data['password']);
@@ -128,7 +162,7 @@ class UserController extends Controller
 
         $user->update($updateData);
 
-        return $this->sendOk($this->formatUser($user));
+        return $this->sendOk($this->formatUser($user->fresh(['cawangan'])));
     }
 
     public function destroy(Request $request, int $id): JsonResponse

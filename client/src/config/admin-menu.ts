@@ -19,6 +19,7 @@ import {
   ListChecks,
   Mail,
   Menu,
+  MessageSquare,
   Plug,
   Settings,
   Shield,
@@ -73,6 +74,9 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
         icon: ClipboardList,
         children: [
           { id: "permohonan-daftar", label: "Pendaftaran Permohonan", to: "/admin/permohonan" },
+          { id: "permohonan-semakan", label: "Semakan", to: "/admin/permohonan/semakan" },
+          { id: "permohonan-sokongan", label: "Sokongan", to: "/admin/permohonan/sokongan" },
+          { id: "permohonan-kelulusan", label: "Kelulusan", to: "/admin/permohonan/kelulusan" },
           { id: "permohonan-usahawan", label: "Rekod Usahawan", to: "/admin/permohonan/usahawan" },
         ],
       },
@@ -158,7 +162,17 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
         ],
       },
       { id: "integrasi", label: "Integrasi", to: "/admin/settings/integrasi", icon: Plug },
-      { id: "tetapan", label: "Tetapan (Setup)", to: "/admin/pembiayaan/tetapan", icon: Settings },
+      {
+        id: "tetapan",
+        label: "Tetapan (Setup)",
+        to: "/admin/pembiayaan/tetapan",
+        icon: Settings,
+        children: [
+          { id: "tetapan-setup", label: "Status & Konfigurasi", to: "/admin/pembiayaan/tetapan" },
+          { id: "tetapan-cawangan", label: "Cawangan TEKUN", to: "/admin/pembiayaan/tetapan/cawangan" },
+        ],
+      },
+      { id: "aina-user", label: "AINA — User", to: "/admin/pembiayaan/aina-user", icon: MessageSquare },
     ],
   },
   {
@@ -297,6 +311,7 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
     label: "Administration",
     items: [
       { id: "menus", label: "Menus", to: "/admin/menus", icon: Menu },
+      { id: "workflow-configuration", label: "Workflow Configuration", to: "/admin/workflow-configuration", icon: ListChecks },
       {
         id: "settings",
         label: "Settings",

@@ -69,6 +69,15 @@ class Permission
 
     const SPPT_DELETE = 'sppt.delete';
 
+    const SPPT_SEMAKAN = 'sppt.semakan';
+
+    const SPPT_SOKONGAN = 'sppt.sokongan';
+
+    const SPPT_KELULUSAN = 'sppt.kelulusan';
+
+    // AINA User Chat
+    const CHAT_USE = 'chat.use';
+
     public static function all(): array
     {
         return [
@@ -81,6 +90,8 @@ class Permission
             self::MENUS_VIEW, self::MENUS_EDIT,
             self::AUDIT_READ,
             self::SPPT_VIEW, self::SPPT_CREATE, self::SPPT_EDIT, self::SPPT_DELETE,
+            self::SPPT_SEMAKAN, self::SPPT_SOKONGAN, self::SPPT_KELULUSAN,
+            self::CHAT_USE,
         ];
     }
 }

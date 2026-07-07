@@ -5,7 +5,7 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import { type KesLitigasi, NEGERI_OPTIONS, CAWANGAN_OPTIONS, PRODUK_OPTIONS, LAPORAN_KEPUTUSAN_BULANAN } from "@/data/litigasi-dummy";
 
 const { t, tp } = useI18n();
@@ -14,12 +14,9 @@ const kesLitigasi = ref<KesLitigasi[]>([]);
 const chartData = ref<(typeof LAPORAN_KEPUTUSAN_BULANAN)[number][]>([]);
 
 onMounted(async () => {
-  const [kesRes, chartRes] = await Promise.all([
-    fetchSpptDataset("litigasi", "kes_litigasi"),
-    fetchSpptDataset("litigasi", "laporan_keputusan_bulanan"),
-  ]);
-  kesLitigasi.value = kesRes.data as KesLitigasi[];
-  chartData.value = chartRes.data as typeof chartData.value;
+  const data = await fetchSpptModuleDatasets("litigasi");
+  kesLitigasi.value = pickSpptModuleDataset(data, "kes_litigasi", [] as KesLitigasi[]);
+  chartData.value = pickSpptModuleDataset(data, "laporan_keputusan_bulanan", [] as typeof chartData.value);
 });
 
 const q = ref("");

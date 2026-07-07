@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             PostSeeder::class,
             SpptSeeder::class,
+            CawanganSeeder::class,
+            TekunNiagaWorkflowSeeder::class,
         ]);
     }
 }

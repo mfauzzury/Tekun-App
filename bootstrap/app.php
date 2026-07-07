@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CamelCaseMiddleware;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\EnsureUserChatAccess;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permission' => CheckPermission::class,
+            'user_chat_access' => EnsureUserChatAccess::class,
         ]);
 
         $middleware->appendToGroup('api', [

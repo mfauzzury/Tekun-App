@@ -9,6 +9,8 @@ import {
   type EkycSimulationInput,
   type EligibilityInput,
 } from "@/data/portal-dummy";
+import { runHardRuleCheck } from "@/api/pemohon";
+import type { HardRuleCheckInput, HardRuleCheckResult } from "@/types";
 import { requestOtp as requestOtpApi, verifyOtp as verifyOtpApi, type OtpChannel } from "@/api/otp";
 
 const SESSION_KEY = "pemohon.session";
@@ -157,12 +159,32 @@ export const usePemohonStore = defineStore("pemohon", () => {
     isLoggedIn.value = false;
   }
 
-  function runEligibilityCheck(input: EligibilityInput) {
-    const result = evaluateEligibility(input);
-    onboarding.value.eligibilityChecked = true;
-    onboarding.value.eligibilityResult = result.eligible ? "lulus" : "gagal";
-    onboarding.value.eligibilityReasons = result.reasons;
-    return result;
+  async function runEligibilityCheck(input: EligibilityInput | HardRuleCheckInput): Promise<HardRuleCheckResult> {
+    try {
+      const res = await runHardRuleCheck({
+        umur: input.umur,
+        noKp: "noKp" in input ? input.noKp : undefined,
+        pendapatanBulanan: "pendapatanBulanan" in input ? input.pendapatanBulanan : undefined,
+        jumlahKomitmenSediaAda: "jumlahKomitmenSediaAda" in input ? input.jumlahKomitmenSediaAda : undefined,
+      });
+      const result = res.data;
+      onboarding.value.eligibilityChecked = true;
+      onboarding.value.eligibilityResult = result.eligible ? "lulus" : "gagal";
+      onboarding.value.eligibilityReasons = result.reasons;
+      return result;
+    } catch {
+      const fallback = evaluateEligibility(input as EligibilityInput);
+      const result: HardRuleCheckResult = {
+        eligible: fallback.eligible,
+        autoReject: !fallback.eligible,
+        reasons: fallback.reasons,
+        failedRules: [],
+      };
+      onboarding.value.eligibilityChecked = true;
+      onboarding.value.eligibilityResult = result.eligible ? "lulus" : "gagal";
+      onboarding.value.eligibilityReasons = result.reasons;
+      return result;
+    }
   }
 
   function runEkyc(input: EkycSimulationInput) {

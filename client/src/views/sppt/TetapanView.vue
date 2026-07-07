@@ -6,8 +6,8 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import { useI18n } from "@/composables/useI18n";
 import { useConfirmDialog } from "@/composables/useConfirmDialog";
-import { fetchSpptSetup, updateSpptSetupCategory } from "@/api/sppt";
-import type { SpptSetupCategory, SpptSetupStatusItem } from "@/types";
+import { fetchSpptSetup, updateSpptHardRulesSetup, updateSpptSetupCategory } from "@/api/sppt";
+import type { SpptHardRulesConfig, SpptSetupCategory, SpptSetupStatusItem } from "@/types";
 
 const { t, tp } = useI18n();
 const { confirm } = useConfirmDialog();
@@ -33,9 +33,16 @@ const newItem = ref<SpptSetupStatusItem>({ value: "", label: "", color: "slate",
 
 const selectedCategory = computed(() => categories.value.find((c) => c.key === selectedKey.value));
 const isKnowledgeCategory = computed(() => selectedCategory.value?.type === "knowledge");
+const isHardRulesCategory = computed(() => selectedCategory.value?.type === "hard_rules");
 const editingIndex = ref<number | null>(null);
+const editHardRules = ref<SpptHardRulesConfig>({ active: true, rules: [] });
+const blacklistText = ref<Record<string, string>>({});
 
 const isDirty = computed(() => {
+  if (isHardRulesCategory.value) {
+    const original = selectedCategory.value?.hardRules;
+    return JSON.stringify(original) !== JSON.stringify(editHardRules.value);
+  }
   const original = selectedCategory.value?.items ?? [];
   return JSON.stringify(original) !== JSON.stringify(editItems.value);
 });
@@ -71,8 +78,29 @@ async function loadSetup() {
 
 function syncEditItems() {
   const cat = selectedCategory.value;
-  editItems.value = cat ? cat.items.map((item) => ({ ...item })) : [];
+  if (isHardRulesCategory.value && cat?.hardRules) {
+    editHardRules.value = JSON.parse(JSON.stringify(cat.hardRules));
+    blacklistText.value = {};
+    for (const rule of editHardRules.value.rules) {
+      if (rule.code === "blacklist") {
+        blacklistText.value[rule.code] = (rule.config.ics ?? []).join("\n");
+      }
+    }
+    editItems.value = [];
+  } else {
+    editItems.value = cat ? cat.items.map((item) => ({ ...item })) : [];
+    editHardRules.value = { active: true, rules: [] };
+  }
   editingIndex.value = null;
+}
+
+function syncBlacklistFromText(ruleCode: string) {
+  const rule = editHardRules.value.rules.find((item) => item.code === ruleCode);
+  if (!rule) return;
+  rule.config.ics = (blacklistText.value[ruleCode] ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function selectCategory(key: string) {
@@ -144,10 +172,20 @@ async function saveCategory() {
   saved.value = false;
   error.value = "";
   try {
-    const res = await updateSpptSetupCategory(selectedKey.value, editItems.value);
-    const idx = categories.value.findIndex((c) => c.key === selectedKey.value);
-    if (idx >= 0) categories.value[idx] = res.data;
-    editItems.value = res.data.items.map((item) => ({ ...item }));
+    if (isHardRulesCategory.value) {
+      syncBlacklistFromText("blacklist");
+      const res = await updateSpptHardRulesSetup(selectedKey.value, editHardRules.value);
+      const idx = categories.value.findIndex((c) => c.key === selectedKey.value);
+      if (idx >= 0) categories.value[idx] = res.data;
+      if (res.data.hardRules) {
+        editHardRules.value = JSON.parse(JSON.stringify(res.data.hardRules));
+      }
+    } else {
+      const res = await updateSpptSetupCategory(selectedKey.value, editItems.value);
+      const idx = categories.value.findIndex((c) => c.key === selectedKey.value);
+      if (idx >= 0) categories.value[idx] = res.data;
+      editItems.value = res.data.items.map((item) => ({ ...item }));
+    }
     editingIndex.value = null;
     saved.value = true;
     setTimeout(() => { saved.value = false; }, 2500);
@@ -245,8 +283,76 @@ onMounted(loadSetup);
             </div>
 
             <div class="overflow-x-auto">
+              <!-- Hard rules editor -->
+              <div v-if="isHardRulesCategory" class="space-y-4 p-4">
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <input v-model="editHardRules.active" type="checkbox" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                  <span class="text-sm font-medium text-slate-700">{{ tp("Aktifkan Saringan Auto-Kelayakan") }}</span>
+                </label>
+
+                <div
+                  v-for="rule in editHardRules.rules"
+                  :key="rule.code"
+                  class="rounded-lg border border-slate-200 bg-white p-4"
+                >
+                  <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-900">{{ rule.label }}</p>
+                      <p class="font-mono text-xs text-slate-400">{{ rule.code }}</p>
+                    </div>
+                    <label class="inline-flex cursor-pointer items-center gap-2">
+                      <input v-model="rule.active" type="checkbox" class="rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                      <span class="text-xs text-slate-600">{{ rule.active ? tp("Aktif") : tp("Tidak Aktif") }}</span>
+                    </label>
+                  </div>
+
+                  <div v-if="rule.code === 'age_limit'" class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Umur Minimum") }}</label>
+                      <input v-model.number="rule.config.minAge" type="number" min="1" max="120" class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Umur Maksimum") }}</label>
+                      <input v-model.number="rule.config.maxAge" type="number" min="1" max="120" class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm" />
+                    </div>
+                  </div>
+
+                  <div v-else-if="rule.code === 'blacklist'">
+                    <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Senarai Hitam No. KP (satu setiap baris)") }}</label>
+                    <textarea
+                      v-model="blacklistText[rule.code]"
+                      rows="4"
+                      class="w-full rounded border border-slate-200 px-2 py-1.5 font-mono text-sm"
+                      placeholder="800101-01-0001"
+                      @blur="syncBlacklistFromText(rule.code)"
+                    />
+                  </div>
+
+                  <div v-else-if="rule.code === 'commitment_ratio'">
+                    <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Nisbah Komitmen Maksimum (0–1)") }}</label>
+                    <input v-model.number="rule.config.maxRatio" type="number" min="0" max="1" step="0.05" class="w-full max-w-xs rounded border border-slate-200 px-2 py-1.5 text-sm" />
+                    <p class="mt-1 text-xs text-slate-400">{{ tp("Contoh: 0.7 = 70% daripada pendapatan bulanan") }}</p>
+                  </div>
+
+                  <div v-else-if="rule.code === 'active_financing_limit'" class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Bilangan Pembiayaan Aktif Maks.") }}</label>
+                      <input v-model.number="rule.config.maxActiveCount" type="number" min="0" class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">{{ tp("Jumlah Pembiayaan Aktif Maks. (RM)") }}</label>
+                      <input v-model.number="rule.config.maxTotalAmount" type="number" min="0" step="1000" class="w-full rounded border border-slate-200 px-2 py-1.5 text-sm" />
+                    </div>
+                  </div>
+
+                  <p v-else-if="rule.code === 'bankruptcy'" class="text-xs text-slate-500">
+                    {{ tp("Semakan status muflis/insolvensi — input `muflis` dari integrasi pihak ketiga (POC: manual flag).") }}
+                  </p>
+                </div>
+              </div>
+
               <!-- Knowledge criteria editor -->
-              <table v-if="isKnowledgeCategory" class="w-full text-sm">
+              <table v-else-if="isKnowledgeCategory" class="w-full text-sm">
                 <thead>
                   <tr class="border-b border-slate-100 text-left">
                     <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">ID</th>
@@ -385,7 +491,7 @@ onMounted(loadSetup);
             </div>
 
             <!-- Add new item -->
-            <div class="border-t border-slate-100 px-4 py-3">
+            <div v-if="!isHardRulesCategory" class="border-t border-slate-100 px-4 py-3">
               <button
                 v-if="!showAddForm"
                 type="button"

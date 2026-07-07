@@ -1,6 +1,10 @@
 import { API_BASE_URL } from "@/env";
 import { apiRequest, ensureCsrfCookie } from "./client";
 import type {
+  AiRiskScoringInput,
+  AiRiskScoringResult,
+  AiCreditScoringInput,
+  AiCreditScoringResult,
   AkaunPembiayaan,
   DocumentClassification,
   Permohonan,
@@ -8,7 +12,10 @@ import type {
   PermohonanFormOcrResult,
   DocumentVerification,
   PermohonanInput,
+  SpptCawangan,
+  SpptCawanganInput,
   SpptDashboardSummary,
+  SpptHardRulesConfig,
   SpptReferenceData,
   SpptSetupCategory,
   SpptSetupStatusItem,
@@ -37,6 +44,38 @@ export async function fetchSpptSetup() {
   return apiRequest<{ data: SpptSetupCategory[] }>("/api/sppt/setup");
 }
 
+export async function listSpptCawangan(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: SpptCawangan[]; meta: Record<string, unknown> }>(`/api/sppt/cawangan${query(params)}`);
+}
+
+export async function getSpptCawangan(id: number) {
+  return apiRequest<{ data: SpptCawangan }>(`/api/sppt/cawangan/${id}`);
+}
+
+export async function createSpptCawangan(input: SpptCawanganInput) {
+  return apiRequest<{ data: SpptCawangan }>("/api/sppt/cawangan", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateSpptCawangan(id: number, input: Partial<SpptCawanganInput>) {
+  return apiRequest<{ data: SpptCawangan }>(`/api/sppt/cawangan/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteSpptCawangan(id: number) {
+  return apiRequest<{ data: { success: boolean } }>(`/api/sppt/cawangan/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listSpptCawanganNegeriOptions() {
+  return apiRequest<{ data: string[] }>("/api/sppt/cawangan/negeri-options");
+}
+
 export async function fetchSpptSetupCategory(key: string) {
   return apiRequest<{ data: SpptSetupCategory }>(`/api/sppt/setup/${key}`);
 }
@@ -48,9 +87,35 @@ export async function updateSpptSetupCategory(key: string, items: SpptSetupStatu
   });
 }
 
+export async function updateSpptHardRulesSetup(key: string, hardRules: SpptHardRulesConfig) {
+  return apiRequest<{ data: SpptSetupCategory }>(`/api/sppt/setup/${key}`, {
+    method: "PUT",
+    body: JSON.stringify(hardRules),
+  });
+}
+
 export async function fetchSpptDataset(module: string, key?: string) {
   const path = key ? `/api/sppt/datasets/${module}/${key}` : `/api/sppt/datasets/${module}`;
   return apiRequest<{ data: unknown }>(path);
+}
+
+export type SpptModuleDatasets = Record<string, unknown>;
+
+/** Fetch all datasets for a module in one request (avoids N+1 on single-threaded PHP dev server). */
+export async function fetchSpptModuleDatasets(module: string): Promise<SpptModuleDatasets> {
+  const res = await fetchSpptDataset(module);
+  return (res.data ?? {}) as SpptModuleDatasets;
+}
+
+/** Read one dataset from bulk module payload; `datasetKey` is the backend snake_case key. */
+export function pickSpptModuleDataset<T>(
+  datasets: SpptModuleDatasets,
+  datasetKey: string,
+  fallback: T,
+): T {
+  const camelKey = datasetKey.replace(/_([a-z])/g, (_, char: string) => char.toUpperCase());
+  const value = datasets[camelKey];
+  return (value === undefined ? fallback : value) as T;
 }
 
 export async function listPermohonan(params: Record<string, string | number | undefined> = {}) {
@@ -149,6 +214,33 @@ export async function extractPermohonanFormOcr(file: File) {
   });
 }
 
+export async function runPermohonanAiRiskScoring(input: AiRiskScoringInput) {
+  return apiRequest<{ data: AiRiskScoringResult }>("/api/sppt/permohonan/risk-scoring/score", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function scorePermohonanRisk(permohonanId: number) {
+  return apiRequest<{ data: AiRiskScoringResult }>(`/api/sppt/permohonan/${permohonanId}/risk-scoring`, {
+    method: "POST",
+  });
+}
+
+export async function runPermohonanAiCreditScoring(input: AiCreditScoringInput) {
+  return apiRequest<{ data: AiCreditScoringResult }>("/api/sppt/permohonan/credit-scoring/score", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function scorePermohonanCredit(permohonanId: number) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: AiCreditScoringResult }>(`/api/sppt/permohonan/${permohonanId}/credit-scoring`, {
+    method: "POST",
+  });
+}
+
 export async function verifyPermohonanDocument(
   file: File,
   applicantIc?: string,
@@ -201,8 +293,48 @@ export async function openPermohonanDocument(permohonanId: number, attachmentId:
   window.open(blobUrl, "_blank", "noopener,noreferrer");
 }
 
+export function permohonanOfferLetterUrl(permohonanId: number) {
+  return `${API_BASE_URL}/api/sppt/permohonan/${permohonanId}/surat-tawaran`;
+}
+
+export async function openPermohonanOfferLetter(permohonanId: number) {
+  await ensureCsrfCookie();
+  const response = await fetch(permohonanOfferLetterUrl(permohonanId), {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let message = "Gagal menjana surat tawaran.";
+    try {
+      const payload = await response.json();
+      message = (payload?.error?.message as string) || message;
+    } catch {
+      // non-JSON error body
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, "_blank", "noopener,noreferrer");
+}
+
+export function isApprovedPermohonanStatus(status: string): boolean {
+  return ["Diluluskan", "Lulus", "Berjaya"].includes(status);
+}
+
 export async function deletePermohonan(id: number) {
   return apiRequest<{ data: { success: boolean } }>(`/api/sppt/permohonan/${id}`, { method: "DELETE" });
+}
+
+export async function processPermohonanWorkflow(
+  id: number,
+  input: { stage: "semakan" | "sokongan" | "kelulusan"; keputusan: "lulus" | "tolak"; catatan?: string },
+) {
+  return apiRequest<{ data: Permohonan }>(`/api/sppt/permohonan/${id}/workflow`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function listUsahawan(params: Record<string, string | number | undefined> = {}) {

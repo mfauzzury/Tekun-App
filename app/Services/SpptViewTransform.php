@@ -121,7 +121,10 @@ class SpptViewTransform
     {
         return [
             'id' => $row['noRujukan'],
+            'permohonan_id' => $row['id'],
             'nama' => $row['nama'],
+            'negeri' => $row['negeri'] ?? null,
+            'cawangan' => $row['cawangan'] ?? null,
             'jumlah' => 'RM '.number_format((float) $row['jumlahPermohonan'], 0),
             'tarikh' => $row['tarikhPermohonan']
                 ? self::formatTarikhMalay($row['tarikhPermohonan'])

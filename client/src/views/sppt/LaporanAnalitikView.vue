@@ -21,7 +21,7 @@ import LaporanLineChart from "@/components/sppt/laporan/LaporanLineChart.vue";
 import LaporanPieChart from "@/components/sppt/laporan/LaporanPieChart.vue";
 import LaporanMapMalaysia from "@/components/sppt/laporan/LaporanMapMalaysia.vue";
 import { exportToCSV, exportToExcel } from "@/composables/useExport";
-import { fetchSpptDataset } from "@/api/sppt";
+import { fetchSpptModuleDatasets, pickSpptModuleDataset } from "@/api/sppt";
 import {
   type LaporanItem,
   type RoleLaporan,
@@ -45,6 +45,7 @@ import {
   MEDAN_TERSEDIA,
 } from "@/data/laporan-dummy";
 
+const loading = ref(true);
 const kpiSummary = ref({ ...KPI_SUMMARY });
 const laporanItems = ref<LaporanItem[]>([]);
 const kutipanVsSasaran = ref<(typeof KUTIPAN_VS_SASARAN)[number][]>([]);
@@ -66,50 +67,32 @@ const notifikasiLaporan = ref<(typeof NOTIFIKASI_LAPORAN)[number][]>([]);
 const medanTersedia = ref<(typeof MEDAN_TERSEDIA)[number][]>([]);
 
 onMounted(async () => {
-  const [
-    kpiRes, itemsRes, kutipanRes, trendRes, agihanRes, prestasiRes, crossRes,
-    individuRes, resitRes, penyesuaianRes, monthEndRes, npfRes, syariahRes, sncRes,
-    nisbahRes, auditRes, arkibRes, notifRes, medanRes,
-  ] = await Promise.all([
-    fetchSpptDataset("laporan", "kpi_summary"),
-    fetchSpptDataset("laporan", "laporan_items"),
-    fetchSpptDataset("laporan", "kutipan_vs_sasaran"),
-    fetchSpptDataset("laporan", "trend_npf"),
-    fetchSpptDataset("laporan", "agihan_status_akaun"),
-    fetchSpptDataset("laporan", "prestasi_negeri"),
-    fetchSpptDataset("laporan", "cross_analysis_produk"),
-    fetchSpptDataset("laporan", "laporan_individu"),
-    fetchSpptDataset("laporan", "laporan_resit"),
-    fetchSpptDataset("laporan", "laporan_penyesuaian_bank"),
-    fetchSpptDataset("laporan", "laporan_month_end"),
-    fetchSpptDataset("laporan", "laporan_npf"),
-    fetchSpptDataset("laporan", "laporan_patuh_syariah"),
-    fetchSpptDataset("laporan", "laporan_snc"),
-    fetchSpptDataset("laporan", "laporan_nisbah_seliaan"),
-    fetchSpptDataset("laporan", "audit_laporan"),
-    fetchSpptDataset("laporan", "arkib_laporan"),
-    fetchSpptDataset("laporan", "notifikasi_laporan"),
-    fetchSpptDataset("laporan", "medan_tersedia"),
-  ]);
-  kpiSummary.value = kpiRes.data as typeof kpiSummary.value;
-  laporanItems.value = itemsRes.data as LaporanItem[];
-  kutipanVsSasaran.value = kutipanRes.data as typeof kutipanVsSasaran.value;
-  trendNpf.value = trendRes.data as typeof trendNpf.value;
-  agihanStatusAkaun.value = agihanRes.data as typeof agihanStatusAkaun.value;
-  prestasiNegeri.value = prestasiRes.data as typeof prestasiNegeri.value;
-  crossAnalysisProduk.value = crossRes.data as typeof crossAnalysisProduk.value;
-  laporanIndividu.value = individuRes.data as typeof laporanIndividu.value;
-  laporanResit.value = resitRes.data as typeof laporanResit.value;
-  laporanPenyesuaianBank.value = penyesuaianRes.data as typeof laporanPenyesuaianBank.value;
-  laporanMonthEnd.value = monthEndRes.data as typeof laporanMonthEnd.value;
-  laporanNpf.value = npfRes.data as typeof laporanNpf.value;
-  laporanPatuhSyariah.value = syariahRes.data as typeof laporanPatuhSyariah.value;
-  laporanSnc.value = sncRes.data as typeof laporanSnc.value;
-  laporanNisbahSeliaan.value = nisbahRes.data as typeof laporanNisbahSeliaan.value;
-  auditLaporan.value = auditRes.data as AuditLaporan[];
-  arkibLaporan.value = arkibRes.data as typeof arkibLaporan.value;
-  notifikasiLaporan.value = notifRes.data as typeof notifikasiLaporan.value;
-  medanTersedia.value = medanRes.data as typeof medanTersedia.value;
+  loading.value = true;
+  try {
+    const data = await fetchSpptModuleDatasets("laporan");
+
+    kpiSummary.value = pickSpptModuleDataset(data, "kpi_summary", kpiSummary.value);
+    laporanItems.value = pickSpptModuleDataset(data, "laporan_items", [] as LaporanItem[]);
+    kutipanVsSasaran.value = pickSpptModuleDataset(data, "kutipan_vs_sasaran", [] as typeof kutipanVsSasaran.value);
+    trendNpf.value = pickSpptModuleDataset(data, "trend_npf", [] as typeof trendNpf.value);
+    agihanStatusAkaun.value = pickSpptModuleDataset(data, "agihan_status_akaun", [] as typeof agihanStatusAkaun.value);
+    prestasiNegeri.value = pickSpptModuleDataset(data, "prestasi_negeri", [] as typeof prestasiNegeri.value);
+    crossAnalysisProduk.value = pickSpptModuleDataset(data, "cross_analysis_produk", [] as typeof crossAnalysisProduk.value);
+    laporanIndividu.value = pickSpptModuleDataset(data, "laporan_individu", [] as typeof laporanIndividu.value);
+    laporanResit.value = pickSpptModuleDataset(data, "laporan_resit", [] as typeof laporanResit.value);
+    laporanPenyesuaianBank.value = pickSpptModuleDataset(data, "laporan_penyesuaian_bank", [] as typeof laporanPenyesuaianBank.value);
+    laporanMonthEnd.value = pickSpptModuleDataset(data, "laporan_month_end", [] as typeof laporanMonthEnd.value);
+    laporanNpf.value = pickSpptModuleDataset(data, "laporan_npf", [] as typeof laporanNpf.value);
+    laporanPatuhSyariah.value = pickSpptModuleDataset(data, "laporan_patuh_syariah", [] as typeof laporanPatuhSyariah.value);
+    laporanSnc.value = pickSpptModuleDataset(data, "laporan_snc", [] as typeof laporanSnc.value);
+    laporanNisbahSeliaan.value = pickSpptModuleDataset(data, "laporan_nisbah_seliaan", [] as typeof laporanNisbahSeliaan.value);
+    auditLaporan.value = pickSpptModuleDataset(data, "audit_laporan", [] as AuditLaporan[]);
+    arkibLaporan.value = pickSpptModuleDataset(data, "arkib_laporan", [] as typeof arkibLaporan.value);
+    notifikasiLaporan.value = pickSpptModuleDataset(data, "notifikasi_laporan", [] as typeof notifikasiLaporan.value);
+    medanTersedia.value = pickSpptModuleDataset(data, "medan_tersedia", [] as typeof medanTersedia.value);
+  } finally {
+    loading.value = false;
+  }
 });
 
 // --- Fasa 1: Filter & state ---
@@ -280,6 +263,10 @@ const roleOptions: { value: RoleLaporan; label: string }[] = [
 
       <!-- Tab: Dashboard (Fasa 2) -->
       <div v-show="activeTab === 'dashboard'" class="space-y-4">
+        <p v-if="loading" class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
+          Memuatkan data laporan...
+        </p>
+
         <!-- KPI Cards with threshold -->
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <article
