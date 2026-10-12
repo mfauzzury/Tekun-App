@@ -141,8 +141,16 @@
             <td>: {{ $profitRateLabel }}</td>
         </tr>
         <tr>
+            <td>Kaedah Pengiraan</td>
+            <td>: {{ $profitMethodLabel }}</td>
+        </tr>
+        <tr>
             <td>Ansuran Bulanan</td>
             <td>: {{ $monthlyInstallment }}</td>
+        </tr>
+        <tr>
+            <td>Jumlah Bayaran Balik</td>
+            <td>: {{ $totalRepaymentLabel }}</td>
         </tr>
         <tr>
             <td>Konsep Syariah</td>

@@ -8,6 +8,7 @@ export type PermohonanWorkflowStageConfig = {
   routeName: string;
   routePath: string;
   menuId: string;
+  permission: string;
   approveLabel: string;
   rejectLabel: string;
   approveHint: string;
@@ -24,6 +25,7 @@ export const PERMOHONAN_WORKFLOW_STAGES: Record<PermohonanWorkflowStage, Permoho
     routeName: "permohonan-semakan",
     routePath: "/admin/permohonan/semakan",
     menuId: "permohonan-semakan",
+    permission: "sppt.semakan",
     approveLabel: "Sahkan Semakan",
     rejectLabel: "Tolak Semakan",
     approveHint: "Permohonan akan dihantar ke peringkat sokongan.",
@@ -38,6 +40,7 @@ export const PERMOHONAN_WORKFLOW_STAGES: Record<PermohonanWorkflowStage, Permoho
     routeName: "permohonan-sokongan",
     routePath: "/admin/permohonan/sokongan",
     menuId: "permohonan-sokongan",
+    permission: "sppt.sokongan",
     approveLabel: "Sokong Permohonan",
     rejectLabel: "Tolak Sokongan",
     approveHint: "Permohonan akan dihantar ke peringkat kelulusan.",
@@ -52,6 +55,7 @@ export const PERMOHONAN_WORKFLOW_STAGES: Record<PermohonanWorkflowStage, Permoho
     routeName: "permohonan-kelulusan",
     routePath: "/admin/permohonan/kelulusan",
     menuId: "permohonan-kelulusan",
+    permission: "sppt.kelulusan",
     approveLabel: "Luluskan Permohonan",
     rejectLabel: "Tolak Permohonan",
     approveHint: "Permohonan akan diluluskan.",
@@ -64,6 +68,20 @@ export function resolveWorkflowStageFromRouteName(routeName?: string | null): Pe
   for (const config of Object.values(PERMOHONAN_WORKFLOW_STAGES)) {
     if (config.routeName === routeName) {
       return config.stage;
+    }
+  }
+
+  return null;
+}
+
+export function canAccessWorkflowStage(permissions: string[] | undefined, stage: PermohonanWorkflowStage): boolean {
+  return Boolean(permissions?.includes(PERMOHONAN_WORKFLOW_STAGES[stage].permission));
+}
+
+export function firstAccessibleWorkflowRoute(permissions: string[] | undefined): string | null {
+  for (const config of Object.values(PERMOHONAN_WORKFLOW_STAGES)) {
+    if (canAccessWorkflowStage(permissions, config.stage)) {
+      return config.routePath;
     }
   }
 

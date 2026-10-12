@@ -13,6 +13,7 @@ use App\Http\Traits\ApiResponse;
 use App\Models\Permohonan;
 use App\Services\DocumentClassificationService;
 use App\Services\MyKadVerificationService;
+use App\Services\PermohonanReferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,7 @@ class PemohonPermohonanController extends Controller
     public function __construct(
         protected MyKadVerificationService $myKadVerification,
         protected DocumentClassificationService $documentClassification,
+        protected PermohonanReferenceService $referenceService,
     ) {}
 
     public function store(StorePemohonPermohonanRequest $request): JsonResponse
@@ -40,7 +42,7 @@ class PemohonPermohonanController extends Controller
         $status = $validated['status'] ?? 'Draf';
 
         $permohonan = Permohonan::create([
-            'no_rujukan' => $this->generateNoRujukan(),
+            'no_rujukan' => $this->referenceService->generateNextNoRujukan(),
             'usahawan_id' => null,
             'nama' => $validated['nama'] ?? 'Draf',
             'kategori_pembiayaan' => $validated['kategori_pembiayaan'] ?? null,
@@ -54,26 +56,6 @@ class PemohonPermohonanController extends Controller
         ]);
 
         return $this->sendCreated($permohonan);
-    }
-
-    /**
-     * Generate a unique PM-YYYY-NNNN reference, avoiding collisions with any existing
-     * record (staff- or pemohon-created) in the shared permohonan table.
-     */
-    private function generateNoRujukan(): string
-    {
-        $prefix = 'PM-'.now()->format('Y').'-';
-        $last = Permohonan::where('no_rujukan', 'like', $prefix.'%')
-            ->orderByDesc('no_rujukan')
-            ->value('no_rujukan');
-        $seq = $last !== null ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-        do {
-            $candidate = $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
-            $seq++;
-        } while (Permohonan::where('no_rujukan', $candidate)->exists());
-
-        return $candidate;
     }
 
     public function show(Request $request, int $permohonan): JsonResponse

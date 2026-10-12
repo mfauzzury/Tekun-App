@@ -62,7 +62,7 @@ class AkaunController extends Controller
     public function summary(): JsonResponse
     {
         $aktif = AkaunPembiayaan::where('status', 'Aktif')->count();
-        $totalBakiTertunggak = (float) AkaunPembiayaan::selectRaw('SUM(tunggakan + penalti) as total')->value('total');
+        $totalBakiTertunggak = (float) AkaunPembiayaan::selectRaw('SUM(tunggakan + COALESCE(tawidh, penalti)) as total')->value('total');
         $bayaranTerkini = AkaunPembiayaan::where('status', 'Aktif')->where('tunggakan', 0)->count();
         $akaunBaru = AkaunPembiayaan::whereMonth('tarikh_mula', now()->month)
             ->whereYear('tarikh_mula', now()->year)

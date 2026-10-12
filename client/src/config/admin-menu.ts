@@ -89,6 +89,7 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
           { id: "pembiayaan-penilaian", label: "Penilaian & Kelulusan", to: "/admin/pembiayaan/penilaian" },
           { id: "pembiayaan-pengeluaran", label: "Pengeluaran Dana", to: "/admin/pembiayaan/pengeluaran" },
           { id: "pembiayaan-akaun", label: "Pengurusan Akaun", to: "/admin/pembiayaan/akaun" },
+          { id: "pembiayaan-penjadualan", label: "Penjadualan Semula", to: "/admin/pembiayaan/penjadualan" },
         ],
       },
       {
@@ -158,6 +159,7 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
         icon: BarChart3,
         children: [
           { id: "laporan-analitik", label: "Laporan & Analitik", to: "/admin/laporan" },
+          { id: "laporan-power-bi", label: "Dashboard Power BI", to: "/admin/laporan/power-bi" },
           { id: "laporan-audit", label: "Audit & Kawalan", to: "/admin/laporan/audit" },
         ],
       },

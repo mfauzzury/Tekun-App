@@ -325,6 +325,10 @@ async function onFilesSelected(event: Event) {
           spouseIcRequired.value ? form.noIcPasangan : undefined,
           spouseIcRequired.value ? form.namaPasangan : undefined,
         );
+        if (classifyRes.data.classification.identityMatched === false) {
+          toast.error(classifyRes.data.classification.message || "MyKad tidak sepadan dengan pemohon.");
+          continue;
+        }
         suggestedClass = classifyRes.data.classification.suggestedClass;
       } catch {
         // Classification is a convenience suggestion — proceed without it if it fails.
@@ -346,7 +350,16 @@ async function onFilesSelected(event: Event) {
             spouseIcRequired.value ? form.noIcPasangan : undefined,
             spouseIcRequired.value ? form.namaPasangan : undefined,
           );
-          attachments.value[index] = { ...attachments.value[index], verification: verifyRes.data.verification, verifying: false };
+          const verification = verifyRes.data.verification;
+          attachments.value[index] = { ...attachments.value[index], verification, verifying: false };
+
+          const isFrontOrCombined = verification.documentType === "ic_front" || verification.documentType === "ic_combined";
+          if (isFrontOrCombined && (verification.identityMatched === false || verification.status === "failed")) {
+            const failedId = attachments.value[index].id;
+            toast.error(verification.message || "MyKad tidak sepadan dengan nama atau No. Kad Pengenalan pemohon.");
+            await deletePemohonPermohonanDocument(record.id, record.token, failedId);
+            attachments.value = attachments.value.filter((item) => item.id !== failedId);
+          }
         } catch {
           attachments.value[index].verifying = false;
         }
@@ -430,6 +443,22 @@ async function submit() {
   }
   if (attachments.value.length === 0) {
     toast.error("Sila lampirkan sekurang-kurangnya satu dokumen sokongan.");
+    currentStep.value = PERMOHONAN_BARU_STEPS.length - 1;
+    return;
+  }
+
+  const identityMismatch = attachments.value.some((item) => {
+    const verification = item.verification;
+    if (!verification) {
+      return false;
+    }
+    if (verification.documentType !== "ic_front" && verification.documentType !== "ic_combined") {
+      return false;
+    }
+    return verification.identityMatched === false || verification.status === "failed";
+  });
+  if (identityMismatch) {
+    toast.error("MyKad depan tidak sepadan dengan nama atau No. Kad Pengenalan pemohon.");
     currentStep.value = PERMOHONAN_BARU_STEPS.length - 1;
     return;
   }

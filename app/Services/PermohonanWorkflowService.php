@@ -253,7 +253,9 @@ class PermohonanWorkflowService
         string $workflowCode,
         WfProcess $process,
     ): array {
-        $statusCode = $keputusan === 'lulus' ? 'APPROVE' : 'REJECT';
+        $statusCode = $keputusan === 'lulus'
+            ? $this->positiveStatusCodeForStage($stage)
+            : 'REJECT';
 
         $detail = WfProcessDetail::query()
             ->where('wpd_process_id', $process->wfp_process_id)
@@ -326,6 +328,16 @@ class PermohonanWorkflowService
             'status' => $status,
             'details' => $details,
         ];
+    }
+
+    private function positiveStatusCodeForStage(string $stage): string
+    {
+        return match ($stage) {
+            self::STAGE_SEMAKAN => 'CHECK',
+            self::STAGE_SOKONGAN => 'SUPPORT',
+            self::STAGE_KELULUSAN => 'APPROVE',
+            default => 'APPROVE',
+        };
     }
 
     private function legacyApproveStatus(string $stage, string $keputusan): string

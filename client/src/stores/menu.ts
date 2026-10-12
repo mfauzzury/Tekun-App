@@ -1,6 +1,9 @@
 import { defineStore } from "pinia";
 import { DEFAULT_MENU, type AdminMenuPrefs, type MenuGroupDef, type MenuNode } from "@/config/admin-menu";
 import { getAdminMenuPrefs, saveAdminMenuPrefs } from "@/api/cms";
+import { useAuthStore } from "@/stores/auth";
+import { filterMenuByPermissions } from "@/utils/permissions";
+import { normalizeMenuPrefs } from "@/utils/admin-menu-prefs";
 
 type LegacyPrefs = {
   groupOrder: string[];
@@ -13,7 +16,7 @@ function normalizePrefs(raw: AdminMenuPrefs | LegacyPrefs | null): AdminMenuPref
   if (!raw) return null;
 
   const prefs = raw as Partial<AdminMenuPrefs> & LegacyPrefs;
-  return {
+  return normalizeMenuPrefs({
     groupOrder: prefs.groupOrder || [],
     itemOrder: prefs.itemOrder || {},
     childOrder: prefs.childOrder || {},
@@ -22,7 +25,7 @@ function normalizePrefs(raw: AdminMenuPrefs | LegacyPrefs | null): AdminMenuPref
     hiddenChildren: prefs.hiddenChildren || [],
     hiddenGrandchildren: prefs.hiddenGrandchildren || [],
     hiddenGroups: prefs.hiddenGroups || [],
-  };
+  });
 }
 
 function orderByIds<T extends { id: string }>(items: T[], order: string[]): T[] {
@@ -112,7 +115,8 @@ export const useMenuStore = defineStore("menu", {
   }),
   getters: {
     resolvedMenu(): MenuGroupDef[] {
-      return resolveMenu(this.prefs);
+      const auth = useAuthStore();
+      return filterMenuByPermissions(resolveMenu(this.prefs), auth.user?.permissions, auth.user?.role);
     },
   },
   actions: {

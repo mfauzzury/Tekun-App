@@ -6,7 +6,6 @@ use App\Models\Role;
 use App\Models\SpptCawangan;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class HuluLangatCawanganUserSeeder extends Seeder
 {
@@ -29,7 +28,7 @@ class HuluLangatCawanganUserSeeder extends Seeder
             return;
         }
 
-        $password = Hash::make(env('HULU_LANGAT_USER_PASSWORD', 'Tekun123!'));
+        $password = env('HULU_LANGAT_USER_PASSWORD', 'Tekun123!');
 
         $users = [
             [

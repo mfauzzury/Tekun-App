@@ -12,6 +12,7 @@ class AiCreditScoringService
     public function __construct(
         protected AiRiskScoringService $riskScoring,
         protected ApkCreditEnrichmentService $apkEnrichment,
+        protected EdgeCaseMitigationService $edgeCaseMitigation,
     ) {}
 
     /**
@@ -34,6 +35,13 @@ class AiCreditScoringService
         $factors = array_merge($factors, $this->apkFactors($apk));
 
         $adverseReasons = $this->adverseActionReasons($creditScore, $apk, $decision);
+        $edgeCase = $this->edgeCaseMitigation->analyze(
+            $input,
+            $creditScore,
+            $decision,
+            (float) $riskResult['recommended_limit'],
+            $apk,
+        );
 
         return [
             'credit_score' => $creditScore,
@@ -46,6 +54,7 @@ class AiCreditScoringService
             'decision_description' => $decision['decision_description'],
             'factors' => array_slice($factors, 0, 8),
             'adverse_action_reasons' => $adverseReasons,
+            'edge_case' => $edgeCase,
             'apk' => $apk,
             'confidence' => $riskResult['confidence'],
             'source' => $riskResult['source'],

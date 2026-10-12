@@ -55,14 +55,16 @@ class TekunNiagaWorkflowSeeder extends Seeder
             ],
         ]);
 
-        $this->upsertDetail($semakan, 'APPROVE', 1, $sokongan, 'Disemak', 'lulus');
-        $this->upsertDetail($semakan, 'REJECT', 2, null, 'Ditolak', 'tolak');
+        $this->upsertDetail($semakan, 'CHECK', 1, $sokongan, 'Disemak', 'lulus', 'Semak');
+        $this->upsertDetail($semakan, 'REJECT', 2, null, 'Ditolak', 'tolak', 'Tolak');
+        $this->removeLegacyDetail($semakan, 'APPROVE');
 
-        $this->upsertDetail($sokongan, 'APPROVE', 1, $kelulusan, 'Disokong', 'lulus');
-        $this->upsertDetail($sokongan, 'REJECT', 2, null, 'Ditolak', 'tolak');
+        $this->upsertDetail($sokongan, 'SUPPORT', 1, $kelulusan, 'Disokong', 'lulus', 'Sokong');
+        $this->upsertDetail($sokongan, 'REJECT', 2, null, 'Ditolak', 'tolak', 'Tolak');
+        $this->removeLegacyDetail($sokongan, 'APPROVE');
 
-        $this->upsertDetail($kelulusan, 'APPROVE', 1, null, 'Diluluskan', 'lulus');
-        $this->upsertDetail($kelulusan, 'REJECT', 2, null, 'Ditolak', 'tolak');
+        $this->upsertDetail($kelulusan, 'APPROVE', 1, null, 'Diluluskan', 'lulus', 'Lulus');
+        $this->upsertDetail($kelulusan, 'REJECT', 2, null, 'Ditolak', 'tolak', 'Tolak');
 
         $this->upsertAuthorizedRole($semakan, 'penyemak');
         $this->upsertAuthorizedRole($sokongan, 'penyokong');
@@ -95,6 +97,7 @@ class TekunNiagaWorkflowSeeder extends Seeder
         ?WfProcess $reroute,
         string $permohonanStatus,
         string $keputusan,
+        string $statusDesc,
     ): void {
         WfProcessDetail::updateOrCreate(
             [
@@ -105,12 +108,20 @@ class TekunNiagaWorkflowSeeder extends Seeder
                 'wpd_reroute_process' => $reroute?->wfp_process_id,
                 'wpd_order' => $order,
                 'wpd_extended_field' => [
-                    'wpd_status_desc' => $statusCode === 'APPROVE' ? 'Lulus' : 'Tolak',
+                    'wpd_status_desc' => $statusDesc,
                     'permohonan_status' => $permohonanStatus,
                     'keputusan' => $keputusan,
                 ],
             ],
         );
+    }
+
+    private function removeLegacyDetail(WfProcess $process, string $statusCode): void
+    {
+        WfProcessDetail::query()
+            ->where('wpd_process_id', $process->wfp_process_id)
+            ->where('wpd_status_code', $statusCode)
+            ->delete();
     }
 
     private function upsertAuthorizedRole(WfProcess $process, string $roleName): void

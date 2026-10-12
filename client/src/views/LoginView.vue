@@ -6,6 +6,7 @@ import { Shield, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-vue-next";
 import { useI18n } from "@/composables/useI18n";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteStore } from "@/stores/site";
+import { defaultAdminLandingRoute } from "@/utils/permissions";
 import { API_BASE_URL } from "@/env";
 
 const router = useRouter();
@@ -32,7 +33,7 @@ async function submit() {
   error.value = "";
   try {
     await auth.signIn(email.value, password.value);
-    router.push("/admin");
+    router.push(defaultAdminLandingRoute(auth.user?.permissions));
   } catch (e) {
     error.value = e instanceof Error ? e.message : t("auth.loginFailed");
   }

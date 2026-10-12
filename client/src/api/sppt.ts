@@ -5,7 +5,22 @@ import type {
   AiRiskScoringResult,
   AiCreditScoringInput,
   AiCreditScoringResult,
+  PembiayaanFormulaComparison,
+  PembiayaanFormulaDefaults,
+  PembiayaanFormulaInput,
+  PermohonanPenilaianInput,
+  PermohonanPenilaianSaveResult,
   AkaunPembiayaan,
+  BatchBayaran,
+  JadualAnsuranRow,
+  PermohonanPenjadualan,
+  PermohonanPenjadualanInput,
+  TawidhConfig,
+  KoleksiConfig,
+  NplAgingBucket,
+  NotisKutipan,
+  TransaksiBayaran,
+  TransaksiBayaranInput,
   DocumentClassification,
   Permohonan,
   PermohonanAttachment,
@@ -241,6 +256,25 @@ export async function scorePermohonanCredit(permohonanId: number) {
   });
 }
 
+export async function getPembiayaanFormulaDefaults() {
+  return apiRequest<{ data: PembiayaanFormulaDefaults }>("/api/sppt/pembiayaan-formula/defaults");
+}
+
+export async function calculatePembiayaanFormula(input: PembiayaanFormulaInput) {
+  return apiRequest<{ data: PembiayaanFormulaComparison }>("/api/sppt/pembiayaan-formula/calculate", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function savePermohonanPenilaian(permohonanId: number, input: PermohonanPenilaianInput) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PermohonanPenilaianSaveResult }>(`/api/sppt/permohonan/${permohonanId}/penilaian`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function verifyPermohonanDocument(
   file: File,
   applicantIc?: string,
@@ -375,4 +409,88 @@ export async function getJaminanSummary() {
 
 export async function listKutipan(params: Record<string, string | number | undefined> = {}) {
   return apiRequest<{ data: unknown[]; meta: Record<string, unknown> }>(`/api/sppt/kutipan${query(params)}`);
+}
+
+export async function getAkaunJadual(akaunDbId: number) {
+  return apiRequest<{ data: JadualAnsuranRow[] }>(`/api/sppt/akaun/${akaunDbId}/jadual`);
+}
+
+export async function listPenjadualan(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: PermohonanPenjadualan[]; meta: Record<string, unknown> }>(`/api/sppt/penjadualan${query(params)}`);
+}
+
+export async function createPenjadualan(input: PermohonanPenjadualanInput) {
+  return apiRequest<{ data: PermohonanPenjadualan }>("/api/sppt/penjadualan", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function approvePenjadualan(id: number, tindakan: "lulus" | "tolak", catatanPegawai?: string) {
+  return apiRequest<{ data: PermohonanPenjadualan }>(`/api/sppt/penjadualan/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ tindakan, catatanPegawai }),
+  });
+}
+
+export async function listBayaran(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: TransaksiBayaran[]; meta: Record<string, unknown> }>(`/api/sppt/bayaran${query(params)}`);
+}
+
+export async function createBayaran(input: TransaksiBayaranInput) {
+  return apiRequest<{ data: TransaksiBayaran }>("/api/sppt/bayaran", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function createBatchBayaran(saluran: string, rows: Array<{ noAkaun: string; jumlah: number; noRujukanLuar?: string }>) {
+  return apiRequest<{ data: BatchBayaran }>("/api/sppt/bayaran/batch", {
+    method: "POST",
+    body: JSON.stringify({ saluran, rows }),
+  });
+}
+
+export async function listBatchBayaran(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: BatchBayaran[]; meta: Record<string, unknown> }>(`/api/sppt/bayaran/batches${query(params)}`);
+}
+
+export async function fetchTawidhConfig() {
+  return apiRequest<{ data: TawidhConfig }>("/api/sppt/tawidh/config");
+}
+
+export async function recalculateTawidhAll() {
+  return apiRequest<{ data: { akaunDikira: number } }>("/api/sppt/tawidh/recalculate", { method: "POST" });
+}
+
+export async function listTunggakanAkaun(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: AkaunPembiayaan[]; meta: Record<string, unknown> }>(`/api/sppt/tawidh/tunggakan${query(params)}`);
+}
+
+export async function fetchKoleksiConfig() {
+  return apiRequest<{ data: KoleksiConfig }>("/api/sppt/koleksi/config");
+}
+
+export async function listKlasifikasiAkaun(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: AkaunPembiayaan[]; meta: Record<string, unknown> }>(`/api/sppt/koleksi/klasifikasi${query(params)}`);
+}
+
+export async function fetchKlasifikasiSummary() {
+  return apiRequest<{ data: NplAgingBucket[] }>("/api/sppt/koleksi/klasifikasi/summary");
+}
+
+export async function recalculateKlasifikasiNpl() {
+  return apiRequest<{ data: { akaunDikemaskini: number } }>("/api/sppt/koleksi/klasifikasi/recalculate", { method: "POST" });
+}
+
+export async function listNotisKutipan(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: NotisKutipan[]; meta: Record<string, unknown> }>(`/api/sppt/koleksi/notis${query(params)}`);
+}
+
+export async function processDunning() {
+  return apiRequest<{ data: { notisDijana: number; notisDihantar: number; gagal: number } }>("/api/sppt/koleksi/notis/process", { method: "POST" });
+}
+
+export function notisKutipanPdfUrl(dbId: number) {
+  return `${API_BASE_URL}/api/sppt/koleksi/notis/${dbId}/pdf`;
 }

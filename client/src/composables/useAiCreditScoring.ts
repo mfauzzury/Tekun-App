@@ -1,4 +1,4 @@
-import type { AiCreditScoringResult } from "@/types";
+import type { AiCreditScoringResult, EdgeCaseMitigation } from "@/types";
 
 export function decisionActionClass(action: string): string {
   if (action === "auto_approve") return "bg-emerald-100 text-emerald-800 border-emerald-200";
@@ -29,12 +29,69 @@ export function applyCreditScoreToForm(credit: AiCreditScoringResult): {
   keputusan: string;
 } {
   let keputusan = "";
-  if (credit.recommendedAction === "auto_approve") keputusan = "Lulus";
-  else if (credit.recommendedAction === "reject_escalate") keputusan = "Tolak";
+  if (credit.recommendedAction === "auto_approve" && !credit.edgeCase?.autoApproveBlocked) {
+    keputusan = "Lulus";
+  } else if (credit.recommendedAction === "reject_escalate") {
+    keputusan = "Tolak";
+  }
 
   return {
     skorKredit: String(credit.creditScore),
     cadanganPembiayaan: formatRecommendedLimit(credit.recommendedLimit),
     keputusan,
   };
+}
+
+export function applyMitigationToForm(
+  form: {
+    cadanganPembiayaan: string;
+    tempohPembiayaan: number;
+    catatan: string;
+    keputusan?: string;
+  },
+  mitigation: EdgeCaseMitigation,
+): void {
+  const noteLines: string[] = [];
+
+  switch (mitigation.code) {
+    case "reduce_amount":
+      if (mitigation.suggestedAmountLabel) {
+        form.cadanganPembiayaan = mitigation.suggestedAmountLabel;
+      } else if (mitigation.suggestedAmount != null) {
+        form.cadanganPembiayaan = formatRecommendedLimit(mitigation.suggestedAmount);
+      }
+      noteLines.push(`${mitigation.title}: ${mitigation.description}`);
+      break;
+    case "extend_tenure":
+      if (mitigation.suggestedTenureMonths) {
+        form.tempohPembiayaan = mitigation.suggestedTenureMonths;
+      }
+      noteLines.push(`${mitigation.title}: tempoh ${mitigation.suggestedTenureMonths ?? "-"} bulan`);
+      break;
+    case "additional_guarantor":
+      noteLines.push(`${mitigation.title}: ${mitigation.description}`);
+      break;
+    case "restructure_package":
+      if (mitigation.suggestedAmountLabel) {
+        form.cadanganPembiayaan = mitigation.suggestedAmountLabel;
+      } else if (mitigation.suggestedAmount != null) {
+        form.cadanganPembiayaan = formatRecommendedLimit(mitigation.suggestedAmount);
+      }
+      if (mitigation.suggestedTenureMonths) {
+        form.tempohPembiayaan = mitigation.suggestedTenureMonths;
+      }
+      noteLines.push(`${mitigation.title}: ${mitigation.description}`);
+      break;
+    default:
+      noteLines.push(`${mitigation.title}: ${mitigation.description}`);
+  }
+
+  if (noteLines.length) {
+    const line = noteLines[0];
+    form.catatan = form.catatan ? `${form.catatan}\n${line}` : line;
+  }
+
+  if (form.keputusan === "Lulus") {
+    form.keputusan = "Tangguh";
+  }
 }

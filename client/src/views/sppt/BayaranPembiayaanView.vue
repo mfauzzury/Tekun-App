@@ -43,13 +43,14 @@ const items = computed(() => {
 });
 
 const modules = [
-  { label: "Terima Bayaran", to: "/admin/pembayaran/terima", desc: "FPX, e-Wallet, Auto Debit, Kaunter" },
+  { label: "Terima Bayaran", to: "/admin/pembayaran/terima", desc: "FPX, JomPAY, e-Wallet, Auto Debit, Kaunter" },
   { label: "Pemadanan Resit", to: "/admin/pembayaran/pemadanan", desc: "Auto & manual matching" },
   { label: "Rekonsiliasi Bank", to: "/admin/pembayaran/rekon", desc: "Pemadanan penyata bank" },
   { label: "Lebihan & Kekurangan", to: "/admin/pembayaran/lebihan-kekurangan", desc: "Overpayment / underpayment" },
   { label: "Penyata Bayaran", to: "/admin/pembayaran/penyata", desc: "Jana & muat turun penyata" },
   { label: "Early Settlement", to: "/admin/pembayaran/early-settlement", desc: "Penyelesaian awal" },
   { label: "Akaun Selesai Bayar", to: "/admin/pembayaran/selesai-bayar", desc: "NOD & dashboard" },
+  { label: "Pemantauan Tunggakan", to: "/admin/pembayaran/tunggakan", desc: "Klasifikasi NPL, Ta'widh & notis kutipan" },
   { label: "AI Bayaran", to: "/admin/pembayaran/ai", desc: "OCR, analitik, chatbot" },
 ];
 </script>

@@ -36,7 +36,8 @@ class RoleSeeder extends Seeder
             [
                 'description' => 'Pegawai penyemak permohonan (cawangan)',
                 'permissions' => [
-                    'sppt.view', 'sppt.edit', 'sppt.semakan',
+                    'sppt.view', 'sppt.create', 'sppt.edit', 'sppt.semakan',
+                    'chat.use',
                 ],
             ]
         );
@@ -46,7 +47,8 @@ class RoleSeeder extends Seeder
             [
                 'description' => 'Pegawai penyokong permohonan (cawangan)',
                 'permissions' => [
-                    'sppt.view', 'sppt.edit', 'sppt.sokongan',
+                    'sppt.view', 'sppt.create', 'sppt.edit', 'sppt.sokongan',
+                    'chat.use',
                 ],
             ]
         );
@@ -56,7 +58,8 @@ class RoleSeeder extends Seeder
             [
                 'description' => 'Pegawai pelulus permohonan (semua cawangan)',
                 'permissions' => [
-                    'sppt.view', 'sppt.edit', 'sppt.kelulusan',
+                    'sppt.view', 'sppt.create', 'sppt.edit', 'sppt.kelulusan',
+                    'chat.use',
                 ],
             ]
         );

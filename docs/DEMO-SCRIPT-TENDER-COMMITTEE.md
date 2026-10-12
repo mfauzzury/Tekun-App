@@ -1,247 +1,581 @@
-# Demo Script: Sistem Pengurusan Pembiayaan TEKUN (SPPT)
+# Skrip Demo POC SPPT — Jawatankuasa Tender
 
-**Untuk:** Jawatankuasa Tender TEKUN Nasional  
-**Tempoh Cadangan:** 25–30 minit  
-**Tarikh:** _______________  
-**Pembentang:** _______________
-
----
-
-## Persiapan Sebelum Demo
-
-- [ ] Pastikan `npm run dev:cms` berjalan (API: port 4000, Web: port 5180)
-- [ ] Buka browser: `http://localhost:5180` (Storefront) dan `http://localhost:5180/admin` (Admin)
-- [ ] Portal Pemohon: `http://localhost:5180/portal`
-- [ ] Login Admin: `admin@example.com` / `admin12345`
-- [ ] Sediakan skrin bersih, tutup tab tidak berkaitan
-- [ ] Uji sambungan internet (untuk integrasi masa depan)
-- [ ] Sediakan backup: tangkapan skrin / video jika demo gagal
+**Rujukan:** `Skrip POC Petender SPPT - Final.pdf` (PMO TEKUN Nasional)  
+**Projek:** Sistem Pengurusan Pembiayaan TEKUN (SPPT)  
+**Tempoh cadangan:** 35–40 minit (versi ringkas: 25 minit — lihat Jadual A)  
+**Pembentang:** _______________  
+**Tarikh demo:** _______________
 
 ---
 
-## Bahagian 1: Pembukaan & Nilai Usaha (3 minit)
+## 1. Matlamat Demo
 
-### Naratif Pembentang
+Demonstrasi **live** keupayaan teknikal SPPT POC mengikut enam modul skrip tender:
+
+| # | Modul (PDF) | Fokus pembuktian |
+|---|-------------|------------------|
+| 1 | Permohonan & Semakan Kelayakan Awalan | Omnichannel, integrasi, hard rules, eKYC, borang dinamik |
+| 2 | Penilaian Risiko & Skor Kredit | AI scoring, formula pembiayaan, edge cases, surat tawaran |
+| 3 | Aliran Kerja Kelulusan Berperingkat | Cawangan → Ibu Pejabat, RBAC, aging/escalation |
+| 4 | Pengurusan Akaun & Pembayaran Balik | Penjadualan semula, multi-saluran bayaran, Ta'widh |
+| 5 | Pemulihan & Kutipan Hutang | Klasifikasi NPL, dunning automatik, notis PDF |
+| 6 | Dashboard & Pelaporan | KPI eksekutif, Power BI, eksport |
+
+---
+
+## 2. Persiapan Teknikal (1 hari sebelum / 30 minit sebelum demo)
+
+### 2.1 Jalankan persekitaran
+
+```powershell
+cd C:\Tekun\sppt-poc-repo
+composer dev:win
+```
+
+| Perkhidmatan | URL |
+|--------------|-----|
+| Portal Pemohon | http://localhost:5180/pemohon |
+| Portal Pegawai (Admin) | http://localhost:5180/admin |
+| Webfront awam | http://localhost:5180/ |
+| API Laravel | http://localhost:8000 |
+
+### 2.2 Seed data (jika perlu)
+
+```powershell
+php artisan migrate
+php artisan db:seed
+```
+
+Seeder penting: `TekunNiagaWorkflowSampleSeeder` (permohonan contoh di pelbagai peringkat workflow), `HuluLangatCawanganUserSeeder`, `IbuPejabatApproverUserSeeder`.
+
+### 2.3 Akaun demo
+
+| Peranan | E-mel | Kata laluan | Guna untuk |
+|---------|-------|-------------|------------|
+| Pentadbir | `admin@example.com` | `admin12345` | Overview, tetapan, laporan |
+| Penyemak Cawangan | `penyemak1.hululangat@tekun.gov.my` | `Tekun123!` | Modul 1 & 3 — Semakan |
+| Penyokong Cawangan | `penyokong.hululangat@tekun.gov.my` | `Tekun123!` | Modul 3 — Sokongan |
+| Pelulus Ibu Pejabat | `pelulus.ibupejabat@tekun.gov.my` | `Tekun123!` | Modul 3 — Kelulusan |
+| Pemohon (contoh) | Daftar baharu semasa demo | — | Modul 1 — self-service |
+
+> **Nota OTP:** Pendaftaran pemohon menggunakan OTP SMS/e-mel sebenar jika Twilio/Mail dikonfigurasi. Untuk demo tanpa SMS, gunakan aliran **Log Masuk Demo** di `/pemohon/log-masuk` (akaun demo: `demo@pemohon.my` / `demo1234` jika tersedia) atau daftar dengan e-mel dan semak log Laravel (`storage/logs/laravel.log`) untuk kod OTP.
+
+### 2.4 Senarai semak hari demo
+
+- [ ] `composer dev:win` berjalan tanpa ralat
+- [ ] Buka dua tab: **Pemohon** + **Admin** (Chrome/Edge, zoom 100%)
+- [ ] Tutup tab tidak berkaitan; matikan notifikasi OS
+- [ ] Sediakan backup: tangkapan skrin modul kritikal + video rakaman (jika ada)
+- [ ] Uji sekali aliran penuh Modul 1→3 (15 min dry run)
+- [ ] Pastikan `VITE_POWERBI_REPORT_URL` dikonfigurasi jika demo Power BI (atau gunakan URL lalai dalam `client/src/env.ts`)
+
+### 2.5 Legenda status ciri
+
+| Tag | Maksud |
+|-----|--------|
+| **LIVE** | Berfungsi dalam POC — tunjukkan secara langsung |
+| **SIM** | Simulasi / mock integrasi — jelaskan sebagai reka bentuk sedia untuk API sebenar |
+| **ROADMAP** | Belum dibina — nyatakan fasa seterusnya |
+
+---
+
+## 3. Pembukaan (2 minit)
+
+### Naratif
 
 > *"Yang Berbahagia Tuan Pengerusi, ahli jawatankuasa tender yang dihormati,*
 >
-> *Terima kasih atas peluang membentang penyelesaian kami untuk Sistem Pengurusan Pembiayaan TEKUN — SPPT.*
+> *Terima kasih atas peluang membentang penyelesaian SPPT — Sistem Pengurusan Pembiayaan TEKUN Nasional.*
 >
-> *SPPT direka untuk menyokong keseluruhan kitaran pembiayaan TEKUN — daripada permohonan usahawan sehingga pemantauan bayaran balik dan pelaporan. Kami menawarkan tiga nilai utama:*
+> *Demo hari ini mengikut skrip POC rasmi PMO TEKUN, enam modul, secara live. Kami akan tunjukkan:*
+> - *Pengalaman pemohon omnichannel (portal self-service + kemasukan pegawai)*
+> - *Enjin kelayakan automatik dan sokongan keputusan AI*
+> - *Aliran kelulusan berperingkat Cawangan → Ibu Pejabat*
+> - *Operasi pasca-kelulusan: akaun, bayaran, kutipan, dan pelaporan eksekutif*
 >
-> 1. **Digitalisasi Bersepadu** — Satu platform untuk pegawai dan pemohon, mengurangkan kerja berulang dan ralat manusia.
-> 2. **AI-Assisted Decision Support** — Sokongan keputusan pintar untuk penilaian risiko, pengesahan dokumen, dan pengesanan penipuan — tanpa menggantikan kuasa pegawai.
-> 3. **Pematuhan & Audit Trail** — Rekod lengkap, kawalan akses berasaskan peranan, dan kesediaan untuk integrasi JPN, SSM, APK.
->
-> *Saya akan tunjukkan aliran pengguna dari perspektif pemohon dan pegawai, diikuti oleh visi AI dan integrasi.*"
+> *Ciri yang ditanda simulasi adalah reka bentuk integrasi sedia — bukan kekurangan fungsi teras sistem."*
 
 ---
 
-## Bahagian 2: Portal Pemohon — Pengalaman Usahawan (8 minit)
+## 4. Modul 1 — Permohonan & Semakan Kelayakan Awalan (~8 minit)
 
-### 2.1 Laman Utama & Login (2 minit)
+**Keperluan PDF:** Omnichannel, integrasi integriti/kredit, saringan auto-kelayakan, laman utama, pendaftaran OTP, eKYC, borang dinamik, penjejakan status.
 
-**Tindakan:** Buka `/portal` atau `/portal/login`
+### 4.1 Laman Utama & Hebahan (1.1) — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Buka portal pemohon | `/pemohon` |
+| *(Pilihan)* Webfront awam | `/` |
+
+**Tunjuk:** UI responsif, hebahan skim pembiayaan, pautan Daftar / Log Masuk.
 
 **Naratif:**
 
-> *"Pemohon mula di Portal Pemohon. Mereka boleh daftar akaun baru atau log masuk. Antara muka direka responsif — boleh digunakan di desktop dan mudah alih."*
+> *"Pemohon boleh akses SPPT melalui portal web responsif — sesuai desktop dan mudah alih. Hebahan skim pembiayaan semasa dipaparkan di laman utama."*
+
+---
+
+### 4.2 Pendaftaran Akaun + OTP (1.2) — **LIVE** (OTP **SIM** jika tiada Twilio)
+
+| Tindakan | URL |
+|----------|-----|
+| Daftar akaun | `/pemohon/daftar` |
 
 **Tunjuk:**
-- Halaman login yang bersih
-- Pautan Daftar Akaun
-- *(Jika ada)* Pemilih bahasa BM/BI
-
----
-
-### 2.2 Permohonan Baru — Wizard 12 Langkah (4 minit)
-
-**Tindakan:** Klik **Permohonan Baru** → `/portal/permohonan/baru`
+1. Isi nama, MyKad, telefon, e-mel, kata laluan (polisi keselamatan)
+2. Pilih saluran OTP (SMS / E-mel)
+3. Sahkan OTP → redirect ke semakan kelayakan
 
 **Naratif:**
 
-> *"Permohonan baru mengikut borang BPP TEKUN dalam format wizard langkah demi langkah. Ini mengurangkan rasa tertekan pemohon dan memastikan data lengkap."*
-
-**Tunjuk mengikut langkah:**
-
-| Langkah | Apa yang ditunjuk | Naratif ringkas |
-|---------|-------------------|-----------------|
-| 1 | Pilih **Individu** atau **Syarikat** | *"Pemohon pilih kategori — borang berubah secara dinamik mengikut pilihan."* |
-| 2 | Borang maklumat asas (Nama, MyKad, alamat, dll.) | *"Medan selari dengan BPP-01 — maklumat asas, pasangan, perniagaan."* |
-| 3 | Jenis perniagaan (Patuh Syariah / Tidak Patuh / Bercampur) | *"Sokongan penuh untuk pemilihan syariah."* |
-| 4 | Produk pembiayaan (SPUMI, Kontrak-i, Tekun Niaga, dll.) | *"Semua skim TEKUN disokong — Qard, TEMAN TEKUN, SPUMI, dan lain-lain."* |
-| 5 | Muat naik dokumen (IC, Lesen, Penyata Bank) | *"Drag-and-drop muat naik — sokongan batch. Rancangan: AI-OCR untuk auto-extract data."* |
-| 6 | Semakan & Hantar | *"Pemohon semak maklumat sebelum hantar. Rujukan permohonan dijana automatik."* |
-
-**Penekanan:**
-
-> *"Struktur borang mematuhi BPP-01 TEKUN. Untuk fasa seterusnya, kami merancang auto-fill dari MyGDX, JPN, SSM, dan pengesahan APK (EXPERIAN, CTOS, CCRIS) semasa kemasukan data."*
+> *"Pendaftaran baharu termasuk pengesahan TAC/OTP untuk keselamatan identiti. Integrasi SMS/e-mel production menggunakan Twilio / SMTP rasmi TEKUN."*
 
 ---
 
-### 2.3 Permohonan Saya & Profil Usahawan (2 minit)
+### 4.3 Saringan Auto-Kelayakan / Hard Rules (1.4 + PDF Modul 1) — **LIVE**
 
-**Tindakan:** Klik **Permohonan Saya** → `/portal/permohonan`
+| Tindakan | URL |
+|----------|-----|
+| Semakan kelayakan | `/pemohon/semakan-kelayakan` |
+
+**Senario A — Lulus (tunjuk dulu):**
+
+| Medan | Nilai |
+|-------|-------|
+| Umur | 30 |
+| No. KP | `850101-10-1234` |
+| Pendapatan bulanan | RM 3,000 |
+| Komitmen sedia ada | RM 500 |
+
+**Tunjuk:** Status **Layak**, senarai peraturan aktif dari API `/api/public/sppt/hard-rules`, skor risiko AI awal.
+
+**Senario B — Auto-reject (tunjuk cepat):**
+
+| Medan | Nilai | Sebab |
+|-------|-------|-------|
+| Umur | 17 | Bawah had umur |
+| ATAU No. KP | `800101-01-0001` | Senarai hitam |
+| ATAU Komitmen tinggi | Pendapatan RM 2,000, komitmen RM 1,900 | Nisbah komitmen melebihi had |
 
 **Naratif:**
 
-> *"Selepas hantar, pemohon boleh semak semua permohonan di satu tempat. Status dipaparkan dengan jelas: Diterima, Dalam Semakan, Dokumen Tambahan Diperlukan, Lulus, Tidak Lulus."*
+> *"Enjin Hard Rules Check menapis permohonan secara automatik — umur, senarai hitam, dan had komitmen kewangan. Permohonan yang gagal ditolak tanpa membebankan pegawai."*
+
+---
+
+### 4.4 Pengesahan Identiti eKYC (1.3) — **SIM**
+
+| Tindakan | URL |
+|----------|-----|
+| eKYC | `/pemohon/ekyc` |
+
+**Tunjuk:** Muat naik / imbas IC (simulasi), liveness detection, keputusan lulus/gagal.
+
+**Naratif:**
+
+> *"Modul eKYC menyokong imbasan dokumen dan padanan wajah. POC menggunakan simulasi; production disambung ke vendor eKYC berlesen (contoh: MyDigital ID)."*
+
+---
+
+### 4.5 Borang Permohonan Digital + Draf (3.5) — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Permohonan baharu (pemohon) | `/pemohon/permohonan/baru` |
+| ATAU kemasukan pegawai | `/admin/permohonan/baru` (login pegawai) |
 
 **Tunjuk:**
-- Senarai permohonan dengan status berwarna
-- Filter mengikut status
-- Nombor rujukan permohonan
-
-**Tindakan:** Klik **Profil Usahawan** → `/portal/profil`
+- Borang wizard berbilang langkah (individu/syarikat, produk TEKUN Niaga, dll.)
+- Validasi medan wajib
+- Simpan draf → kembali kemudian
+- Muat naik dokumen (IC, lesen, penyata bank)
 
 **Naratif:**
 
-> *"Profil usahawan digital menyimpan maklumat lengkap, checklist dokumen, dan status syariah. Ini memudahkan pemohon tahu apa yang sudah lengkap dan apa yang masih perlu."*
+> *"Borang digital dinamik mengikut jenis pemohon dan produk. Pegawai cawangan juga boleh kemasukan bagi pihak — omnichannel seperti keperluan tender."*
 
 ---
 
-## Bahagian 3: Portal Admin — Pengurusan Pegawai (7 minit)
+### 4.6 Integrasi Integriti / Kredit (PDF Modul 1) — **SIM**
 
-### 3.1 Login Admin & Dashboard (2 minit)
+**Naratif (semasa borang / semakan):**
 
-**Tindakan:** Buka `/admin/login` → Log masuk `admin@example.com` / `admin12345`
+> *"Reka bentuk SPPT sedia untuk panggilan API masa nyata: muflis/e-Syariah, SSM, CCRIS, CTOS. POC memaparkan slot integrasi dan simulasi respons; sambungan production bergantung kebenaran agensi."*
+
+**Tunjuk (jika masa):** `/admin/settings/integrasi` atau halaman Integrasi dalam menu Tetapan.
+
+---
+
+### 4.7 Penyerahan & Penjejakan Status (3.6) — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Senarai permohonan pemohon | `/pemohon/permohonan` |
+| Timeline status | Klik permohonan → butiran |
+
+**Tunjuk:** Nombor rujukan, status berwarna, garis masa workflow.
 
 **Naratif:**
 
-> *"Pegawai TEKUN mengakses portal pentadbiran. Akses dikawal mengikut peranan — Pentadbir, Pegawai Operasi, Penilai, Kewangan, Pemantauan, Undang-undang."*
+> *"Selepas hantar, pemohon jejak status secara real-time — Diterima, Dalam Semakan, Dokumen Tambahan, Lulus, Tolak."*
+
+---
+
+## 5. Modul 2 — Penilaian Risiko & Skor Kredit (~7 minit)
+
+**Keperluan PDF:** Enjin pemarkahan, formula fleksibel, edge cases, dashboard penilai, pra-penilaian, kelulusan, surat tawaran.
+
+### 5.1 Dashboard / Inbox Pegawai Penilai (2.1) — **LIVE**
+
+| Tindakan | URL | Login |
+|----------|-----|-------|
+| Senarai penilaian | `/admin/pembiayaan/penilaian` | `admin@example.com` |
+| Penilaian baharu | `/admin/pembiayaan/penilaian/baru` | |
+
+**Tunjuk:** Senarai permohonan menunggu penilaian, filter, paparan berasaskan peranan.
+
+---
+
+### 5.2 AI Credit Scoring (2.3) — **LIVE**
+
+| Tindakan | Lokasi |
+|----------|--------|
+| Panel AI Credit Scoring | `/admin/pembiayaan/penilaian/baru` → pilih permohonan → **Jana Skor Kredit** |
 
 **Tunjuk:**
-- Dashboard admin
-- Menu utama (Posts, Pages, Categories, Media, Settings)
-- *(Jika ada)* Modul pembiayaan / permohonan
-
----
-
-### 3.2 Modul Pembiayaan — Aliran Kerja (3 minit)
+- Skor / gred risiko
+- Cadangan had pembiayaan
+- Kategori (Low / Medium / High / Borderline)
 
 **Naratif:**
 
-> *"SPPT menyokong sepuluh modul utama mengikut SRS:*
->
-> - *Pendaftaran & Permohonan*
-> - *Penilaian & Kelulusan*
-> - *Pengeluaran Dana*
-> - *Pengurusan Akaun*
-> - *Bayaran Pembiayaan*
-> - *Pemantauan & Kutipan*
-> - *Undang-Undang & Litigasi*
-> - *Laporan & Analitik*
-> - *Audit & Kawalan Dalaman*
-> - *Integrasi Pihak Ketiga*
-> - *Pengurusan Jaminan*
-> - *Pemantauan Usahawan*
->
-> *Setiap modul mengikut aliran: Input → Validation → Approval → Update → Notification. Ini memastikan konsistensi dan audit trail."*
-
-**Tunjuk:** *(Sesuaikan dengan apa yang sedia ada dalam UI)*
-- Senarai permohonan untuk penilaian
-- Status workflow
-- Butang kelulusan / penolakan
+> *"AI berfungsi sebagai decision-support — pegawai kekal membuat keputusan muktamad. Skor dijana berdasarkan parameter matrik TEKUN: industri, aliran tunai, komitmen."*
 
 ---
 
-### 3.3 Laporan & Analitik (2 minit)
+### 5.3 Formula Pengiraan & Jadual Pelunasan (2.x Fleksibiliti) — **LIVE**
+
+| Tindakan | Lokasi |
+|----------|--------|
+| Panel Formula Pembiayaan | Halaman Penilaian Baharu — **PembiayaanFormulaPanel** |
+
+**Tunjuk:**
+- Kadar flat vs reducing balance
+- Jumlah, tempoh, keuntungan
+- Jadual ansuran (amortization) auto-jana
 
 **Naratif:**
 
-> *"Modul Laporan menyokong:*
-> - *Laporan Statistik Pembiayaan*
-> - *Laporan Prestasi Bayaran Balik*
-> - *Laporan Tunggakan*
-> - *Laporan Prestasi Pegawai*
-> - *Laporan Pemantauan Usahawan*
->
-> *Data boleh dieksport untuk mesyuarat pengurusan dan pematuhan."*
+> *"Formula boleh dikonfigurasi — flat rate atau baki berkurang — dan jadual pelunasan dijana automatik."*
 
 ---
 
-## Bahagian 4: AI & Inovasi — Sokongan Keputusan (5 minit)
+### 5.4 Edge Case / Borderline (2.x Simulasi Kes Sempadan) — **LIVE/SIM**
 
-### Naratif (Slide / Paparan)
+**Tunjuk:** Permohonan dengan skor borderline → cadangan mitigasi (kurangkan amaun, penjamin tambahan) dalam panel penilaian.
 
-> *"SPPT dirancang dengan lima ciri AI sebagai sokongan keputusan — bukan pengganti pegawai:*
->
-> | Ciri AI | Fungsi | Manfaat |
-> |---------|--------|---------|
-> | **1. AI Loan Risk Scoring** | Skor risiko automatik berdasarkan data sejarah | Penilaian lebih pantas, konsisten |
-> | **2. AI Document OCR + Validation** | Ekstrak data dari IC, penyata bank, lesen | Kurangkan kerja manual, kurang ralat |
-> | **3. AI Fraud Detection** | Pengesanan identiti duplikat, akaun berulang, anomali | Lindungi dana, pematuhan audit |
-> | **4. AI Repayment Prediction** | Ramalan bayaran lewat / default | Campur tangan awal, kurangkan NPL |
-> | **5. AI Chatbot** | Bantuan BM/BI untuk pemohon | Kurangkan beban pusat panggilan |
->
-> *Semua AI berfungsi sebagai decision-support — pegawai tetap membuat keputusan muktamad."*
+**Naratif:**
 
-**Tunjuk:** Halaman Bantuan `/portal/bantuan` — UI Chatbot & FAQ
-
-> *"Ini adalah asas untuk AI Chatbot — sokongan NLP BM/BI dan handover ke pegawai akan ditambah dalam fasa integrasi."*
+> *"Untuk kes kelabu, sistem mencadangkan mitigasi — penstrukturan semula amaun atau keperluan penjamin — tanpa auto-lulus."*
 
 ---
 
-## Bahagian 5: Keselamatan, Pematuhan & Teknikal (4 minit)
+### 5.5 Surat Tawaran PDF (2.5) — **LIVE**
+
+| Tindakan | Lokasi |
+|----------|--------|
+| Muat turun Surat Tawaran | Penilaian Baharu → permohonan berstatus Lulus → **Muat Turun Surat Tawaran** |
+
+**Tunjuk:** PDF `surat-tawaran.blade.php` dijana automatik.
+
+**Naratif:**
+
+> *"Selepas kelulusan, Surat Tawaran rasmi dijana automatik dalam PDF — sedia untuk cetak atau e-mel."*
+
+---
+
+## 6. Modul 3 — Aliran Kerja Kelulusan Berperingkat (~6 minit)
+
+**Keperluan PDF:** Aliran dinamik Cawangan→HQ, notifikasi/escalation aging, matriks kuasa melulus.
+
+### 6.1 Aliran Digital 3 Peringkat — **LIVE**
+
+Gunakan permohonan seeder (contoh: `PM-2026-WF-SEM-001`) atau hantar permohonan baharu dari Modul 1.
+
+| Peringkat | URL | Akaun | Tindakan demo |
+|-----------|-----|-------|---------------|
+| **Semakan** | `/admin/permohonan/semakan` | `penyemak1.hululangat@tekun.gov.my` | Buka permohonan → **Sahkan Semakan** + catatan |
+| **Sokongan** | `/admin/permohonan/sokongan` | `penyokong.hululangat@tekun.gov.my` | **Sokong Permohonan** |
+| **Kelulusan** | `/admin/permohonan/kelulusan` | `pelulus.ibupejabat@tekun.gov.my` | **Luluskan** / **Tolak** / **Kembalikan untuk penjelasan** |
+
+**Tunjuk:**
+- Fail digital bergerak peringkat demi peringkat — tiada muat turun manual
+- Sejarah workflow / audit trail
+- Scope cawangan (penyemak hanya lihat cawangan sendiri)
+
+**Naratif:**
+
+> *"Aliran TEKUN Niaga: Pegawai Cawangan (Semakan) → Pengurus/Penyokong (Sokongan) → Jawatankuasa Ibu Pejabat (Kelulusan). Semua dalam sistem, dengan jejak audit penuh."*
+
+---
+
+### 6.2 Kuasa Melulus / Approval Authority Matrix — **SIM/ROADMAP**
+
+**Naratif:**
+
+> *"Matriks kuasa melulus (contoh: Pengurus Cawangan sehingga RM10,000) boleh dikonfigurasi dalam Tetapan Setup. POC menunjukkan aliran berperingkat; had limit automatik adalah konfigurasi perniagaan dalam fasa production."*
+
+**Tunjuk (jika masa):** `/admin/pembiayaan/tetapan` — parameter perniagaan.
+
+---
+
+### 6.3 Aging & Escalation — **SIM**
+
+**Naratif:**
+
+> *"Sistem direka untuk amaran visual dan eskalasi automatik jika fail melebihi SLA (contoh: 2 hari bekerja di cawangan). Notifikasi e-mel diaktifkan melalui workflow configuration."*
+
+**Tunjuk (jika masa):** `/admin/workflow-configuration`
+
+---
+
+## 7. Modul 4 — Pengurusan Akaun & Pembayaran Balik (~6 minit)
+
+**Keperluan PDF:** Penjadualan semula, multi-saluran bayaran, Ta'widh/penalti Syariah.
+
+### 7.1 Pengurusan Akaun — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Senarai akaun | `/admin/pembiayaan/akaun` |
+
+**Tunjuk:** Akaun contoh (cth. `TEK-KL-2024-0001`), baki pokok/keuntungan, status, klasifikasi NPL.
+
+---
+
+### 7.2 Penjadualan Semula — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Permohonan penjadualan | `/admin/pembiayaan/penjadualan` |
+
+**Tunjuk:** Cipta permohonan moratorium / lanjutan tempoh → lulus penjadualan → jadual ansuran baharu.
+
+**Naratif:**
+
+> *"Moratorium, pindaan tempoh, atau penyusunan semula jadual — dengan kelulusan berperingkat."*
+
+---
+
+### 7.3 Simulasi Multi-Saluran Bayaran — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Terima bayaran | `/admin/pembayaran/terima` |
+
+**Tunjuk:**
+1. **Mod Masa Nyata:** FPX / JomPAY / e-Wallet / Auto Debit / Kaunter — rekod bayaran untuk akaun `TEK-KL-2024-0001`
+2. **Mod Batch:** Muat naik CSV transaksi (simulasi fail kelompok dari saluran luar)
+
+**Naratif:**
+
+> *"Bayaran dikemaskini ke akaun secara real-time atau melalui batch processing — menyokong JomPAY, FPX, kaunter, dan auto-debit."*
+
+---
+
+### 7.4 Pengiraan Ta'widh / Penalti — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Pemantauan tunggakan | `/admin/pembayaran/tunggakan` |
+
+**Tunjuk:** Tab klasifikasi + konfigurasi Ta'widh → **Kira Semula Ta'widh** → paparan penalti mengikut parameter Syariah.
+
+**Naratif:**
+
+> *"Caj lewat bayar (Ta'widh) dikira automatik mengikut parameter Lembaga Penasihat Syariah TEKUN."*
+
+---
+
+## 8. Modul 5 — Pemulihan & Kutipan Hutang (~4 minit)
+
+**Keperluan PDF:** Klasifikasi NPL, dunning automatik, notis peringatan.
+
+### 8.1 Klasifikasi Akaun NPL — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Pemantauan tunggakan | `/admin/pembayaran/tunggakan` → tab **Klasifikasi** |
+
+**Tunjuk:**
+- Lancar / Perhatian Khusus / Tidak Lancar (NPL)
+- Aging analysis (hari tunggakan)
+- **Kira Semula Klasifikasi NPL**
+
+---
+
+### 8.2 Dunning Automatik & Notis — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Tab Notis Kutipan | `/admin/pembayaran/tunggakan` → tab **Notis** |
+| Proses dunning | Butang **Proses Dunning** |
+| PDF notis | Muat turun Notis Peringatan 1/2/3 |
+
+**Naratif:**
+
+> *"Sistem menjana, menjadual, dan menghantar SMS amaran serta Surat Notis Peringatan secara automatik mengikut garis masa tunggakan."*
+
+---
+
+## 9. Modul 6 — Dashboard & Pelaporan Eksekutif (~3 minit)
+
+**Keperluan PDF:** Dashboard KPI real-time, laporan ad-hoc, eksport.
+
+### 9.1 Dashboard Utama — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Main dashboard | `/admin` |
+
+**Tunjuk:** Ringkasan metrik SPPT (permohonan, akaun, kutipan — mengikut data seed).
+
+---
+
+### 9.2 Power BI / Analitik — **LIVE** (embed) / **SIM** (data production)
+
+| Tindakan | URL |
+|----------|-----|
+| Dashboard Power BI | `/admin/laporan/power-bi` |
+| Laporan & Analitik | `/admin/laporan` |
+
+**Tunjuk:** Embed Power BI interaktif; penapis cawangan/negeri (jika dikonfigurasi dalam report).
+
+**Naratif:**
+
+> *"Pengurusan tertinggi mendapat insight KPI — agihan dana, kadar kutipan, taburan NPL — dengan penapis mengikut cawangan, daerah, negeri. Laporan ad-hoc boleh dieksport Excel/PDF."*
+
+---
+
+### 9.3 Audit Trail — **LIVE**
+
+| Tindakan | URL |
+|----------|-----|
+| Audit trail | `/admin/platform/observability/audit-trail` |
+
+**Naratif:** Pematuhan audit dalaman — setiap tindakan direkod.
+
+---
+
+## 10. AI & Inovasi (ringkas, 2 minit — boleh digabung Modul 2)
+
+Rujuk `docs/SPPT_AI_Features.md`:
+
+| # | Ciri | Status POC |
+|---|------|------------|
+| 1 | AI Loan Risk Scoring | **LIVE** — portal pemohon + penilaian |
+| 2 | AI Document OCR + Validation | **SIM** — classify/verify endpoints |
+| 3 | AI Fraud Detection | **ROADMAP** |
+| 4 | AI Repayment Prediction | **SIM** — `/admin/pembayaran/ai` |
+| 5 | AI Chatbot Pemohon | **LIVE** — `/pemohon/bantuan` |
+
+**Naratif:**
+
+> *"Semua AI adalah decision-support — pegawai kekal membuat keputusan muktamad mengikut prosedur TEKUN."*
+
+---
+
+## 11. Penutup & Sesi Soal Jawab (3 minit)
 
 ### Naratif
 
-> *"Dari segi teknikal dan pematuhan:*
+> *"Kesimpulannya, SPPT POC membuktikan:*
 >
-> - **Keselamatan:** Role-based access control (RBAC), audit trail, enkripsi data
-> - **Prestasi:** Masa tindak balas kurang 10 saat (sasaran SRS)
-> - **Ketersediaan:** Sokongan operasi harian, sandaran berkala
-> - **Integrasi:** Reka bentuk sedia untuk JPN, MyGDX, SSM, APK (EXPERIAN, CTOS, CCRIS)
-> - **Stack:** Vue 3, Express, Prisma, SQLite (dev) — boleh skala ke MSSQL/PostgreSQL
+> 1. *Kemasukan data omnichannel dengan saringan automatik*
+> 2. *Penilaian risiko berpandukan AI dan formula fleksibel*
+> 3. *Kelulusan berperingkat tanpa bottleneck dokumen fizikal*
+> 4. *Operasi akaun, bayaran, Ta'widh, dan kutipan bersepadu*
+> 5. *Pelaporan eksekutif dan audit trail*
 >
-> *Kami faham keperluan TEKUN untuk pematuhan penuh dan kesediaan audit."*
+> *Kami bersedia menjawab soalan teknikal dan komersial."*
 
 ---
 
-## Bahagian 6: Penutup & Soalan (3 minit)
+## Jadual A — Versi Ringkas (25 minit)
 
-### Naratif
-
-> *"Kesimpulannya, SPPT menawarkan:*
->
-> 1. **Pengalaman pemohon yang baik** — wizard jelas, status transparen, sokongan chatbot
-> 2. **Kecekapan pegawai** — workflow bersepadu, AI sokongan keputusan, laporan automatik
-> 3. **Pematuhan & kawalan** — audit trail, RBAC, integrasi pihak ketiga
-> 4. **Jalan evolusi jelas** — fasa asas, integrasi, AI lanjutan
->
-> *Kami bersedia menjawab sebarang soalan dan menyediakan butiran teknikal atau komersial mengikut keperluan jawatankuasa."*
+| Masa | Modul | Tindakan utama |
+|------|-------|----------------|
+| 0–2 | Pembukaan | Slaid + konteks |
+| 2–8 | 1 | Portal → hard rules (lulus + tolak) → eKYC → hantar permohonan |
+| 8–14 | 2+3 | Penilaian + AI score + formula → workflow 3 peringkat (3 login pantas) |
+| 14–19 | 4 | Akaun → bayaran FPX → Ta'widh |
+| 19–23 | 5+6 | NPL + dunning + Power BI |
+| 23–25 | Penutup | Ringkasan + Q&A |
 
 ---
 
-## Senarai Semak Selepas Demo
+## Jadual B — Pemetaan Skrip PDF → Bukti Demo
 
-- [ ] Jawab soalan dengan yakin dan jujur
-- [ ] Jika ada yang belum dibina: nyatakan sebagai "rancangan fasa seterusnya" dan tunjukkan roadmap
-- [ ] Catat soalan yang memerlukan susulan bertulis
-- [ ] Ucap terima kasih dan tinggalkan bahan sokongan (jika ada)
-
----
-
-## Cadangan Jawapan untuk Soalan Lazim
-
-| Soalan | Cadangan Jawapan |
-|--------|------------------|
-| *"Adakah integrasi JPN/SSM/APK sudah siap?"* | "Reka bentuk dan spesifikasi sedia. Integrasi bergantung kepada API dan kebenaran pihak berkenaan. Kami merancang dalam Fasa 2." |
-| *"Berapa lama masa untuk deploy penuh?"* | "Bergantung skop fasa. Fasa 1 (asas) boleh dalam X bulan; integrasi dan AI dalam fasa seterusnya." |
-| *"Adakah AI menggantikan pegawai?"* | "Tidak. AI berfungsi sebagai decision-support. Pegawai tetap membuat keputusan muktamad mengikut prosedur TEKUN." |
-| *"Bagaimana dengan keselamatan data?"* | "Enkripsi, RBAC, audit trail, dan pematuhan standard industri. Boleh dibincang terperinci dalam dokumen teknikal." |
-| *"Sokongan mobile?"* | "Portal responsif. Aplikasi mudah alih (React Native/Expo) dalam stack — boleh dikembangkan untuk pemohon." |
-
----
-
-## Nota untuk Pembentang
-
-- **Bercakap dengan yakin** — tunjukkan pemahaman mendalam tentang proses TEKUN
-- **Jangan over-promise** — nyatakan dengan jelas apa yang siap vs rancangan
-- **Highlight alignment** — sentiasa kaitkan dengan BPP, SRS, dan keperluan tender
-- **Gunakan istilah TEKUN** — Pembiayaan, Qard, TEMAN TEKUN, SPUMI, BPP, dll.
-- **Bersedia untuk demo live** — pastikan persekitaran stabil sebelum hari demo
+| Keperluan PDF | Bukti dalam POC | Status |
+|---------------|-----------------|--------|
+| Kemasukan omnichannel (ejen + portal) | `/admin/permohonan/baru` + `/pemohon/permohonan/baru` | LIVE |
+| Integrasi SSM/CCRIS/CTOS/muflis | Halaman Integrasi + simulasi semasa semakan | SIM |
+| Auto-reject hard rules | `/pemohon/semakan-kelayakan` + API hard-rules | LIVE |
+| Laman utama responsif | `/pemohon`, `/` | LIVE |
+| Pendaftaran + OTP | `/pemohon/daftar` | LIVE |
+| eKYC | `/pemohon/ekyc` | SIM |
+| Borang dinamik + draf | Wizard permohonan | LIVE |
+| Timeline status | Butiran permohonan | LIVE |
+| Credit scoring engine | Penilaian Baharu + AI panel | LIVE |
+| Formula flat/reducing + jadual | PembiayaanFormulaPanel | LIVE |
+| Edge case borderline | Cadangan mitigasi dalam penilaian | LIVE |
+| Workflow Cawangan→HQ | Semakan→Sokongan→Kelulusan | LIVE |
+| Approval authority matrix | Tetapan Setup | SIM |
+| Aging escalation | Workflow configuration | SIM |
+| Surat Tawaran PDF | Muat turun dari penilaian | LIVE |
+| Penjadualan semula | `/admin/pembiayaan/penjadualan` | LIVE |
+| Multi-saluran + batch bayaran | `/admin/pembayaran/terima` | LIVE |
+| Ta'widh Syariah | `/admin/pembayaran/tunggakan` | LIVE |
+| Klasifikasi NPL | Tab klasifikasi tunggakan | LIVE |
+| Dunning + Notis 1/2/3 | Proses dunning + PDF | LIVE |
+| Dashboard KPI | `/admin` + Power BI | LIVE |
+| Laporan ad-hoc + eksport | `/admin/laporan` | LIVE/SIM |
 
 ---
 
-*Dokumen ini disediakan sebagai panduan. Sesuaikan mengikut masa yang diperuntukkan dan keutamaan jawatankuasa.*
+## Soalan Lazim — Cadangan Jawapan
+
+| Soalan | Jawapan |
+|--------|---------|
+| *Integrasi JPN/SSM/APK sudah siap?* | Reka bentuk dan endpoint simulasi sedia. Production bergantung API rasmi dan MOU agensi — Fasa 2. |
+| *AI ganti pegawai?* | Tidak. AI decision-support sahaja; pegawai kekal authority. |
+| *198 cawangan — skala?* | Architecture Laravel + Vue SPA; RBAC per cawangan sudah ditunjuk (Hulu Langat vs Ibu Pejabat). |
+| *Mobile app?* | Portal responsif web-first; app native dalam roadmap. |
+| *Keselamatan data?* | RBAC, Sanctum session, audit trail, enkripsi — boleh elaborat dalam doc teknikal. |
+| *Masa deploy penuh?* | Bergantung skop kontrak; modular rollout mengikut modul tender. |
+
+---
+
+## Pelan Kontingensi
+
+| Masalah | Tindakan |
+|---------|----------|
+| API down | Tunjuk tangkapan skrin / video rakaman |
+| OTP gagal | Guna log masuk demo pemohon atau skip ke aliran pegawai |
+| Power BI tidak load | Tunjuk `/admin/laporan` statik + jelaskan embed |
+| Workflow kosong | Pastikan `php artisan db:seed` — rujuk `PM-2026-WF-SEM-001` |
+| Demo terlalu lama | Ikut Jadual A (25 min) — langkau eKYC & integrasi |
+
+---
+
+## Nota Pembentang
+
+- **Jujur tentang SIM/ROADMAP** — jawatankuasa hargai ketelusan
+- **Gunakan istilah TEKUN** — Tekun Niaga, Qard, Ta'widh, BPP, NPL
+- **Dry run wajib** — uji 3 login workflow berturut-turut
+- **Highlight alignment** — setiap modul rujuk skrip PDF PMO
+
+---
+
+*Dokumen ini selaras dengan `Skrip POC Petender SPPT - Final.pdf` dan keadaan codebase SPPT POC semasa. Kemas kini selepas perubahan major.*

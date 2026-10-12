@@ -1,6 +1,7 @@
 /** Row shape returned by GET /api/sppt/permohonan?penilaian=1 */
 export type PermohonanPenilaianRow = {
   id: string;
+  noRujukan?: string;
   permohonanId?: number;
   _dbId?: number;
   nama: string;

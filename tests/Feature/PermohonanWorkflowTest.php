@@ -168,7 +168,8 @@ class PermohonanWorkflowTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'Disemak');
+            ->assertJsonPath('data.status', 'Disemak')
+            ->assertJsonPath('data.details.workflow.semakan.wfStatusCode', 'CHECK');
 
         $sokonganProcessId = app(\App\Services\PermohonanWorkflowService::class)
             ->processForStage('TEKUN_NIAGA', 'sokongan')?->wfp_process_id;
@@ -213,6 +214,21 @@ class PermohonanWorkflowTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('data.wfWorkflowCode', 'TEKUN_NIAGA')
             ->assertJsonPath('data.wfCurrentProcessId', $semakanProcessId);
+    }
+
+    public function test_penyemak_can_create_permohonan(): void
+    {
+        $cawangan = $this->createCawangan('hulu-langat', 'TEKUN Nasional Cawangan Hulu Langat');
+        $this->actingAsRole('penyemak', ['sppt.view', 'sppt.create', 'sppt.edit', 'sppt.semakan'], $cawangan);
+
+        $response = $this->postJson('/api/sppt/permohonan', [
+            'nama' => 'Pemohon Hulu Langat',
+            'status' => 'Draf',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.nama', 'Pemohon Hulu Langat')
+            ->assertJsonPath('data.status', 'Draf');
     }
 
     public function test_workflow_queue_requires_permission(): void

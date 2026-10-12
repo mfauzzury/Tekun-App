@@ -78,7 +78,9 @@ return [
             ['value' => 'tunggakan', 'label' => 'Tunggakan', 'color' => 'amber', 'active' => true, 'sort' => 2],
             ['value' => 'npf', 'label' => 'NPF', 'color' => 'rose', 'active' => true, 'sort' => 3],
             ['value' => 'selesai-bayar', 'label' => 'Selesai Bayar', 'color' => 'blue', 'active' => true, 'sort' => 4],
-            ['value' => 'ditutup', 'label' => 'Ditutup', 'color' => 'slate', 'active' => true, 'sort' => 5],
+            ['value' => 'moratorium', 'label' => 'Moratorium', 'color' => 'indigo', 'active' => true, 'sort' => 5],
+            ['value' => 'reschedule', 'label' => 'Jadual Semula', 'color' => 'violet', 'active' => true, 'sort' => 6],
+            ['value' => 'ditutup', 'label' => 'Ditutup', 'color' => 'slate', 'active' => true, 'sort' => 7],
         ],
         'status_pengeluaran_dana' => [
             ['value' => 'draf', 'label' => 'Draf', 'color' => 'slate', 'active' => true, 'sort' => 1],

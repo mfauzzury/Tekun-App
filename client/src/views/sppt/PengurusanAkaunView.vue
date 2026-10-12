@@ -421,6 +421,12 @@ const exportTableData = computed(() => filteredItems.value);
                 <p>{{ fmtRm(selectedItem.bakiSimpanan) }}</p>
               </div>
               <div>
+                <p class="text-xs text-slate-500">Ta'widh (Ganti Rugi)</p>
+                <p :class="(selectedItem as { tawidh?: number }).tawidh ? 'text-rose-600 font-medium' : ''">
+                  {{ fmtRm((selectedItem as { tawidh?: number }).tawidh ?? selectedItem.penalti) }}
+                </p>
+              </div>
+              <div>
                 <p class="text-xs text-slate-500">Penalti</p>
                 <p>{{ fmtRm(selectedItem.penalti) }}</p>
               </div>

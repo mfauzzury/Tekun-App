@@ -32,10 +32,18 @@ class AkaunPembiayaan extends Model
         'baki_keuntungan',
         'baki_simpanan',
         'penalti',
+        'tawidh',
+        'hari_lewat',
         'tunggakan',
         'baki_akhir',
         'bayaran_bulanan',
+        'kaedah_pengiraan',
+        'kadar_keuntungan_tahunan',
+        'tempoh_bulan',
+        'moratorium_tamat',
         'status',
+        'klasifikasi_npl',
+        'klasifikasi_dikemaskini_pada',
         'risiko',
         'no_bsas',
         'snc',
@@ -51,11 +59,20 @@ class AkaunPembiayaan extends Model
             'baki_keuntungan' => 'decimal:2',
             'baki_simpanan' => 'decimal:2',
             'penalti' => 'decimal:2',
+            'tawidh' => 'decimal:2',
             'tunggakan' => 'decimal:2',
             'baki_akhir' => 'decimal:2',
             'bayaran_bulanan' => 'decimal:2',
+            'kadar_keuntungan_tahunan' => 'decimal:2',
+            'moratorium_tamat' => 'date',
+            'klasifikasi_dikemaskini_pada' => 'datetime',
             'snc' => 'boolean',
         ];
+    }
+
+    public function notisKutipan(): HasMany
+    {
+        return $this->hasMany(NotisKutipan::class, 'akaun_id')->orderByDesc('tarikh_dijadual');
     }
 
     public function permohonan(): BelongsTo
@@ -71,5 +88,20 @@ class AkaunPembiayaan extends Model
     public function pengeluaranDana(): HasMany
     {
         return $this->hasMany(PengeluaranDana::class, 'akaun_id');
+    }
+
+    public function jadualAnsuran(): HasMany
+    {
+        return $this->hasMany(JadualAnsuran::class, 'akaun_id')->orderBy('no_ansuran');
+    }
+
+    public function transaksiBayaran(): HasMany
+    {
+        return $this->hasMany(TransaksiBayaran::class, 'akaun_id');
+    }
+
+    public function permohonanPenjadualan(): HasMany
+    {
+        return $this->hasMany(PermohonanPenjadualan::class, 'akaun_id');
     }
 }
