@@ -179,9 +179,10 @@ class AuthController extends Controller
      */
     protected function userPayload($user): array
     {
-        $user->loadMissing('cawangan');
+        $user->loadMissing(['cawangan', 'roleModel']);
 
         $cawangan = $user->cawangan;
+        $permissions = is_array($user->roleModel?->permissions) ? $user->roleModel->permissions : [];
 
         return [
             'id' => $user->id,
@@ -190,6 +191,7 @@ class AuthController extends Controller
             'photo_url' => $user->photo_url,
             'role' => $user->role,
             'sppt_cawangan_id' => $user->sppt_cawangan_id,
+            'permissions' => $permissions,
             'cawangan' => $cawangan ? [
                 'id' => $cawangan->id,
                 'code' => $cawangan->code,

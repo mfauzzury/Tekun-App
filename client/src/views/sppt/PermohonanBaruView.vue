@@ -89,7 +89,27 @@ const classModalConfidence = ref(0);
 const classModalMessage = ref("");
 const classModalSelectedClass = ref<SpptDocumentClass>("lain_lain");
 const classModalOtherLabel = ref("");
+const classModalIdentityRejected = ref(false);
 const pendingClassificationFiles = ref<File[]>([]);
+
+function isIcOwnershipClass(documentClass?: string | null): boolean {
+  return (
+    documentClass === "ic_pemohon_depan"
+    || documentClass === "ic_pemohon_combined"
+    || documentClass === "ic_pasangan_depan"
+    || documentClass === "ic_pasangan_combined"
+  );
+}
+
+function isIdentityMismatchVerification(verification?: DocumentVerification | null): boolean {
+  if (!verification) {
+    return false;
+  }
+  if (verification.documentType !== "ic_front" && verification.documentType !== "ic_combined") {
+    return false;
+  }
+  return verification.identityMatched === false || verification.status === "failed";
+}
 
 const ocrProcessing = ref(false);
 const ocrResult = ref<PermohonanFormOcrResult | null>(null);
@@ -269,9 +289,6 @@ async function verifyAttachmentForSubmit(itemId: string, file: File) {
 
 async function verifyLocalAttachmentsForSubmit(): Promise<boolean> {
   const localImages = attachments.value.filter((item) => item.file?.type.startsWith("image/"));
-  if (localImages.length === 0) {
-    return true;
-  }
 
   icSubmitVerifying.value = true;
   try {
@@ -279,9 +296,7 @@ async function verifyLocalAttachmentsForSubmit(): Promise<boolean> {
       await verifyAttachmentForSubmit(item.id, item.file!);
     }
 
-    const identityMismatch = attachments.value.some(
-      (item) => item.verification?.documentType === "ic_front" && item.verification?.identityMatched === false,
-    );
+    const identityMismatch = attachments.value.some((item) => isIdentityMismatchVerification(item.verification));
     if (identityMismatch) {
       validationErrors.value = [{
         stepIndex: 11,
@@ -291,8 +306,9 @@ async function verifyLocalAttachmentsForSubmit(): Promise<boolean> {
       return false;
     }
 
+    // Uploaded attachments without a local file are re-checked on the server.
     const hasUnverifiedUploaded = attachments.value.some((item) => item.url && !item.file && !item.verification);
-    if (hasUnverifiedUploaded) {
+    if (hasUnverifiedUploaded && localImages.length === 0) {
       return true;
     }
 
@@ -367,8 +383,19 @@ async function processClassificationQueue() {
   classModalOtherLabel.value = "";
   classModalConfidence.value = 0;
   classModalMessage.value = "";
+  classModalIdentityRejected.value = false;
 
   try {
+    if (!form.value.noIcBaru?.trim() || !form.value.nama?.trim()) {
+      classModalSuggestedClass.value = "lain_lain";
+      classModalSelectedClass.value = "lain_lain";
+      classModalConfidence.value = 0;
+      classModalIdentityRejected.value = true;
+      classModalMessage.value = "Sila isi nama dan No. Kad Pengenalan pemohon dahulu sebelum memuat naik MyKad.";
+      toast.error("Sila isi nama dan No. KP pemohon sebelum muat naik MyKad.");
+      return;
+    }
+
     const res = await classifyPermohonanDocument(
       file,
       form.value.noIcBaru,
@@ -378,14 +405,20 @@ async function processClassificationQueue() {
     );
     const suggested = res.data.classification.suggestedClass as SpptDocumentClass;
     const normalized = normalizeDocumentClass(suggested) ?? "lain_lain";
+    const identityRejected = res.data.classification.identityMatched === false;
     classModalSuggestedClass.value = normalized;
     classModalSelectedClass.value = normalized;
     classModalConfidence.value = res.data.classification.confidence;
     classModalMessage.value = res.data.classification.message;
+    classModalIdentityRejected.value = identityRejected;
+    if (identityRejected) {
+      toast.error(res.data.classification.message || "MyKad tidak sepadan dengan pemohon.");
+    }
   } catch {
     classModalSuggestedClass.value = "lain_lain";
     classModalSelectedClass.value = "lain_lain";
     classModalConfidence.value = 0;
+    classModalIdentityRejected.value = false;
     classModalMessage.value = "Klasifikasi AI gagal. Sila pilih jenis dokumen secara manual.";
     toast.error("Klasifikasi AI gagal. Sila pilih jenis dokumen.");
   } finally {
@@ -396,12 +429,18 @@ async function processClassificationQueue() {
 function cancelClassModal() {
   classModalOpen.value = false;
   classModalFile.value = null;
+  classModalIdentityRejected.value = false;
   void processClassificationQueue();
 }
 
 async function confirmClassModal() {
   const file = classModalFile.value;
   if (!file || classModalClassifying.value) {
+    return;
+  }
+
+  if (classModalIdentityRejected.value) {
+    toast.error(classModalMessage.value || "MyKad tidak sepadan dengan pemohon.");
     return;
   }
 
@@ -426,6 +465,18 @@ async function confirmClassModal() {
 
   classModalOpen.value = false;
   classModalFile.value = null;
+  classModalIdentityRejected.value = false;
+
+  if (file.type.startsWith("image/") && isIcOwnershipClass(entry.documentClass)) {
+    await verifyAttachmentForSubmit(entry.id, file);
+    const attached = attachments.value.find((item) => item.id === entry.id);
+    if (isIdentityMismatchVerification(attached?.verification)) {
+      attachments.value = attachments.value.filter((item) => item.id !== entry.id);
+      toast.error(attached?.verification?.message || "MyKad tidak sepadan dengan pemohon.");
+      void processClassificationQueue();
+      return;
+    }
+  }
 
   if (draftId.value) {
     await uploadPendingAttachment(entry, draftId.value);
@@ -2521,6 +2572,7 @@ const readonlyClass =
               :suggested-class="classModalSuggestedClass"
               :confidence="classModalConfidence"
               :message="classModalMessage"
+              :identity-rejected="classModalIdentityRejected"
               v-model:selected-class="classModalSelectedClass"
               v-model:other-label="classModalOtherLabel"
               @confirm="confirmClassModal"

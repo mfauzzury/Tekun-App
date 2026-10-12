@@ -67,6 +67,7 @@ class AiCreditScoringTest extends TestCase
                     'decisionDescription',
                     'factors',
                     'adverseActionReasons',
+                    'edgeCase',
                     'apk',
                 ],
             ]);

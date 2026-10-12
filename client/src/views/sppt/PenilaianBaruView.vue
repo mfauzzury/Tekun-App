@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import {
   applyCreditScoreToForm,
-  decisionActionClass,
-  formatRecommendedLimit,
-  riskBandClass,
+  applyMitigationToForm,
 } from "@/composables/useAiCreditScoring";
 import { mapPermohonanPenilaianRow } from "@/composables/usePermohonanPenilaian";
 import { useI18n } from "@/composables/useI18n";
 import { useToast } from "@/composables/useToast";
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeft, Save, Sparkles, Search, User, FileCheck, Handshake, Eye, Loader2, Gauge, FileText } from "lucide-vue-next";
+import { ArrowLeft, Save, Search, User, FileCheck, Handshake, Eye, Loader2, FileText } from "lucide-vue-next";
 
-import { isApprovedPermohonanStatus, listPermohonan, openPermohonanOfferLetter, scorePermohonanCredit } from "@/api/sppt";
+import { getPermohonan, isApprovedPermohonanStatus, listPermohonan, openPermohonanOfferLetter, savePermohonanPenilaian, scorePermohonanCredit } from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
-import CreditScoreSpeedometer from "@/components/sppt/CreditScoreSpeedometer.vue";
+import AiCreditScoringPanel from "@/components/sppt/AiCreditScoringPanel.vue";
+import PembiayaanFormulaPanel from "@/components/sppt/PembiayaanFormulaPanel.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
-import type { AiCreditScoringResult } from "@/types";
+import type { AiCreditScoringResult, EdgeCaseMitigation } from "@/types";
 
 const { t, tp } = useI18n();
 const toast = useToast();
@@ -41,6 +40,9 @@ interface PermohonanItem {
 
 const permohonanList = ref<PermohonanItem[]>([]);
 
+/** Only applications ready for assessment appear in Penilaian Baru. */
+const PENILAIAN_BARU_STATUSES = ["Dalam Proses", "Disemak"] as const;
+
 const JENIS_PEMBIAYAAN_OPTIONS = [
   "Pembiayaan Pertama",
   "Pembiayaan Ulangan",
@@ -53,7 +55,11 @@ const JENIS_PEMBIAYAAN_OPTIONS = [
 onMounted(async () => {
   loadingList.value = true;
   try {
-    const res = await listPermohonan({ limit: 100, penilaian: 1 });
+    const res = await listPermohonan({
+      limit: 100,
+      penilaian: 1,
+      statuses: PENILAIAN_BARU_STATUSES.join(","),
+    });
     permohonanList.value = (res.data as Array<Record<string, unknown>>).map((row) =>
       mapPermohonanPenilaianRow(row),
     );
@@ -74,26 +80,71 @@ const filteredPermohonan = computed(() => {
 
 const selectedPermohonan = ref<PermohonanItem | null>(null);
 
+function parseRmAmount(value: string | number | undefined): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+const formulaJumlahPokok = computed(() => parseRmAmount(selectedPermohonan.value?.jumlah));
+
 const form = ref({
   keputusan: "",
   skorKredit: "",
   cadanganPembiayaan: "",
   cadanganJenisPembiayaan: "",
   catatan: "",
+  kadarKeuntungan: 4,
+  tempohPembiayaan: 36,
+  kaedahPengiraan: "reducing_balance" as "flat_rate" | "reducing_balance",
+  bukaAkaun: true,
 });
+
+const openedAkaunNo = ref<string | null>(null);
+
+function hydratePenilaianFromDetails(details: Record<string, unknown> | undefined) {
+  const penilaian = details?.penilaian;
+  if (!penilaian || typeof penilaian !== "object") return;
+  const row = penilaian as Record<string, unknown>;
+  form.value.keputusan = String(row.keputusan ?? "");
+  form.value.skorKredit = String(row.skor_kredit ?? row.skorKredit ?? "");
+  form.value.cadanganPembiayaan = String(row.cadangan_pembiayaan ?? row.cadanganPembiayaan ?? "");
+  form.value.cadanganJenisPembiayaan = String(row.cadangan_jenis_pembiayaan ?? row.cadanganJenisPembiayaan ?? "");
+  form.value.catatan = String(row.catatan ?? "");
+  form.value.kadarKeuntungan = Number(row.kadar_keuntungan ?? row.kadarKeuntungan ?? 4);
+  form.value.tempohPembiayaan = Number(row.tempoh_pembiayaan ?? row.tempohPembiayaan ?? 36);
+  const kaedah = String(row.kaedah_pengiraan ?? row.kaedahPengiraan ?? "reducing_balance");
+  form.value.kaedahPengiraan = kaedah === "flat_rate" ? "flat_rate" : "reducing_balance";
+}
 
 async function selectPermohonan(p: PermohonanItem) {
   selectedPermohonan.value = p;
   aiCredit.value = null;
+  openedAkaunNo.value = null;
   form.value.cadanganJenisPembiayaan = "";
   form.value.keputusan = "";
   form.value.catatan = "";
   form.value.skorKredit = "";
   form.value.cadanganPembiayaan = "";
+  form.value.kadarKeuntungan = 4;
+  form.value.tempohPembiayaan = 36;
+  form.value.kaedahPengiraan = "reducing_balance";
+  form.value.bukaAkaun = true;
+  saved.value = false;
 
   if (!p.id) {
     toast.error("ID permohonan tidak sah. Sila muat semula senarai.");
     return;
+  }
+
+  try {
+    const detailRes = await getPermohonan(p.id);
+    const details = detailRes.data.details as Record<string, unknown> | undefined;
+    hydratePenilaianFromDetails(details);
+  } catch {
+    // Continue with defaults if detail fetch fails.
   }
 
   scoring.value = true;
@@ -121,13 +172,51 @@ function gunakanCadanganAI() {
   if (applied.keputusan) form.value.keputusan = applied.keputusan;
 }
 
-function simpan() {
-  if (!selectedPermohonan.value) return;
+function gunaMitigasi(mitigation: EdgeCaseMitigation) {
+  applyMitigationToForm(form.value, mitigation);
+}
+
+function applyFormulaInstallment(amount: number, methodLabel: string) {
+  const line = `Ansuran bulanan dicadangkan: RM ${Math.round(amount).toLocaleString("en-MY")} (${methodLabel})`;
+  form.value.catatan = form.value.catatan ? `${form.value.catatan}\n${line}` : line;
+}
+
+async function simpan() {
+  if (!selectedPermohonan.value?.id) return;
+  if (!form.value.keputusan) {
+    toast.error("Sila pilih keputusan penilaian.");
+    return;
+  }
+
   saving.value = true;
-  setTimeout(() => {
-    saving.value = false;
+  saved.value = false;
+  try {
+    const res = await savePermohonanPenilaian(selectedPermohonan.value.id, {
+      keputusan: form.value.keputusan as "Lulus" | "Tolak" | "Tangguh",
+      skorKredit: form.value.skorKredit,
+      cadanganPembiayaan: form.value.cadanganPembiayaan,
+      cadanganJenisPembiayaan: form.value.cadanganJenisPembiayaan,
+      catatan: form.value.catatan,
+      kadarKeuntunganTahunan: form.value.kadarKeuntungan,
+      tempohPembiayaan: form.value.tempohPembiayaan,
+      kaedahPengiraan: form.value.kaedahPengiraan,
+      bukaAkaun: form.value.bukaAkaun,
+    });
+
     saved.value = true;
-  }, 800);
+    selectedPermohonan.value.status = String(res.data.permohonan.status ?? selectedPermohonan.value.status);
+    openedAkaunNo.value = res.data.akaun ? String(res.data.akaun.id ?? "") : null;
+
+    if (res.data.akaun) {
+      toast.success(`Penilaian disimpan. Akaun ${openedAkaunNo.value} dibuka dengan jadual ansuran formula.`);
+    } else {
+      toast.success("Penilaian berjaya disimpan.");
+    }
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Gagal menyimpan penilaian.");
+  } finally {
+    saving.value = false;
+  }
 }
 
 function batal() {
@@ -265,99 +354,22 @@ async function downloadOfferLetter() {
                 </div>
               </section>
 
-              <!-- AI Credit Scoring + Decision Engine (Spec 2.1.1) -->
-              <section class="rounded-lg border border-violet-200 bg-violet-50/50 shadow-sm">
-                <div class="flex items-center gap-2 border-b border-violet-200/50 px-4 py-3">
-                  <Sparkles class="h-4 w-4 text-violet-600" />
-                  <h4 class="text-sm font-semibold text-violet-900">AI Credit Scoring</h4>
-                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium text-violet-600 bg-violet-100">Risk & Amount Analysis</span>
-                </div>
-                <div class="p-4">
-                  <div v-if="scoring" class="flex items-center gap-2 text-sm text-violet-700">
-                    <Loader2 class="h-4 w-4 animate-spin" />
-                    Mengira skor kredit AI (APK + rekod dalaman)...
-                  </div>
-                  <template v-else-if="aiCredit">
-                    <!-- Decision Engine -->
-                    <div
-                      class="mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3"
-                      :class="decisionActionClass(aiCredit.recommendedAction)"
-                    >
-                      <div class="flex items-center gap-2">
-                        <Gauge class="h-5 w-5 shrink-0" />
-                        <div>
-                          <p class="text-xs font-semibold uppercase tracking-wide">Decision Engine</p>
-                          <p class="text-sm font-bold">{{ aiCredit.decisionLabel }}</p>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <span class="h-3 w-3 rounded-full" :class="riskBandClass(aiCredit.riskBandColor)" />
-                        <span class="text-xs">{{ aiCredit.decisionDescription }}</span>
-                      </div>
-                    </div>
+              <AiCreditScoringPanel
+                :scoring="scoring"
+                :ai-credit="aiCredit"
+                show-apply-suggestion
+                @apply-suggestion="gunakanCadanganAI"
+                @apply-mitigation="gunaMitigasi"
+              />
 
-                    <p class="text-xs text-violet-600/90">{{ aiCredit.message }}</p>
-
-                    <div class="mt-4 flex flex-col items-center gap-4 rounded-xl border border-violet-100 bg-white/80 p-4 sm:flex-row sm:items-start sm:justify-between">
-                      <CreditScoreSpeedometer
-                        :score="aiCredit.creditScore"
-                        :category="aiCredit.creditCategory"
-                        :band-color="aiCredit.riskBandColor"
-                        :size="240"
-                      />
-                      <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div class="rounded-lg bg-slate-50 px-3 py-2 shadow-sm">
-                          <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Had Pembiayaan Dicadangkan</p>
-                          <p class="mt-0.5 text-lg font-bold text-slate-900">{{ formatRecommendedLimit(aiCredit.recommendedLimit) }}</p>
-                          <button
-                            type="button"
-                            class="mt-1.5 text-xs font-medium text-violet-600 hover:text-violet-700"
-                            @click="gunakanCadanganAI"
-                          >
-                            Guna sebagai cadangan →
-                          </button>
-                        </div>
-                        <div class="rounded-lg bg-slate-50 px-3 py-2 shadow-sm">
-                          <p class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Keputusan AI</p>
-                          <p class="mt-0.5 text-sm font-bold text-slate-900">{{ aiCredit.decisionLabel }}</p>
-                          <p class="mt-1 text-xs text-slate-500">Keyakinan model: {{ aiCredit.confidence }}%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- APK enrichment summary -->
-                    <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
-                        <p class="font-semibold text-slate-700">CCRIS</p>
-                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.ccris.score }}</p>
-                        <p class="text-slate-500">Facilities: {{ aiCredit.apk.ccris.totalFacilities }}</p>
-                      </div>
-                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
-                        <p class="font-semibold text-slate-700">CTOS</p>
-                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.ctos.score }}</p>
-                        <p class="text-slate-500">{{ aiCredit.apk.ctos.litigation ? "Litigasi: Ya" : "Litigasi: Tiada" }}</p>
-                      </div>
-                      <div class="rounded-lg border border-slate-200 bg-white/70 px-3 py-2 text-xs">
-                        <p class="font-semibold text-slate-700">EXPERIAN</p>
-                        <p class="mt-0.5 text-slate-600">Skor: {{ aiCredit.apk.experian.score }}</p>
-                        <p class="text-slate-500">{{ aiCredit.apk.experian.delinquency ? "Tunggakan: Ya" : "Tunggakan: Tiada" }}</p>
-                      </div>
-                    </div>
-
-                    <ul v-if="aiCredit.factors.length" class="mt-4 space-y-1.5 rounded-lg border border-violet-100 bg-white/60 p-3">
-                      <li v-for="(factor, idx) in aiCredit.factors" :key="idx" class="text-xs text-slate-600">
-                        <span class="font-medium text-slate-700">{{ factor.factor }}:</span> {{ factor.description }}
-                      </li>
-                    </ul>
-
-                    <ul v-if="aiCredit.adverseActionReasons.length" class="mt-3 space-y-1 rounded-lg border border-rose-100 bg-rose-50/80 p-3">
-                      <li class="text-xs font-semibold text-rose-800">Sebab Penolakan / Kelewatan (Adverse Action)</li>
-                      <li v-for="(reason, idx) in aiCredit.adverseActionReasons" :key="idx" class="text-xs text-rose-700">• {{ reason }}</li>
-                    </ul>
-                  </template>
-                  <p v-else class="text-sm text-slate-500">Skor kredit AI tidak tersedia untuk permohonan ini.</p>
-                </div>
-              </section>
+              <PembiayaanFormulaPanel
+                v-if="selectedPermohonan"
+                :jumlah-pokok="formulaJumlahPokok"
+                v-model:kaedah-pengiraan="form.kaedahPengiraan"
+                v-model:kadar-keuntungan="form.kadarKeuntungan"
+                v-model:tempoh-bulan="form.tempohPembiayaan"
+                @apply-monthly-installment="applyFormulaInstallment"
+              />
 
               <!-- Skor Kredit, Kelulusan, Cadangan, Catatan -->
               <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -415,12 +427,17 @@ async function downloadOfferLetter() {
                       placeholder="Catatan dan ulasan penilaian..."
                     />
                   </div>
+                  <label v-if="form.keputusan === 'Lulus'" class="flex items-center gap-2 text-sm text-slate-700">
+                    <input v-model="form.bukaAkaun" type="checkbox" class="rounded border-slate-300" />
+                    Buka akaun pembiayaan automatik (guna formula dipilih)
+                  </label>
                 </div>
               </section>
 
               <!-- Success message -->
-              <div v-if="saved" class="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-                Penilaian berjaya disimpan. (Dummy – tiada sambungan ke jadual.)
+              <div v-if="saved" class="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                Penilaian berjaya disimpan ke permohonan.
+                <span v-if="openedAkaunNo"> Akaun {{ openedAkaunNo }} dibuka dengan jadual ansuran formula.</span>
               </div>
 
               <!-- Actions -->

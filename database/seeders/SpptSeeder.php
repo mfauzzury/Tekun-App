@@ -9,7 +9,11 @@ use App\Models\Permohonan;
 use App\Models\PengeluaranDana;
 use App\Models\SpptDataset;
 use App\Models\Usahawan;
+use App\Services\DunningService;
+use App\Services\JadualAnsuranService;
+use App\Services\KoleksiDemoProfileService;
 use App\Services\SpptViewTransform;
+use App\Services\TawidhCalculationService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
@@ -29,6 +33,7 @@ class SpptSeeder extends Seeder
         $this->seedPengeluaranDana();
         $this->seedJaminan();
         $this->seedKutipan();
+        $this->seedRepaymentData();
         $this->seedDatasets();
         $this->seedSetup();
     }
@@ -127,10 +132,41 @@ class SpptSeeder extends Seeder
      */
     private function permohonanSeedAttributes(string $nama, ?int $usahawanId, array $attributes): array
     {
+        $kategori = $attributes['kategori_pembiayaan'] ?? 'TEKUN Niaga';
+        $details = is_array($attributes['details'] ?? null) ? $attributes['details'] : [];
+
         return array_merge([
             'nama' => $nama,
             'usahawan_id' => $usahawanId,
+            'wf_workflow_code' => $this->resolvePermohonanWorkflowCode($kategori),
+            'negeri' => $this->resolvePermohonanNegeri($nama, $details),
         ], $attributes);
+    }
+
+    /**
+     * @param  array<string, mixed>  $details
+     */
+    private function resolvePermohonanNegeri(string $nama, array $details): ?string
+    {
+        static $akaunByNama = null;
+
+        if ($akaunByNama === null) {
+            $akaunByNama = collect($this->loadJson('pengurusan-akaun.json')['items'] ?? [])
+                ->keyBy('nama');
+        }
+
+        $akaun = $akaunByNama->get($nama);
+
+        return $akaun['negeri']
+            ?? ($details['negeri'] ?? Usahawan::where('nama', $nama)->value('negeri'));
+    }
+
+    private function resolvePermohonanWorkflowCode(?string $kategori): string
+    {
+        $scheme = trim((string) ($kategori ?? ''));
+        $map = config('sppt-workflow.scheme_workflows', []);
+
+        return $map[$scheme] ?? (string) config('sppt-workflow.default_workflow_code', 'TEKUN_NIAGA');
     }
 
     /**
@@ -176,7 +212,11 @@ class SpptSeeder extends Seeder
                     'baki_keuntungan' => $item['bakiKeuntungan'],
                     'baki_simpanan' => $item['bakiSimpanan'],
                     'penalti' => $item['penalti'],
+                    'tawidh' => $item['penalti'],
                     'tunggakan' => $item['tunggakan'],
+                    'hari_lewat' => $item['hariLewat'] ?? 0,
+                    'klasifikasi_npl' => $item['klasifikasiNpl'] ?? 'lancar',
+                    'klasifikasi_dikemaskini_pada' => isset($item['klasifikasiNpl']) ? now() : null,
                     'baki_akhir' => $item['bakiAkhir'],
                     'bayaran_bulanan' => $item['bayaranBulanan'],
                     'status' => $item['status'],
@@ -186,6 +226,36 @@ class SpptSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    private function seedRepaymentData(): void
+    {
+        $jadualService = app(JadualAnsuranService::class);
+        $tawidhService = app(TawidhCalculationService::class);
+
+        AkaunPembiayaan::query()->each(function (AkaunPembiayaan $akaun) use ($jadualService) {
+            $jadualService->ensureSchedule($akaun);
+
+            if ((float) $akaun->tunggakan > 0) {
+                $akaun->jadualAnsuran()
+                    ->whereIn('status', ['menunggu'])
+                    ->whereDate('tarikh_bayaran', '<', now()->toDateString())
+                    ->orderBy('no_ansuran')
+                    ->limit(1)
+                    ->update(['status' => 'tertunggak']);
+            }
+        });
+
+        $demoProfiles = app(KoleksiDemoProfileService::class);
+        $demoProfiles->syncOverdueJadualDates();
+
+        AkaunPembiayaan::query()
+            ->where('tunggakan', '>', 0)
+            ->each(fn (AkaunPembiayaan $akaun) => $tawidhService->recalculate($akaun));
+
+        $demoProfiles->applyProfiles();
+
+        app(DunningService::class)->processAll();
     }
 
     private function seedPengeluaranDana(): void

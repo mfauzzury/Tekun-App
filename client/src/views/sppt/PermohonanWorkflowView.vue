@@ -1,14 +1,25 @@
 <script setup lang="ts">
+import { applyCreditScoreToForm, applyMitigationToForm } from "@/composables/useAiCreditScoring";
 import { mapPermohonanPenilaianRow } from "@/composables/usePermohonanPenilaian";
 import { useI18n } from "@/composables/useI18n";
 import { useSpptStatus } from "@/composables/useSpptStatus";
 import { useToast } from "@/composables/useToast";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeft, Check, Eye, FileCheck, Loader2, Search, X } from "lucide-vue-next";
+import { ArrowLeft, Check, Eye, FileCheck, FileText, Handshake, Loader2, Save, Search, X } from "lucide-vue-next";
 
-import { getPermohonan, listPermohonan, processPermohonanWorkflow } from "@/api/sppt";
+import {
+  getPermohonan,
+  isApprovedPermohonanStatus,
+  listPermohonan,
+  openPermohonanOfferLetter,
+  processPermohonanWorkflow,
+  savePermohonanPenilaian,
+  scorePermohonanCredit,
+} from "@/api/sppt";
 import AdminLayout from "@/layouts/AdminLayout.vue";
+import AiCreditScoringPanel from "@/components/sppt/AiCreditScoringPanel.vue";
+import PembiayaanFormulaPanel from "@/components/sppt/PembiayaanFormulaPanel.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import {
   PERMOHONAN_WORKFLOW_STAGES,
@@ -16,7 +27,16 @@ import {
   type PermohonanWorkflowStage,
 } from "@/config/permohonan-workflow";
 import { useAuthStore } from "@/stores/auth";
-import type { Permohonan } from "@/types";
+import type { AiCreditScoringResult, EdgeCaseMitigation, Permohonan } from "@/types";
+
+const JENIS_PEMBIAYAAN_OPTIONS = [
+  "Pembiayaan Pertama",
+  "Pembiayaan Ulangan",
+  "Tekun Niaga",
+  "Teman Tekun",
+  "Qard",
+  "Lain-lain",
+];
 
 const { tp } = useI18n();
 const toast = useToast();
@@ -27,6 +47,8 @@ const router = useRouter();
 
 const stage = computed<PermohonanWorkflowStage | null>(() => resolveWorkflowStageFromRouteName(String(route.name ?? "")));
 const config = computed(() => (stage.value ? PERMOHONAN_WORKFLOW_STAGES[stage.value] : null));
+const isSemakanPenilaian = computed(() => stage.value === "semakan");
+const isWorkflowReviewStage = computed(() => stage.value === "sokongan" || stage.value === "kelulusan");
 
 interface WorkflowListItem {
   id: number;
@@ -44,10 +66,211 @@ const loadingList = ref(false);
 const loadingDetail = ref(false);
 const processing = ref(false);
 const permohonanList = ref<WorkflowListItem[]>([]);
-const workflowTitle = ref("");
 const selectedItem = ref<WorkflowListItem | null>(null);
 const selectedDetail = ref<Permohonan | null>(null);
 const catatan = ref("");
+const scoring = ref(false);
+const aiCredit = ref<AiCreditScoringResult | null>(null);
+const saving = ref(false);
+const saved = ref(false);
+const openedAkaunNo = ref<string | null>(null);
+const downloadingOfferLetter = ref(false);
+
+const form = ref({
+  keputusan: "",
+  skorKredit: "",
+  cadanganPembiayaan: "",
+  cadanganJenisPembiayaan: "",
+  catatan: "",
+  kadarKeuntungan: 4,
+  tempohPembiayaan: 36,
+  kaedahPengiraan: "reducing_balance" as "flat_rate" | "reducing_balance",
+  bukaAkaun: true,
+});
+
+function parseRmAmount(value: string | number | undefined): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (!value) return 0;
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+const formulaJumlahPokok = computed(() => {
+  if (selectedDetail.value?.jumlahPermohonan != null) {
+    return Number(selectedDetail.value.jumlahPermohonan);
+  }
+  return parseRmAmount(selectedItem.value?.jumlah);
+});
+
+function getSavedFormulaRow(): Record<string, unknown> | null {
+  const details = selectedDetail.value?.details as Record<string, unknown> | undefined;
+  const formula = details?.formulaPembiayaan ?? details?.formula_pembiayaan;
+  return formula && typeof formula === "object" ? (formula as Record<string, unknown>) : null;
+}
+
+const hasSavedFormula = computed(() => {
+  const row = getSavedFormulaRow();
+  if (!row) return false;
+  return Boolean(row.kaedahPengiraan ?? row.kaedah_pengiraan);
+});
+
+const savedFormulaJumlahPokok = computed(() => {
+  const row = getSavedFormulaRow();
+  if (row) {
+    const jumlah = Number(row.jumlahPokok ?? row.jumlah_pokok ?? 0);
+    if (jumlah >= 1000) return jumlah;
+  }
+  return formulaJumlahPokok.value;
+});
+
+function hydratePenilaianFromDetails(details: Record<string, unknown> | undefined) {
+  const penilaian = details?.penilaian;
+  const formula = details?.formulaPembiayaan ?? details?.formula_pembiayaan;
+  const penilaianRow = penilaian && typeof penilaian === "object" ? (penilaian as Record<string, unknown>) : null;
+  const formulaRow = formula && typeof formula === "object" ? (formula as Record<string, unknown>) : null;
+
+  if (penilaianRow) {
+    form.value.keputusan = String(penilaianRow.keputusan ?? "");
+    form.value.skorKredit = String(penilaianRow.skor_kredit ?? penilaianRow.skorKredit ?? "");
+    form.value.cadanganPembiayaan = String(penilaianRow.cadangan_pembiayaan ?? penilaianRow.cadanganPembiayaan ?? "");
+    form.value.cadanganJenisPembiayaan = String(
+      penilaianRow.cadangan_jenis_pembiayaan ?? penilaianRow.cadanganJenisPembiayaan ?? "",
+    );
+    form.value.catatan = String(penilaianRow.catatan ?? "");
+  }
+
+  form.value.kadarKeuntungan = Number(
+    formulaRow?.kadarKeuntunganTahunan
+      ?? formulaRow?.kadar_keuntungan_tahunan
+      ?? penilaianRow?.kadarKeuntungan
+      ?? penilaianRow?.kadar_keuntungan
+      ?? 4,
+  );
+  form.value.tempohPembiayaan = Number(
+    formulaRow?.tempohBulan
+      ?? formulaRow?.tempoh_bulan
+      ?? penilaianRow?.tempohPembiayaan
+      ?? penilaianRow?.tempoh_pembiayaan
+      ?? 36,
+  );
+  const kaedah = String(
+    formulaRow?.kaedahPengiraan
+      ?? formulaRow?.kaedah_pengiraan
+      ?? penilaianRow?.kaedahPengiraan
+      ?? penilaianRow?.kaedah_pengiraan
+      ?? "reducing_balance",
+  );
+  form.value.kaedahPengiraan = kaedah === "flat_rate" ? "flat_rate" : "reducing_balance";
+
+  if (isSemakanPenilaian.value && form.value.catatan) {
+    catatan.value = form.value.catatan;
+  }
+}
+
+function resetPenilaianForm() {
+  form.value = {
+    keputusan: "",
+    skorKredit: "",
+    cadanganPembiayaan: "",
+    cadanganJenisPembiayaan: "",
+    catatan: "",
+    kadarKeuntungan: 4,
+    tempohPembiayaan: 36,
+    kaedahPengiraan: "reducing_balance",
+    bukaAkaun: true,
+  };
+  saved.value = false;
+  openedAkaunNo.value = null;
+}
+
+function applyFormulaInstallment(amount: number, methodLabel: string) {
+  const line = `Ansuran bulanan dicadangkan: RM ${Math.round(amount).toLocaleString("en-MY")} (${methodLabel})`;
+  form.value.catatan = form.value.catatan ? `${form.value.catatan}\n${line}` : line;
+}
+
+function gunakanCadanganAI() {
+  if (!aiCredit.value) return;
+  const applied = applyCreditScoreToForm(aiCredit.value);
+  form.value.cadanganPembiayaan = applied.cadanganPembiayaan;
+  form.value.skorKredit = applied.skorKredit;
+  if (applied.keputusan) form.value.keputusan = applied.keputusan;
+}
+
+function gunaMitigasi(mitigation: EdgeCaseMitigation) {
+  applyMitigationToForm(form.value, mitigation);
+}
+
+function mapPenilaianKeputusanToWorkflow(keputusan: string): "lulus" | "tolak" | null {
+  if (keputusan === "Lulus") return "lulus";
+  if (keputusan === "Tolak") return "tolak";
+  return null;
+}
+
+async function simpanPenilaian() {
+  if (!selectedItem.value?.id) return;
+  if (!form.value.keputusan) {
+    toast.error("Sila pilih keputusan penilaian.");
+    return;
+  }
+
+  saving.value = true;
+  saved.value = false;
+  try {
+    const res = await savePermohonanPenilaian(selectedItem.value.id, {
+      keputusan: form.value.keputusan as "Lulus" | "Tolak" | "Tangguh",
+      skorKredit: form.value.skorKredit,
+      cadanganPembiayaan: form.value.cadanganPembiayaan,
+      cadanganJenisPembiayaan: form.value.cadanganJenisPembiayaan,
+      catatan: form.value.catatan,
+      kadarKeuntunganTahunan: form.value.kadarKeuntungan,
+      tempohPembiayaan: form.value.tempohPembiayaan,
+      kaedahPengiraan: form.value.kaedahPengiraan,
+      bukaAkaun: form.value.bukaAkaun,
+    });
+
+    const workflowKeputusan = mapPenilaianKeputusanToWorkflow(form.value.keputusan);
+    if (workflowKeputusan) {
+      await processPermohonanWorkflow(selectedItem.value.id, {
+        stage: "semakan",
+        keputusan: workflowKeputusan,
+        catatan: form.value.catatan.trim() || undefined,
+      });
+    }
+
+    saved.value = true;
+    const newStatus = String(res.data.permohonan.status ?? selectedItem.value.status);
+    selectedItem.value.status = newStatus;
+    if (selectedDetail.value) {
+      selectedDetail.value.status = newStatus;
+    }
+    openedAkaunNo.value = res.data.akaun ? String(res.data.akaun.id ?? "") : null;
+
+    if (res.data.akaun) {
+      toast.success(`Penilaian disimpan. Akaun ${openedAkaunNo.value} dibuka dengan jadual ansuran formula.`);
+    } else {
+      toast.success("Penilaian berjaya disimpan.");
+    }
+
+    await loadList();
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Gagal menyimpan penilaian.");
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function downloadOfferLetter() {
+  if (!selectedItem.value?.id) return;
+  downloadingOfferLetter.value = true;
+  try {
+    await openPermohonanOfferLetter(selectedItem.value.id);
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Gagal menjana surat tawaran.");
+  } finally {
+    downloadingOfferLetter.value = false;
+  }
+}
 
 const officerBranch = computed(() => authStore.user?.cawangan ?? null);
 
@@ -80,8 +303,6 @@ async function loadList() {
         cawangan: String(row.cawangan ?? ""),
       };
     });
-    const workflowMeta = res.meta?.workflow as Record<string, unknown> | undefined;
-    workflowTitle.value = String(workflowMeta?.title ?? "");
   } catch (err) {
     toast.error(err instanceof Error ? err.message : "Gagal memuatkan senarai permohonan.");
     permohonanList.value = [];
@@ -94,6 +315,8 @@ async function selectItem(item: WorkflowListItem) {
   selectedItem.value = item;
   selectedDetail.value = null;
   catatan.value = "";
+  aiCredit.value = null;
+  resetPenilaianForm();
 
   if (!item.id) {
     toast.error("ID permohonan tidak sah.");
@@ -101,13 +324,31 @@ async function selectItem(item: WorkflowListItem) {
   }
 
   loadingDetail.value = true;
+  scoring.value = true;
   try {
-    const res = await getPermohonan(item.id);
-    selectedDetail.value = res.data;
+    const [detailRes, creditRes] = await Promise.all([
+      getPermohonan(item.id),
+      scorePermohonanCredit(item.id).catch(() => null),
+    ]);
+    selectedDetail.value = detailRes.data;
+    aiCredit.value = creditRes?.data ?? null;
+    hydratePenilaianFromDetails(detailRes.data.details as Record<string, unknown> | undefined);
+
+    if (isSemakanPenilaian.value && creditRes?.data) {
+      const applied = applyCreditScoreToForm(creditRes.data);
+      if (!form.value.skorKredit) form.value.skorKredit = applied.skorKredit;
+      if (!form.value.cadanganPembiayaan) form.value.cadanganPembiayaan = applied.cadanganPembiayaan;
+      if (!form.value.keputusan && applied.keputusan) form.value.keputusan = applied.keputusan;
+    }
+
+    if (!creditRes) {
+      toast.error("Gagal mengira skor kredit AI.");
+    }
   } catch (err) {
     toast.error(err instanceof Error ? err.message : "Gagal memuatkan butiran permohonan.");
   } finally {
     loadingDetail.value = false;
+    scoring.value = false;
   }
 }
 
@@ -125,6 +366,8 @@ async function submitDecision(keputusan: "lulus" | "tolak") {
     selectedItem.value = null;
     selectedDetail.value = null;
     catatan.value = "";
+    aiCredit.value = null;
+    resetPenilaianForm();
     await loadList();
   } catch (err) {
     toast.error(err instanceof Error ? err.message : "Gagal memproses keputusan.");
@@ -144,6 +387,8 @@ watch(
     selectedItem.value = null;
     selectedDetail.value = null;
     catatan.value = "";
+    aiCredit.value = null;
+    resetPenilaianForm();
     void loadList();
   },
 );
@@ -167,21 +412,6 @@ onMounted(() => {
           { label: config.title },
         ]"
       />
-
-      <div
-        v-if="workflowTitle"
-        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--accent-200)] bg-[var(--accent-50)] px-4 py-3 text-sm text-[var(--accent-900)]"
-      >
-        <div>
-          <span class="font-medium">Aliran Kerja:</span> {{ workflowTitle }}
-        </div>
-        <router-link
-          to="/admin/workflow-configuration"
-          class="text-xs font-medium underline decoration-[var(--accent-400)] underline-offset-2 hover:text-[var(--accent-700)]"
-        >
-          Konfigurasi Workflow
-        </router-link>
-      </div>
 
       <div
         v-if="config.showCawanganScope && officerBranch"
@@ -276,6 +506,144 @@ onMounted(() => {
               Memuatkan butiran...
             </div>
 
+            <div v-else-if="isSemakanPenilaian" class="space-y-6 p-6">
+              <article class="rounded-lg border border-slate-200 bg-white">
+                <div class="border-b border-slate-100 px-4 py-3">
+                  <h4 class="text-sm font-semibold text-slate-900">Ringkasan Permohonan</h4>
+                </div>
+                <div class="grid gap-4 p-4 sm:grid-cols-2">
+                  <div>
+                    <p class="text-xs font-medium text-slate-500">Jumlah Permohonan</p>
+                    <p class="mt-1 text-sm text-slate-800">
+                      {{ selectedDetail?.jumlahPermohonan != null ? `RM ${Number(selectedDetail.jumlahPermohonan).toLocaleString()}` : selectedItem.jumlah }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-slate-500">Kategori Pembiayaan</p>
+                    <p class="mt-1 text-sm text-slate-800">{{ selectedDetail?.kategoriPembiayaan ?? selectedItem.jenisPermohonan }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-slate-500">Status Semasa</p>
+                    <p class="mt-1">
+                      <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(selectedDetail?.status ?? selectedItem.status)">
+                        {{ statusLabel(selectedDetail?.status ?? selectedItem.status) }}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium text-slate-500">Tarikh Permohonan</p>
+                    <p class="mt-1 text-sm text-slate-800">{{ selectedDetail?.tarikhPermohonan ?? "—" }}</p>
+                  </div>
+                </div>
+              </article>
+
+              <AiCreditScoringPanel
+                :scoring="scoring"
+                :ai-credit="aiCredit"
+                show-apply-suggestion
+                @apply-suggestion="gunakanCadanganAI"
+                @apply-mitigation="gunaMitigasi"
+              />
+
+              <PembiayaanFormulaPanel
+                :jumlah-pokok="formulaJumlahPokok"
+                v-model:kaedah-pengiraan="form.kaedahPengiraan"
+                v-model:kadar-keuntungan="form.kadarKeuntungan"
+                v-model:tempoh-bulan="form.tempohPembiayaan"
+                @apply-monthly-installment="applyFormulaInstallment"
+              />
+
+              <form class="space-y-6" @submit.prevent="simpanPenilaian">
+                <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+                  <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
+                    <Handshake class="h-4 w-4 text-slate-500" />
+                    <h4 class="text-sm font-semibold text-slate-900">Penilaian & Kelulusan</h4>
+                  </div>
+                  <div class="space-y-4 p-4">
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">Skor Kredit</label>
+                      <input
+                        v-model="form.skorKredit"
+                        type="text"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        placeholder="Contoh: 75"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">Kelulusan Penilaian</label>
+                      <select
+                        v-model="form.keputusan"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      >
+                        <option value="">-- Pilih Keputusan --</option>
+                        <option value="Lulus">Lulus</option>
+                        <option value="Tolak">Tolak</option>
+                        <option value="Tangguh">Tangguh</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">Cadangan Jumlah Pembiayaan</label>
+                      <input
+                        v-model="form.cadanganPembiayaan"
+                        type="text"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        placeholder="Contoh: RM 40,000"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">Cadangan Jenis Pembiayaan</label>
+                      <select
+                        v-model="form.cadanganJenisPembiayaan"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      >
+                        <option value="">-- Pilih Jenis Pembiayaan --</option>
+                        <option v-for="opt in JENIS_PEMBIAYAAN_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs font-medium text-slate-600">Catatan</label>
+                      <textarea
+                        v-model="form.catatan"
+                        rows="4"
+                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        placeholder="Catatan dan ulasan penilaian..."
+                      />
+                    </div>
+                    <label v-if="form.keputusan === 'Lulus'" class="flex items-center gap-2 text-sm text-slate-700">
+                      <input v-model="form.bukaAkaun" type="checkbox" class="rounded border-slate-300" />
+                      Buka akaun pembiayaan automatik (guna formula dipilih)
+                    </label>
+                  </div>
+                </section>
+
+                <div v-if="saved" class="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  Penilaian berjaya disimpan ke permohonan.
+                  <span v-if="openedAkaunNo"> Akaun {{ openedAkaunNo }} dibuka dengan jadual ansuran formula.</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                  <button
+                    type="submit"
+                    :disabled="saving"
+                    class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60"
+                  >
+                    <Save class="h-4 w-4" />
+                    {{ saving ? "Menyimpan..." : "Simpan Penilaian" }}
+                  </button>
+                  <button
+                    v-if="isApprovedPermohonanStatus(selectedItem.status)"
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 disabled:opacity-60"
+                    :disabled="downloadingOfferLetter"
+                    @click="downloadOfferLetter"
+                  >
+                    <FileText class="h-4 w-4" />
+                    {{ downloadingOfferLetter ? "Menjana PDF..." : "Surat Tawaran PDF" }}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             <div v-else class="space-y-6 p-6">
               <article class="rounded-lg border border-slate-200 bg-white">
                 <div class="border-b border-slate-100 px-4 py-3">
@@ -305,6 +673,30 @@ onMounted(() => {
                     <p class="mt-1 text-sm text-slate-800">{{ selectedDetail?.tarikhPermohonan ?? "—" }}</p>
                   </div>
                 </div>
+              </article>
+
+              <AiCreditScoringPanel :scoring="scoring" :ai-credit="aiCredit" />
+
+              <PembiayaanFormulaPanel
+                v-if="isWorkflowReviewStage && hasSavedFormula"
+                :key="`formula-${selectedItem.id}`"
+                readonly
+                :jumlah-pokok="savedFormulaJumlahPokok"
+                :kaedah-pengiraan="form.kaedahPengiraan"
+                :kadar-keuntungan="form.kadarKeuntungan"
+                :tempoh-bulan="form.tempohPembiayaan"
+              />
+
+              <article
+                v-else-if="isWorkflowReviewStage"
+                class="rounded-lg border border-amber-200 bg-amber-50"
+              >
+                <div class="border-b border-amber-200/60 px-4 py-3">
+                  <h4 class="text-sm font-semibold text-amber-900">Fleksibiliti Formula Pengiraan</h4>
+                </div>
+                <p class="p-4 text-sm text-amber-900">
+                  Penyemak belum menyimpan formula penilaian untuk permohonan ini.
+                </p>
               </article>
 
               <article class="rounded-lg border border-slate-200 bg-white">

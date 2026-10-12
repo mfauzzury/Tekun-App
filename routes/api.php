@@ -19,8 +19,14 @@ use App\Http\Controllers\Api\Sppt\CawanganController;
 use App\Http\Controllers\Api\Sppt\AiCreditScoringController;
 use App\Http\Controllers\Api\Sppt\AiRiskScoringController;
 use App\Http\Controllers\Api\Sppt\AkaunController;
+use App\Http\Controllers\Api\Sppt\BayaranController;
 use App\Http\Controllers\Api\Sppt\HardRuleCheckController;
+use App\Http\Controllers\Api\Sppt\JadualAnsuranController;
 use App\Http\Controllers\Api\Sppt\JaminanController;
+use App\Http\Controllers\Api\Sppt\PembiayaanFormulaController;
+use App\Http\Controllers\Api\Sppt\PenjadualanController;
+use App\Http\Controllers\Api\Sppt\TawidhController;
+use App\Http\Controllers\Api\Sppt\KoleksiController;
 use App\Http\Controllers\Api\Sppt\KutipanController;
 use App\Http\Controllers\Api\Sppt\PengeluaranDanaController;
 use App\Http\Controllers\Api\Sppt\PermohonanController;
@@ -144,6 +150,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/permohonan/{permohonan}/risk-scoring', [AiRiskScoringController::class, 'scorePermohonan']);
         Route::post('/permohonan/credit-scoring/score', [AiCreditScoringController::class, 'score']);
         Route::post('/permohonan/{permohonan}/credit-scoring', [AiCreditScoringController::class, 'scorePermohonan']);
+        Route::get('/pembiayaan-formula/defaults', [PembiayaanFormulaController::class, 'defaults']);
+        Route::post('/pembiayaan-formula/calculate', [PembiayaanFormulaController::class, 'calculate']);
         Route::post('/permohonan/dokumen/verify', [PermohonanController::class, 'verifyDocument'])
             ->middleware('permission:sppt.edit');
         Route::post('/permohonan/dokumen/classify', [PermohonanController::class, 'classifyDocument'])
@@ -151,6 +159,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/permohonan/{permohonan}/dokumen', [PermohonanController::class, 'uploadDocument'])
             ->middleware('permission:sppt.edit');
         Route::patch('/permohonan/{permohonan}/dokumen/{attachmentId}', [PermohonanController::class, 'updateDocumentClass'])
+            ->middleware('permission:sppt.edit');
+        Route::post('/permohonan/{permohonan}/penilaian', [PermohonanController::class, 'savePenilaian'])
             ->middleware('permission:sppt.edit');
         Route::get('/permohonan/{permohonan}/surat-tawaran', [PermohonanController::class, 'offerLetter']);
         Route::get('/permohonan/{permohonan}/dokumen/{attachmentId}', [PermohonanController::class, 'showDocument']);
@@ -170,6 +180,39 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/akaun/summary', [AkaunController::class, 'summary']);
         Route::get('/akaun', [AkaunController::class, 'index']);
         Route::get('/akaun/{id}', [AkaunController::class, 'show']);
+        Route::get('/akaun/{id}/jadual', [JadualAnsuranController::class, 'index'])->whereNumber('id');
+
+        Route::get('/penjadualan', [PenjadualanController::class, 'index']);
+        Route::post('/penjadualan', [PenjadualanController::class, 'store'])
+            ->middleware('permission:sppt.create');
+        Route::get('/penjadualan/{id}', [PenjadualanController::class, 'show'])->whereNumber('id');
+        Route::post('/penjadualan/{id}/approve', [PenjadualanController::class, 'approve'])
+            ->middleware('permission:sppt.edit')->whereNumber('id');
+
+        Route::get('/bayaran/saluran', [BayaranController::class, 'saluran']);
+        Route::get('/bayaran', [BayaranController::class, 'index']);
+        Route::post('/bayaran', [BayaranController::class, 'store'])
+            ->middleware('permission:sppt.create');
+        Route::post('/bayaran/batch', [BayaranController::class, 'batch'])
+            ->middleware('permission:sppt.create');
+        Route::get('/bayaran/batches', [BayaranController::class, 'batches']);
+
+        Route::get('/tawidh/config', [TawidhController::class, 'config']);
+        Route::post('/tawidh/recalculate', [TawidhController::class, 'recalculateAll'])
+            ->middleware('permission:sppt.edit');
+        Route::post('/tawidh/recalculate/{akaunId}', [TawidhController::class, 'recalculateAccount'])
+            ->middleware('permission:sppt.edit')->whereNumber('akaunId');
+        Route::get('/tawidh/tunggakan', [TawidhController::class, 'tunggakanSummary']);
+
+        Route::get('/koleksi/config', [KoleksiController::class, 'config']);
+        Route::get('/koleksi/klasifikasi', [KoleksiController::class, 'klasifikasiIndex']);
+        Route::get('/koleksi/klasifikasi/summary', [KoleksiController::class, 'klasifikasiSummary']);
+        Route::post('/koleksi/klasifikasi/recalculate', [KoleksiController::class, 'recalculateKlasifikasi'])
+            ->middleware('permission:sppt.edit');
+        Route::get('/koleksi/notis', [KoleksiController::class, 'notisIndex']);
+        Route::post('/koleksi/notis/process', [KoleksiController::class, 'processDunning'])
+            ->middleware('permission:sppt.edit');
+        Route::get('/koleksi/notis/{id}/pdf', [KoleksiController::class, 'notisPdf'])->whereNumber('id');
 
         Route::get('/pengeluaran-dana/summary', [PengeluaranDanaController::class, 'summary']);
         Route::get('/pengeluaran-dana', [PengeluaranDanaController::class, 'index']);

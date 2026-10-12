@@ -3,9 +3,14 @@
 namespace App\Services;
 
 use App\Models\AkaunPembiayaan;
+use App\Models\BatchBayaran;
+use App\Models\JadualAnsuran;
 use App\Models\Jaminan;
 use App\Models\Kutipan;
 use App\Models\PengeluaranDana;
+use App\Models\NotisKutipan;
+use App\Models\PermohonanPenjadualan;
+use App\Models\TransaksiBayaran;
 use Carbon\Carbon;
 
 class SpptViewTransform
@@ -29,10 +34,19 @@ class SpptViewTransform
             'bakiKeuntungan' => (float) $row->baki_keuntungan,
             'bakiSimpanan' => (float) $row->baki_simpanan,
             'penalti' => (float) $row->penalti,
+            'tawidh' => (float) ($row->tawidh ?? 0),
+            'hariLewat' => (int) ($row->hari_lewat ?? 0),
             'tunggakan' => (float) $row->tunggakan,
             'bakiAkhir' => (float) $row->baki_akhir,
             'bayaranBulanan' => (float) $row->bayaran_bulanan,
+            'kaedahPengiraan' => $row->kaedah_pengiraan,
+            'kadarKeuntunganTahunan' => $row->kadar_keuntungan_tahunan !== null ? (float) $row->kadar_keuntungan_tahunan : null,
+            'tempohBulan' => $row->tempoh_bulan ? (int) $row->tempoh_bulan : null,
+            'moratoriumTamat' => $row->moratorium_tamat?->format('Y-m-d'),
             'status' => $row->status,
+            'klasifikasiNpl' => $row->klasifikasi_npl ?? 'lancar',
+            'klasifikasiNplLabel' => config('sppt-collection.npl.labels.'.$row->klasifikasi_npl, $row->klasifikasi_npl ?? 'Lancar'),
+            'klasifikasiDikemaskiniPada' => $row->klasifikasi_dikemaskini_pada?->toIso8601String(),
             'risiko' => $row->risiko,
             'noBsas' => $row->no_bsas,
             'snc' => (bool) $row->snc,
@@ -171,5 +185,102 @@ class SpptViewTransform
         $clean = preg_replace('/[^0-9.]/', '', $value);
 
         return $clean !== '' ? (float) $clean : null;
+    }
+
+    public static function jadualAnsuran(JadualAnsuran $row): array
+    {
+        return [
+            'no' => (int) $row->no_ansuran,
+            'tarikh' => self::formatTarikhMalay($row->tarikh_bayaran->format('Y-m-d')),
+            'tarikhIso' => $row->tarikh_bayaran->format('Y-m-d'),
+            'ansuran' => (float) $row->jumlah_ansuran,
+            'pokok' => (float) $row->pokok,
+            'keuntungan' => (float) $row->keuntungan,
+            'baki' => (float) $row->baki,
+            'status' => $row->status,
+            '_dbId' => $row->id,
+        ];
+    }
+
+    public static function penjadualan(PermohonanPenjadualan $row): array
+    {
+        return [
+            'id' => $row->rujukan,
+            'rujukan' => $row->rujukan,
+            'akaunId' => $row->akaun_id,
+            'noAkaun' => $row->akaun?->no_akaun,
+            'nama' => $row->akaun?->nama,
+            'jenis' => $row->jenis,
+            'status' => $row->status,
+            'tempohBulan' => $row->tempoh_bulan ? (int) $row->tempoh_bulan : null,
+            'tarikhMula' => $row->tarikh_mula?->format('Y-m-d'),
+            'tarikhKuatKuasa' => $row->tarikh_kuat_kuasa?->format('Y-m-d'),
+            'bayaranBaharu' => $row->bayaran_baharu !== null ? (float) $row->bayaran_baharu : null,
+            'sebab' => $row->sebab,
+            'catatanPegawai' => $row->catatan_pegawai,
+            'tarikhKelulusan' => $row->tarikh_kelulusan?->toIso8601String(),
+            '_dbId' => $row->id,
+        ];
+    }
+
+    public static function transaksiBayaran(TransaksiBayaran $row): array
+    {
+        return [
+            'id' => $row->rujukan,
+            'rujukan' => $row->rujukan,
+            'akaunId' => $row->akaun_id,
+            'noAkaun' => $row->akaun?->no_akaun,
+            'nama' => $row->akaun?->nama,
+            'jumlah' => (float) $row->jumlah,
+            'kepadaTawidh' => (float) $row->kepada_tawidh,
+            'kepadaTunggakan' => (float) $row->kepada_tunggakan,
+            'kepadaAnsuran' => (float) $row->kepada_ansuran,
+            'saluran' => $row->saluran,
+            'mod' => $row->mod,
+            'status' => $row->status,
+            'noRujukanLuar' => $row->no_rujukan_luar,
+            'tarikhBayaran' => $row->tarikh_bayaran->toIso8601String(),
+            '_dbId' => $row->id,
+        ];
+    }
+
+    public static function notisKutipan(NotisKutipan $row): array
+    {
+        $meta = $row->meta ?? [];
+
+        return [
+            'id' => $row->rujukan,
+            'rujukan' => $row->rujukan,
+            'akaunId' => $row->akaun_id,
+            'noAkaun' => $row->akaun?->no_akaun ?? ($meta['noAkaun'] ?? ''),
+            'nama' => $row->akaun?->nama ?? ($meta['nama'] ?? ''),
+            'tahap' => $row->tahap,
+            'tahapLabel' => $meta['label'] ?? $row->tahap,
+            'jenis' => $row->jenis,
+            'status' => $row->status,
+            'hariLewat' => (int) $row->hari_lewat,
+            'jumlahTunggakan' => (float) $row->jumlah_tunggakan,
+            'mesej' => $row->mesej,
+            'tarikhDijadual' => $row->tarikh_dijadual->toIso8601String(),
+            'tarikhDihantar' => $row->tarikh_dihantar?->toIso8601String(),
+            'meta' => $meta,
+            '_dbId' => $row->id,
+        ];
+    }
+
+    public static function batchBayaran(BatchBayaran $row): array
+    {
+        return [
+            'id' => $row->rujukan,
+            'rujukan' => $row->rujukan,
+            'saluran' => $row->saluran,
+            'status' => $row->status,
+            'jumlahRekod' => (int) $row->jumlah_rekod,
+            'jumlahBerjaya' => (int) $row->jumlah_berjaya,
+            'jumlahGagal' => (int) $row->jumlah_gagal,
+            'jumlahKeseluruhan' => (float) $row->jumlah_keseluruhan,
+            'catatan' => $row->catatan,
+            '_dbId' => $row->id,
+        ];
     }
 }

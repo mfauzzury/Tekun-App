@@ -7,6 +7,7 @@ use App\Http\Requests\ClassifyPermohonanDocumentRequest;
 use App\Http\Requests\ExtractPermohonanFormOcrRequest;
 use App\Http\Requests\ProcessPermohonanWorkflowRequest;
 use App\Http\Requests\StorePermohonanDocumentRequest;
+use App\Http\Requests\StorePermohonanPenilaianRequest;
 use App\Http\Requests\StorePermohonanRequest;
 use App\Http\Requests\UpdatePermohonanDocumentClassRequest;
 use App\Http\Requests\UpdatePermohonanRequest;
@@ -20,7 +21,9 @@ use App\Services\DocumentClassificationService;
 use App\Services\HardRuleCheckService;
 use App\Services\MyKadVerificationService;
 use App\Services\OfferLetterService;
+use App\Services\PenilaianService;
 use App\Services\PermohonanFormOcrService;
+use App\Services\PermohonanReferenceService;
 use App\Services\PermohonanWorkflowService;
 use App\Services\SpptViewTransform;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +43,9 @@ class PermohonanController extends Controller
         protected HardRuleCheckService $hardRuleCheck,
         protected AiRiskScoringService $riskScoring,
         protected OfferLetterService $offerLetter,
+        protected PenilaianService $penilaianService,
         protected PermohonanWorkflowService $workflow,
+        protected PermohonanReferenceService $referenceService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -71,7 +76,16 @@ class PermohonanController extends Controller
             });
         }
 
-        if ($status) {
+        $statuses = $request->input('statuses');
+        if (is_string($statuses) && $statuses !== '') {
+            $statusList = array_values(array_filter(array_map(
+                static fn (string $value): string => trim($value),
+                explode(',', $statuses),
+            )));
+            if ($statusList !== []) {
+                $query->whereIn('status', $statusList);
+            }
+        } elseif ($status) {
             $query->where('status', $status);
         }
 
@@ -82,6 +96,11 @@ class PermohonanController extends Controller
             }
 
             $query = $this->workflow->applyStageFilter($query, $workflowStage, $user);
+        }
+
+        // Penilaian & Kelulusan queue should not include draft applications.
+        if ($request->boolean('penilaian')) {
+            $query->where('status', '!=', 'Draf');
         }
 
         $total = (clone $query)->count();
@@ -165,7 +184,7 @@ class PermohonanController extends Controller
         $data = $this->preparePermohonanData($request->validated());
         $data = $this->applyOfficerOffice($data);
         if (empty($data['no_rujukan'])) {
-            $data['no_rujukan'] = $this->generateNextNoRujukan();
+            $data['no_rujukan'] = $this->referenceService->generateNextNoRujukan();
         }
 
         $data = $this->applyHardRuleAutoReject($data);
@@ -206,6 +225,21 @@ class PermohonanController extends Controller
         }
 
         return $this->offerLetter->pdfResponse($permohonan);
+    }
+
+    public function savePenilaian(StorePermohonanPenilaianRequest $request, int $id): JsonResponse
+    {
+        $permohonan = Permohonan::find($id);
+        if (! $permohonan) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        $result = $this->penilaianService->save($permohonan, $request->validated());
+
+        return $this->sendOk([
+            'permohonan' => $result['permohonan'],
+            'akaun' => $result['akaun'] ? SpptViewTransform::akaun($result['akaun']) : null,
+        ]);
     }
 
     public function update(UpdatePermohonanRequest $request, int $id): JsonResponse
@@ -467,24 +501,6 @@ class PermohonanController extends Controller
         }
 
         return $data;
-    }
-
-    private function generateNextNoRujukan(): string
-    {
-        $year = now()->format('Y');
-        $prefix = 'PM-'.$year.'-';
-
-        $latest = Permohonan::query()
-            ->where('no_rujukan', 'like', $prefix.'%')
-            ->orderByDesc('no_rujukan')
-            ->value('no_rujukan');
-
-        $next = 1;
-        if (is_string($latest) && preg_match('/-(\d+)$/', $latest, $matches)) {
-            $next = ((int) $matches[1]) + 1;
-        }
-
-        return $prefix.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
     public function uploadDocument(StorePermohonanDocumentRequest $request, int $id): JsonResponse

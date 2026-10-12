@@ -265,6 +265,23 @@ class MyKadVerificationService
             );
         }
 
+        $hasPersonContext = ($applicantIc !== null && trim($applicantIc) !== '' && $applicantName !== null && trim($applicantName) !== '')
+            || ($spouseIc !== null && trim($spouseIc) !== '' && $spouseName !== null && trim($spouseName) !== '');
+
+        // Fail closed: when applicant/spouse identity is known, do not accept combined MyKad
+        // without a positive identity match (filename heuristics are not proof of ownership).
+        if ($hasPersonContext) {
+            return $this->buildResult(
+                'failed',
+                'ic_combined',
+                $confidence,
+                'Tidak dapat mengesahkan nama dan No. Kad Pengenalan pada MyKad. Sila muat naik imej yang jelas.',
+                false,
+                false,
+                null,
+            );
+        }
+
         if ($this->looksLikeCombinedIcFilename($originalName)) {
             return $this->buildResult(
                 'verified',
@@ -706,30 +723,43 @@ class MyKadVerificationService
         $left = $this->normalizeName($extractedName);
         $right = $this->normalizeName($applicantName);
 
+        if ($left === '' || $right === '') {
+            return false;
+        }
+
         if ($left === $right) {
             return true;
         }
 
-        if ($left !== '' && str_contains($right, $left)) {
+        if (str_contains($right, $left) || str_contains($left, $right)) {
             return true;
         }
 
-        if ($right !== '' && str_contains($left, $right)) {
-            return true;
-        }
-
-        $leftTokens = array_values(array_filter(explode(' ', $left)));
-        $rightTokens = array_values(array_filter(explode(' ', $right)));
+        $leftTokens = $this->significantNameTokens($left);
+        $rightTokens = $this->significantNameTokens($right);
         $shared = array_intersect($leftTokens, $rightTokens);
 
+        // Require at least two significant tokens (ignore BIN/BINTI/A/L particles).
         return count($shared) >= 2;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function significantNameTokens(string $normalizedName): array
+    {
+        $particles = ['BIN', 'BINTI', 'BT', 'BTE', 'A/L', 'A/P', 'AL', 'AP', 'S/O', 'D/O'];
+        $tokens = array_values(array_filter(explode(' ', $normalizedName)));
+
+        return array_values(array_filter(
+            $tokens,
+            static fn (string $token): bool => ! in_array($token, $particles, true) && strlen($token) > 1,
+        ));
     }
 
     private function normalizeName(string $name): string
     {
-        $normalized = preg_replace('/\s+/', ' ', strtoupper(trim($name))) ?? '';
-
-        return $normalized;
+        return preg_replace('/\s+/', ' ', strtoupper(trim($name))) ?? '';
     }
 
     /**

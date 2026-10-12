@@ -37,6 +37,20 @@ class MyKadVerificationServiceTest extends TestCase
         $this->assertFalse($result['identity_matched']);
     }
 
+    public function test_names_with_shared_bin_particle_do_not_match_without_enough_tokens(): void
+    {
+        $service = new MyKadVerificationService;
+        $path = base_path('docs/Sample-MalaysianMyKad-Front.jpg');
+
+        $this->assertFileExists($path);
+
+        // Same sample IC image, but applicant name only shares the particle "BIN".
+        $result = $service->verify($path, '691115-12-5053', 'ic-depan.jpg', 'AHMAD BIN ALI');
+
+        $this->assertSame('failed', $result['status']);
+        $this->assertFalse($result['identity_matched']);
+    }
+
     public function test_sample_back_image_is_verified_as_ic_back(): void
     {
         $service = new MyKadVerificationService;

@@ -33,6 +33,7 @@ import DaftarUsahawanBaruView from "@/views/sppt/DaftarUsahawanBaruView.vue";
 import PenilaianKelulusanView from "@/views/sppt/PenilaianKelulusanView.vue";
 import PenilaianBaruView from "@/views/sppt/PenilaianBaruView.vue";
 import PengeluaranDanaView from "@/views/sppt/PengeluaranDanaView.vue";
+import PenjadualanSemulaView from "@/views/sppt/PenjadualanSemulaView.vue";
 import PengurusanAkaunView from "@/views/sppt/PengurusanAkaunView.vue";
 import BayaranPembiayaanView from "@/views/sppt/BayaranPembiayaanView.vue";
 import TerimaBayaranView from "@/views/sppt/TerimaBayaranView.vue";
@@ -66,6 +67,7 @@ import InsolvensiIntegrasiView from "@/views/sppt/litigasi/InsolvensiIntegrasiVi
 import PengurusanJaminanView from "@/views/sppt/PengurusanJaminanView.vue";
 import KemaskiniJaminanView from "@/views/sppt/KemaskiniJaminanView.vue";
 import LaporanAnalitikView from "@/views/sppt/LaporanAnalitikView.vue";
+import PowerBiLaporanView from "@/views/sppt/PowerBiLaporanView.vue";
 import AuditKawalanView from "@/views/sppt/AuditKawalanView.vue";
 import IntegrasiView from "@/views/sppt/IntegrasiView.vue";
 import TetapanView from "@/views/sppt/TetapanView.vue";
@@ -80,6 +82,8 @@ import WorkflowConfigurationView from "@/views/WorkflowConfigurationView.vue";
 import StorefrontHomeView from "@/views/StorefrontHomeView.vue";
 import StorefrontPageView from "@/views/StorefrontPageView.vue";
 import { useAuthStore } from "@/stores/auth";
+import { resolveWorkflowStageFromRouteName, canAccessWorkflowStage, firstAccessibleWorkflowRoute } from "@/config/permohonan-workflow";
+import { canAccessPengurusanPembiayaanRoute, defaultAdminLandingRoute, isAdminRole } from "@/utils/permissions";
 import { useSiteStore } from "@/stores/site";
 import { translateRouteTitle } from "@/i18n";
 import { useUiLocaleStore } from "@/stores/uiLocale";
@@ -206,6 +210,7 @@ const router = createRouter({
     { path: "/admin/pembiayaan/pengeluaran", name: "pengeluaran-dana", component: PengeluaranDanaView, meta: { requiresAuth: true, title: "Pengeluaran Dana" } },
     { path: "/admin/pembiayaan/pengeluaran/proses", name: "proses-pengeluaran", component: PlaceholderView, meta: { requiresAuth: true, title: "Proses Pengeluaran" } },
     { path: "/admin/pembiayaan/akaun", name: "pengurusan-akaun", component: PengurusanAkaunView, meta: { requiresAuth: true, title: "Pengurusan Akaun" } },
+    { path: "/admin/pembiayaan/penjadualan", name: "penjadualan-semula", component: PenjadualanSemulaView, meta: { requiresAuth: true, title: "Penjadualan Semula" } },
     { path: "/admin/pembiayaan/akaun/kemaskini", name: "kemaskini-akaun", component: PlaceholderView, meta: { requiresAuth: true, title: "Kemaskini Akaun" } },
     { path: "/admin/pembayaran", name: "bayaran-pembiayaan", component: BayaranPembiayaanView, meta: { requiresAuth: true, title: "Bayaran Pembiayaan" } },
     { path: "/admin/pembayaran/terima", name: "terima-bayaran", component: TerimaBayaranView, meta: { requiresAuth: true, title: "Terima Bayaran" } },
@@ -251,6 +256,7 @@ const router = createRouter({
     { path: "/admin/jaminan", name: "pengurusan-jaminan", component: PengurusanJaminanView, meta: { requiresAuth: true, title: "Pengurusan Jaminan" } },
     { path: "/admin/jaminan/kemaskini", name: "kemaskini-jaminan", component: KemaskiniJaminanView, meta: { requiresAuth: true, title: "Kemaskini Jaminan" } },
     { path: "/admin/laporan", name: "laporan-analitik", component: LaporanAnalitikView, meta: { requiresAuth: true, title: "Laporan & Analitik" } },
+    { path: "/admin/laporan/power-bi", name: "laporan-power-bi", component: PowerBiLaporanView, meta: { requiresAuth: true, title: "Dashboard Power BI" } },
     { path: "/admin/laporan/kewangan", name: "laporan-kewangan", component: PlaceholderView, meta: { requiresAuth: true, title: "Laporan Kewangan" } },
     { path: "/admin/laporan/prestasi", name: "laporan-prestasi", component: PlaceholderView, meta: { requiresAuth: true, title: "Laporan Prestasi" } },
     { path: "/admin/laporan/audit", name: "audit-kawalan", component: AuditKawalanView, meta: { requiresAuth: true, title: "Audit & Kawalan" } },
@@ -365,8 +371,23 @@ router.beforeEach(async (to) => {
     return { name: "login" };
   }
 
+  if (
+    to.meta.requiresAuth
+    && auth.isAuthenticated
+    && !isAdminRole(auth.user?.role)
+    && !canAccessPengurusanPembiayaanRoute(to.path)
+  ) {
+    return defaultAdminLandingRoute(auth.user?.permissions);
+  }
+
   if (to.meta.guestOnly && auth.isAuthenticated) {
-    return { name: "main-dashboard" };
+    return defaultAdminLandingRoute(auth.user?.permissions);
+  }
+
+  const workflowStage = resolveWorkflowStageFromRouteName(String(to.name ?? ""));
+  if (workflowStage && auth.isAuthenticated && !canAccessWorkflowStage(auth.user?.permissions, workflowStage)) {
+    const fallback = firstAccessibleWorkflowRoute(auth.user?.permissions);
+    return fallback ?? "/admin";
   }
 
   const pemohon = usePemohonStore();

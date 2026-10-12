@@ -28,6 +28,8 @@ return [
     'credit_scoring' => [
         'auto_approve_min_score' => (int) env('SPPT_CREDIT_AUTO_APPROVE_MIN', 80),
         'officer_review_min_score' => (int) env('SPPT_CREDIT_OFFICER_REVIEW_MIN', 60),
+        /** Scenario 3 — lower bound for near-reject borderline mitigations (score 50–59). */
+        'borderline_near_reject_min' => (int) env('SPPT_CREDIT_BORDERLINE_NEAR_REJECT_MIN', 50),
     ],
 
     /** Surat Tawaran Kemudahan Pembiayaan — branch letterhead & default financing terms. */

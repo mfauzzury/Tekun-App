@@ -63,4 +63,19 @@ class UserChatTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data', []);
     }
+
+    public function test_suggestions_allowed_for_sppt_officer_role(): void
+    {
+        $role = Role::create([
+            'name' => 'penyemak',
+            'description' => 'Penyemak',
+            'permissions' => ['sppt.view', 'sppt.edit', 'sppt.semakan', Permission::CHAT_USE],
+        ]);
+        $user = User::factory()->create(['role_id' => $role->id, 'role' => 'penyemak']);
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/chat/user/suggestions')
+            ->assertOk()
+            ->assertJsonStructure(['data' => [['id', 'label', 'module']]]);
+    }
 }

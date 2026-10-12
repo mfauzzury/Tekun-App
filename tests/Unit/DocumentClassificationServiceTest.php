@@ -55,6 +55,42 @@ class DocumentClassificationServiceTest extends TestCase
 
         $this->assertSame(DocumentClassificationService::CLASS_IC_PEMOHON_DEPAN, $result['suggested_class']);
         $this->assertGreaterThanOrEqual(55, $result['confidence']);
+        $this->assertTrue($result['identity_matched']);
+    }
+
+    public function test_rejects_mismatched_ic_front_identity_on_classify(): void
+    {
+        $path = base_path('docs/Sample-MalaysianMyKad-Front.jpg');
+        $this->assertFileExists($path);
+
+        $result = $this->service->classify(
+            $path,
+            'ic-depan.jpg',
+            '850101-01-1234',
+            'AHMAD BIN ALI',
+        );
+
+        $this->assertSame(DocumentClassificationService::CLASS_LAIN_LAIN, $result['suggested_class']);
+        $this->assertFalse($result['identity_matched']);
+        $this->assertStringContainsString('tidak sepadan', $result['message']);
+    }
+
+    public function test_filename_alone_does_not_accept_ic_front_when_applicant_context_exists(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'ic-front');
+        file_put_contents($path, 'dummy');
+
+        $result = $this->service->classify(
+            $path,
+            'mykad-depan-pemohon.jpg',
+            '850101-01-1234',
+            'AHMAD BIN ALI',
+        );
+
+        @unlink($path);
+
+        $this->assertSame(DocumentClassificationService::CLASS_LAIN_LAIN, $result['suggested_class']);
+        $this->assertFalse($result['identity_matched']);
     }
 
     public function test_classifies_ic_pemohon_belakang_from_filename(): void

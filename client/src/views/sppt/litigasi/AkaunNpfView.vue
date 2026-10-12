@@ -5,40 +5,37 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import SpptPageHeader from "@/components/sppt/SpptPageHeader.vue";
 import SpptFilterBar from "@/components/sppt/SpptFilterBar.vue";
 import LitigasiSubNav from "@/components/sppt/litigasi/LitigasiSubNav.vue";
-import { fetchSpptDataset } from "@/api/sppt";
-import type { AkaunNpf } from "@/data/litigasi-dummy";
+import { listKlasifikasiAkaun } from "@/api/sppt";
+import type { AkaunPembiayaan } from "@/types";
 
-const { t, tp } = useI18n();
+const { t } = useI18n();
 
-const rawItems = ref<AkaunNpf[]>([]);
+const rawItems = ref<AkaunPembiayaan[]>([]);
+const loading = ref(true);
 
 onMounted(async () => {
-  const res = await fetchSpptDataset("litigasi", "akaun_npf");
-  rawItems.value = res.data as AkaunNpf[];
+  loading.value = true;
+  try {
+    const res = await listKlasifikasiAkaun({ klasifikasi: "tidak_lancar", limit: 100 });
+    rawItems.value = res.data;
+  } finally {
+    loading.value = false;
+  }
 });
 
 const q = ref("");
-const status = ref("");
 
 const items = computed(() => {
   let list = [...rawItems.value];
   if (q.value) {
     const lower = q.value.toLowerCase();
-    list = list.filter((x) => x.noAkaun.toLowerCase().includes(lower) || x.nama.toLowerCase().includes(lower));
+    list = list.filter((x) => String(x.id).toLowerCase().includes(lower) || x.nama.toLowerCase().includes(lower));
   }
-  if (status.value) list = list.filter((x) => x.status === status.value);
   return list;
 });
 
-function statusNodLabel(s: string) {
-  const m: Record<string, string> = { belum: "Belum NOD", "dalaman-hantar": "NOD Dalaman Dihantar", "panel-hantar": "NOD Panel Dihantar", selesai: "Selesai" };
-  return m[s] ?? s;
-}
-
-function statusClass(s: string) {
-  if (s === "disahkan") return "bg-emerald-100 text-emerald-700";
-  if (s === "menunggu") return "bg-amber-100 text-amber-700";
-  return "bg-slate-100 text-slate-600";
+function fmtRm(n: number) {
+  return `RM ${n.toLocaleString("ms-MY", { minimumFractionDigits: 2 })}`;
 }
 </script>
 
@@ -56,10 +53,11 @@ function statusClass(s: string) {
 
       <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-          <h2 class="text-sm font-semibold text-slate-900">Pengenalpastian Akaun NPF (>90 hari tunggakan) (7.2)</h2>
-          <SpptFilterBar v-model:q="q" v-model:status="status" search-placeholder="Cari no. akaun atau nama..." :filter-options="[{ value: 'disahkan', label: 'Disahkan' }, { value: 'menunggu', label: 'Menunggu' }]" />
+          <h2 class="text-sm font-semibold text-slate-900">Pengenalpastian Akaun NPF — Klasifikasi Tidak Lancar (NPL)</h2>
+          <SpptFilterBar v-model:q="q" search-placeholder="Cari no. akaun atau nama..." />
         </div>
-        <div class="overflow-x-auto">
+        <div v-if="loading" class="p-6 text-center text-sm text-slate-400">Memuatkan...</div>
+        <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-100 text-left">
@@ -68,30 +66,30 @@ function statusClass(s: string) {
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Cawangan</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Hari Tunggakan</th>
                 <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ t("common.amount") }}</th>
-                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Status NOD</th>
-                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Pengesahan</th>
+                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Klasifikasi</th>
+                <th class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="item in items" :key="item.id" class="transition-colors hover:bg-slate-50">
-                <td class="px-4 py-2 font-mono text-slate-600">{{ item.noAkaun }}</td>
+              <tr v-for="item in items" :key="String(item.id)" class="transition-colors hover:bg-slate-50">
+                <td class="px-4 py-2 font-mono text-slate-600">{{ item.id }}</td>
                 <td class="px-4 py-2 font-medium text-slate-900">{{ item.nama }}</td>
                 <td class="px-4 py-2 text-slate-600">{{ item.cawangan }}</td>
-                <td class="px-4 py-2 font-mono text-slate-600">{{ item.hariTunggakan }}</td>
-                <td class="px-4 py-2 font-medium text-slate-900">{{ item.jumlahTunggakan }}</td>
-                <td class="px-4 py-2 text-slate-600">{{ statusNodLabel(item.statusNod) }}</td>
+                <td class="px-4 py-2 font-mono text-slate-600">{{ item.hariLewat ?? 0 }}</td>
+                <td class="px-4 py-2 font-medium text-slate-900">{{ fmtRm(item.tunggakan) }}</td>
                 <td class="px-4 py-2">
-                  <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="statusClass(item.status)">{{ item.status }}</span>
+                  <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-700">
+                    {{ item.klasifikasiNplLabel ?? "Tidak Lancar (NPL)" }}
+                  </span>
                 </td>
+                <td class="px-4 py-2 text-slate-600">{{ item.status }}</td>
+              </tr>
+              <tr v-if="items.length === 0">
+                <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-400">Tiada akaun NPL pada masa ini.</td>
               </tr>
             </tbody>
           </table>
         </div>
-      </article>
-
-      <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 class="mb-2 text-sm font-semibold text-slate-900">Pengesahan Dalaman (7.2.2)</h3>
-        <p class="text-sm text-slate-600">Semak penggiliran NOD (~1000 per panel). Pengesahan BSK/Jawatankuasa. Integrasi Insolvensi untuk auto tagging.</p>
       </article>
     </div>
   </AdminLayout>

@@ -14,6 +14,10 @@ class OfferLetterService
     /** @var list<string> */
     private const APPROVED_STATUSES = ['Diluluskan', 'Lulus', 'Berjaya'];
 
+    public function __construct(
+        protected PembiayaanFormulaService $formulaService,
+    ) {}
+
     public function isApproved(Permohonan $permohonan): bool
     {
         return in_array((string) $permohonan->status, self::APPROVED_STATUSES, true);
@@ -32,7 +36,9 @@ class OfferLetterService
         $approvedAmount = $this->resolveApprovedAmount($permohonan, $details, $penilaian, $credit);
         $months = $this->resolveTenureMonths($details, $penilaian);
         $profitRate = $this->resolveProfitRate($penilaian, $config);
-        $monthlyInstallment = $this->calculateMonthlyInstallment($approvedAmount, $profitRate, $months);
+        $formula = is_array($details['formula_pembiayaan'] ?? null) ? $details['formula_pembiayaan'] : [];
+        $formulaSnapshot = $this->resolveFormulaSnapshot($approvedAmount, $profitRate, $months, $formula, $penilaian);
+        $monthlyInstallment = (float) ($formulaSnapshot['ansuran_bulanan'] ?? $this->calculateMonthlyInstallmentFlat($approvedAmount, $profitRate, $months));
 
         $letterDate = now();
         $noRujukan = (string) ($permohonan->no_rujukan ?? 'PM-'.$permohonan->id);
@@ -52,7 +58,9 @@ class OfferLetterService
             'approvedAmount' => $this->formatCurrency($approvedAmount),
             'tenureLabel' => $this->formatTenureLabel($months),
             'profitRateLabel' => number_format($profitRate, 1).'% Setahun',
+            'profitMethodLabel' => (string) ($formulaSnapshot['kaedah_label'] ?? 'Kadar Rata (Flat Rate)'),
             'monthlyInstallment' => $this->formatCurrency($monthlyInstallment),
+            'totalRepaymentLabel' => $this->formatCurrency((float) ($formulaSnapshot['jumlah_bayaran_balik'] ?? 0)),
             'syariahConcept' => (string) ($penilaian['konsep_syariah'] ?? $config['default_syariah_concept'] ?? 'Tawarruq'),
             'acceptanceDays' => (int) ($config['acceptance_days'] ?? 14),
             'signatoryName' => (string) ($config['signatory_name'] ?? ''),
@@ -192,7 +200,7 @@ class OfferLetterService
         return implode(', ', $parts) ?: '—';
     }
 
-    private function calculateMonthlyInstallment(float $principal, float $annualRate, int $months): float
+    private function calculateMonthlyInstallmentFlat(float $principal, float $annualRate, int $months): float
     {
         if ($principal <= 0 || $months <= 0) {
             return 0.0;
@@ -202,6 +210,35 @@ class OfferLetterService
         $totalRepayment = $principal + ($principal * ($annualRate / 100) * $years);
 
         return round($totalRepayment / $months, 2);
+    }
+
+    /**
+     * @param  array<string, mixed>  $formula
+     * @param  array<string, mixed>  $penilaian
+     * @return array<string, mixed>
+     */
+    private function resolveFormulaSnapshot(
+        float $approvedAmount,
+        float $profitRate,
+        int $months,
+        array $formula,
+        array $penilaian,
+    ): array {
+        if ($formula !== [] && isset($formula['ansuran_bulanan'])) {
+            return $formula;
+        }
+
+        $kaedah = (string) ($penilaian['kaedah_pengiraan'] ?? 'reducing_balance');
+        $comparison = $this->formulaService->compare($approvedAmount, $profitRate, $months);
+        $selected = $this->formulaService->methodResult($comparison, $kaedah);
+
+        return [
+            'kaedah_pengiraan' => $kaedah,
+            'kaedah_label' => (string) ($selected['method_label'] ?? ''),
+            'ansuran_bulanan' => (float) ($selected['ansuran_bulanan'] ?? 0),
+            'jumlah_bayaran_balik' => (float) ($selected['jumlah_bayaran_balik'] ?? 0),
+            'jumlah_keuntungan' => (float) ($selected['jumlah_keuntungan'] ?? 0),
+        ];
     }
 
     private function formatTenureLabel(int $months): string

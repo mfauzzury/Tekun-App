@@ -132,6 +132,7 @@ export type User = {
   name: string;
   photoUrl?: string;
   role?: string;
+  permissions?: string[];
   spptCawanganId?: number | null;
   cawangan?: UserCawangan | null;
 };
@@ -344,6 +345,7 @@ export type DocumentClassification = {
   suggestedClass: string;
   confidence: number;
   message: string;
+  identityMatched?: boolean | null;
 };
 
 export type PermohonanFormOcrResult = {
@@ -428,15 +430,148 @@ export type AkaunPembiayaan = {
   bakiKeuntungan: number;
   bakiSimpanan: number;
   penalti: number;
+  tawidh?: number;
+  hariLewat?: number;
   tunggakan: number;
   bakiAkhir: number;
   bayaranBulanan: number;
+  kaedahPengiraan?: string | null;
+  kadarKeuntunganTahunan?: number | null;
+  tempohBulan?: number | null;
+  moratoriumTamat?: string | null;
   status: string;
+  klasifikasiNpl?: string;
+  klasifikasiNplLabel?: string;
+  klasifikasiDikemaskiniPada?: string | null;
   risiko: string;
   noBsas?: string | null;
   snc: boolean;
-  createdAt: string;
-  updatedAt: string;
+  _dbId?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type JadualAnsuranRow = {
+  no: number;
+  tarikh: string;
+  tarikhIso: string;
+  ansuran: number;
+  pokok: number;
+  keuntungan: number;
+  baki: number;
+  status: string;
+  _dbId?: number;
+};
+
+export type PermohonanPenjadualanInput = {
+  akaunId: number;
+  jenis: "moratorium" | "penjadualan_semula" | "penstrukturan";
+  tempohBulan?: number;
+  tarikhMula?: string;
+  tarikhKuatKuasa?: string;
+  bayaranBaharu?: number;
+  sebab?: string;
+};
+
+export type PermohonanPenjadualan = PermohonanPenjadualanInput & {
+  id: string;
+  rujukan: string;
+  noAkaun?: string;
+  nama?: string;
+  status: string;
+  catatanPegawai?: string | null;
+  tarikhKelulusan?: string | null;
+  _dbId?: number;
+};
+
+export type TransaksiBayaranInput = {
+  akaunId: number;
+  jumlah: number;
+  saluran: "fpx" | "jompay" | "kaunter" | "auto_debit" | "ewallet";
+  noRujukanLuar?: string;
+  tarikhBayaran?: string;
+};
+
+export type TransaksiBayaran = {
+  id: string;
+  rujukan: string;
+  akaunId: number;
+  noAkaun?: string;
+  nama?: string;
+  jumlah: number;
+  kepadaTawidh: number;
+  kepadaTunggakan: number;
+  kepadaAnsuran: number;
+  saluran: string;
+  mod: string;
+  status: string;
+  noRujukanLuar?: string | null;
+  tarikhBayaran: string;
+  _dbId?: number;
+};
+
+export type BatchBayaran = {
+  id: string;
+  rujukan: string;
+  saluran: string;
+  status: string;
+  jumlahRekod: number;
+  jumlahBerjaya: number;
+  jumlahGagal: number;
+  jumlahKeseluruhan: number;
+  _dbId?: number;
+};
+
+export type TawidhConfig = {
+  hariTangguh: number;
+  kadarHarianPct: number;
+  maxPctTahunan: number;
+};
+
+export type KoleksiNplConfig = {
+  perhatianKhususMinHari: number;
+  tidakLancarMinHari: number;
+  labels: Record<string, string>;
+};
+
+export type KoleksiDunningRule = {
+  tahap: string;
+  jenis: "sms" | "surat";
+  label: string;
+  minHari: number;
+  maxHari: number | null;
+  smsTemplate?: string;
+};
+
+export type KoleksiConfig = {
+  npl: KoleksiNplConfig;
+  dunning: KoleksiDunningRule[];
+};
+
+export type NplAgingBucket = {
+  kategori: string;
+  bil: number;
+  amaun: number;
+  peratus: number;
+};
+
+export type NotisKutipan = {
+  id: string;
+  rujukan: string;
+  akaunId: number;
+  noAkaun: string;
+  nama: string;
+  tahap: string;
+  tahapLabel: string;
+  jenis: "sms" | "surat";
+  status: string;
+  hariLewat: number;
+  jumlahTunggakan: number;
+  mesej: string | null;
+  tarikhDijadual: string;
+  tarikhDihantar: string | null;
+  meta?: Record<string, unknown>;
+  _dbId?: number;
 };
 
 export type SpptCawanganBranchType = "negeri" | "cawangan" | "ibu_pejabat";
@@ -595,11 +730,100 @@ export type AiCreditScoringResult = {
   decisionDescription: string;
   factors: AiRiskScoringFactor[];
   adverseActionReasons: string[];
+  edgeCase?: EdgeCaseAnalysis;
   apk: ApkCreditData;
   confidence: number;
   source: string;
   scoredAt: string;
   message: string;
+};
+
+export type EdgeCaseMitigation = {
+  code: "reduce_amount" | "additional_guarantor" | "extend_tenure" | "restructure_package" | string;
+  title: string;
+  description: string;
+  suggestedAmount?: number;
+  suggestedAmountLabel?: string;
+  suggestedTenureMonths?: number;
+  priority: "high" | "medium" | string;
+};
+
+export type EdgeCaseAnalysis = {
+  isBorderline: boolean;
+  zone?: "gray" | "near_reject" | string | null;
+  zoneLabel?: string | null;
+  summary?: string | null;
+  autoApproveBlocked: boolean;
+  mitigations: EdgeCaseMitigation[];
+};
+
+export type PembiayaanFormulaScheduleRow = {
+  no: number;
+  pokok: number;
+  keuntungan: number;
+  ansuran: number;
+  bakiPokok: number;
+  bakiBayaranBalik: number;
+};
+
+export type PembiayaanFormulaMethodResult = {
+  method: "flat_rate" | "reducing_balance" | string;
+  methodLabel: string;
+  jumlahPokok: number;
+  kadarKeuntunganTahunan: number;
+  tempohBulan: number;
+  jumlahKeuntungan: number;
+  jumlahBayaranBalik: number;
+  ansuranBulanan: number;
+  keuntunganEfektifPct: number;
+  jadual: PembiayaanFormulaScheduleRow[];
+};
+
+export type PembiayaanFormulaComparison = {
+  input: {
+    jumlahPokok: number;
+    kadarKeuntunganTahunan: number;
+    tempohBulan: number;
+  };
+  flatRate: PembiayaanFormulaMethodResult;
+  reducingBalance: PembiayaanFormulaMethodResult;
+  perbandingan: {
+    bezaAnsuranBulanan: number;
+    bezaJumlahKeuntungan: number;
+    jumlahBayaranBalikFlat: number;
+    jumlahBayaranBalikReducing: number;
+    ringkasan: string;
+  };
+  calculatedAt: string;
+};
+
+export type PembiayaanFormulaDefaults = {
+  defaultKadarKeuntunganTahunan: number;
+  defaultTempohBulan: number;
+  tempohBulanOptions: number[];
+};
+
+export type PembiayaanFormulaInput = {
+  jumlahPokok: number;
+  kadarKeuntunganTahunan?: number;
+  tempohBulan?: number;
+};
+
+export type PermohonanPenilaianInput = {
+  keputusan: "Lulus" | "Tolak" | "Tangguh";
+  skorKredit?: string;
+  cadanganPembiayaan?: string;
+  cadanganJenisPembiayaan?: string;
+  catatan?: string;
+  kadarKeuntunganTahunan?: number;
+  tempohPembiayaan?: number;
+  kaedahPengiraan?: "flat_rate" | "reducing_balance";
+  bukaAkaun?: boolean;
+};
+
+export type PermohonanPenilaianSaveResult = {
+  permohonan: Record<string, unknown>;
+  akaun: Record<string, unknown> | null;
 };
 
 // AINA User Chat

@@ -22,7 +22,11 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             SpptSeeder::class,
             CawanganSeeder::class,
+            BackfillPermohonanOfficeSeeder::class,
+            HuluLangatCawanganUserSeeder::class,
+            IbuPejabatApproverUserSeeder::class,
             TekunNiagaWorkflowSeeder::class,
+            TekunNiagaWorkflowSampleSeeder::class,
         ]);
     }
 }

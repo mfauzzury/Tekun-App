@@ -60,7 +60,8 @@ class DocumentClassificationService
      * @return array{
      *     suggested_class: string,
      *     confidence: int,
-     *     message: string
+     *     message: string,
+     *     identity_matched: bool|null
      * }
      */
     public function classify(
@@ -72,7 +73,7 @@ class DocumentClassificationService
         ?string $spouseName = null,
     ): array {
         $filename = $originalName ?? basename($filePath);
-        $filenameResult = $this->classifyFromFilename($filename);
+        $filenameResult = $this->withIdentityMeta($this->classifyFromFilename($filename), null);
 
         $mime = mime_content_type($filePath) ?: '';
         $isImage = in_array($mime, ['image/jpeg', 'image/png', 'image/jpg'], true);
@@ -88,25 +89,44 @@ class DocumentClassificationService
             );
 
             $icResult = $this->mapVerificationToClass($verification);
-            if ($icResult !== null && $icResult['confidence'] >= $filenameResult['confidence']) {
-                return $icResult;
+            if ($icResult !== null) {
+                // Identity rejection always wins — never suggest IC as belonging to applicant.
+                if (($icResult['identity_matched'] ?? null) === false) {
+                    return $icResult;
+                }
+
+                if ($icResult['confidence'] >= $filenameResult['confidence']) {
+                    return $icResult;
+                }
             }
         }
 
         if ($filenameResult['confidence'] >= 55) {
+            // Filename alone cannot prove MyKad belongs to the applicant/spouse.
+            if (
+                $this->requiresIdentityProof((string) $filenameResult['suggested_class'])
+                && $this->hasPersonContext($applicantIc, $applicantName, $spouseIc, $spouseName)
+            ) {
+                return $this->withIdentityMeta([
+                    'suggested_class' => self::CLASS_LAIN_LAIN,
+                    'confidence' => 40,
+                    'message' => 'MyKad depan tidak dapat disahkan milik pemohon daripada nama fail sahaja. Sila muat naik imej MyKad yang jelas dan pastikan nama serta No. KP pemohon diisi.',
+                ], false);
+            }
+
             return $filenameResult;
         }
 
-        return [
+        return $this->withIdentityMeta([
             'suggested_class' => self::CLASS_LAIN_LAIN,
             'confidence' => max(35, $filenameResult['confidence']),
             'message' => 'Jenis dokumen tidak dapat dikenalpasti dengan pasti. Sila pilih kategori yang sesuai.',
-        ];
+        ], null);
     }
 
     /**
      * @param  array<string, mixed>  $verification
-     * @return array{suggested_class: string, confidence: int, message: string}|null
+     * @return array{suggested_class: string, confidence: int, message: string, identity_matched: bool|null}|null
      */
     private function mapVerificationToClass(array $verification): ?array
     {
@@ -116,10 +136,30 @@ class DocumentClassificationService
         }
 
         $confidence = (int) ($verification['confidence'] ?? 0);
+        $status = (string) ($verification['status'] ?? '');
+        $identityMatched = array_key_exists('identity_matched', $verification)
+            ? (is_bool($verification['identity_matched']) ? $verification['identity_matched'] : null)
+            : null;
+
         if ($confidence < 55) {
-            $status = (string) ($verification['status'] ?? '');
             if ($status !== 'verified' && $confidence < 45) {
                 return null;
+            }
+        }
+
+        // Front / combined MyKad must belong to applicant or spouse — fail closed.
+        if (in_array($documentType, ['ic_front', 'ic_combined'], true)) {
+            if ($status !== 'verified' || $identityMatched !== true) {
+                $message = (string) ($verification['message'] ?? '');
+                if ($message === '') {
+                    $message = 'MyKad depan tidak sepadan dengan nama atau No. Kad Pengenalan pemohon.';
+                }
+
+                return $this->withIdentityMeta([
+                    'suggested_class' => self::CLASS_LAIN_LAIN,
+                    'confidence' => max($confidence, 72),
+                    'message' => $message,
+                ], false);
             }
         }
 
@@ -135,11 +175,46 @@ class DocumentClassificationService
 
         $subjectLabel = $isSpouse ? 'pasangan' : 'pemohon';
 
-        return [
+        return $this->withIdentityMeta([
             'suggested_class' => $suggestedClass,
             'confidence' => max($confidence, 72),
             'message' => "AI mengesan MyKad {$sideLabel} {$subjectLabel} (keyakinan {$confidence}%).",
-        ];
+        ], $identityMatched);
+    }
+
+    private function requiresIdentityProof(string $documentClass): bool
+    {
+        return in_array($documentClass, [
+            self::CLASS_IC_PEMOHON_DEPAN,
+            self::CLASS_IC_PEMOHON_COMBINED,
+            self::CLASS_IC_PASANGAN_DEPAN,
+            self::CLASS_IC_PASANGAN_COMBINED,
+        ], true);
+    }
+
+    private function hasPersonContext(
+        ?string $applicantIc,
+        ?string $applicantName,
+        ?string $spouseIc,
+        ?string $spouseName,
+    ): bool {
+        $hasApplicant = $applicantIc !== null && trim($applicantIc) !== ''
+            && $applicantName !== null && trim($applicantName) !== '';
+        $hasSpouse = $spouseIc !== null && trim($spouseIc) !== ''
+            && $spouseName !== null && trim($spouseName) !== '';
+
+        return $hasApplicant || $hasSpouse;
+    }
+
+    /**
+     * @param  array{suggested_class: string, confidence: int, message: string}  $result
+     * @return array{suggested_class: string, confidence: int, message: string, identity_matched: bool|null}
+     */
+    private function withIdentityMeta(array $result, ?bool $identityMatched): array
+    {
+        $result['identity_matched'] = $identityMatched;
+
+        return $result;
     }
 
     /**
@@ -278,14 +353,14 @@ class DocumentClassificationService
     }
 
     /**
-     * @return array{suggested_class: string, confidence: int, message: string}
+     * @return array{suggested_class: string, confidence: int, message: string, identity_matched: bool|null}
      */
     private function result(string $class, int $confidence, string $message): array
     {
-        return [
+        return $this->withIdentityMeta([
             'suggested_class' => $class,
             'confidence' => $confidence,
             'message' => $message,
-        ];
+        ], null);
     }
 }

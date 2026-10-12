@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { Sparkles, X } from "lucide-vue-next";
+import { AlertTriangle, Sparkles, X } from "lucide-vue-next";
 
 import { SPPT_DOCUMENT_CLASSES, type SpptDocumentClass } from "@/config/sppt-document-classes";
 
@@ -13,6 +13,7 @@ const props = defineProps<{
   message: string;
   selectedClass: SpptDocumentClass;
   otherLabel: string;
+  identityRejected?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -34,8 +35,21 @@ const otherLabelModel = computed({
 
 const showOtherInput = computed(() => selectedClassModel.value === "lain_lain");
 
+const isIcOwnershipClass = computed(() => {
+  const value = selectedClassModel.value;
+  return (
+    value === "ic_pemohon_depan"
+    || value === "ic_pemohon_combined"
+    || value === "ic_pasangan_depan"
+    || value === "ic_pasangan_combined"
+  );
+});
+
 const canConfirm = computed(() => {
   if (props.classifying) {
+    return false;
+  }
+  if (props.identityRejected && isIcOwnershipClass.value) {
     return false;
   }
   if (selectedClassModel.value === "lain_lain") {
@@ -85,6 +99,22 @@ const canConfirm = computed(() => {
           </div>
 
           <div
+            v-else-if="identityRejected"
+            class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900"
+          >
+            <p class="flex items-center gap-1.5 font-medium">
+              <AlertTriangle class="h-4 w-4 shrink-0 text-rose-600" />
+              MyKad tidak sepadan dengan pemohon
+            </p>
+            <p class="mt-1 text-xs leading-relaxed">
+              {{ message }}
+            </p>
+            <p class="mt-1 text-xs leading-relaxed text-rose-700">
+              Sila muat naik MyKad milik pemohon (nama &amp; No. KP mesti sama dengan borang).
+            </p>
+          </div>
+
+          <div
             v-else
             class="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900"
           >
@@ -102,7 +132,7 @@ const canConfirm = computed(() => {
             <label class="mb-1 block text-xs font-medium text-slate-700">Jenis Dokumen</label>
             <select
               v-model="selectedClassModel"
-              :disabled="classifying"
+              :disabled="classifying || identityRejected"
               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-60"
             >
               <option v-for="item in SPPT_DOCUMENT_CLASSES" :key="item.value" :value="item.value">
@@ -111,7 +141,7 @@ const canConfirm = computed(() => {
             </select>
           </div>
 
-          <div v-if="showOtherInput">
+          <div v-if="showOtherInput && !identityRejected">
             <label class="mb-1 block text-xs font-medium text-slate-700">
               Nyatakan jenis dokumen
               <span class="text-red-500">*</span>
@@ -132,9 +162,10 @@ const canConfirm = computed(() => {
             class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
             @click="emit('cancel')"
           >
-            Batal
+            {{ identityRejected ? "Tutup" : "Batal" }}
           </button>
           <button
+            v-if="!identityRejected"
             type="button"
             :disabled="!canConfirm"
             class="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
