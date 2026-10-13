@@ -1,27 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import {
-  ArrowRight,
-  ArrowUpDown,
-  CheckCircle2,
-  ChevronRight,
-  FileText,
-  Hourglass,
-  Plus,
-  RefreshCw,
-  Search,
-  SearchX,
-  Store,
-  Wallet,
-} from "lucide-vue-next";
+import { ArrowRight, ArrowUpDown, ChevronRight, FileText, MoreVertical, PenLine, Plus, RefreshCw, Search, SearchX, Store } from "lucide-vue-next";
 
 import StageTracker from "@/components/pemohon/status/StageTracker.vue";
 import { deriveView, formatTarikh, useApplicationStatuses } from "@/components/pemohon/status/useApplicationStatus";
 import PBadge from "@/components/pemohon/ui/PBadge.vue";
 import PButton from "@/components/pemohon/ui/PButton.vue";
 import PEmptyState from "@/components/pemohon/ui/PEmptyState.vue";
-import PPageHeader from "@/components/pemohon/ui/PPageHeader.vue";
-import PStatCard from "@/components/pemohon/ui/PStatCard.vue";
 import PemohonLayout from "@/layouts/PemohonLayout.vue";
 import { usePemohonStore, type PermohonanItem } from "@/stores/pemohon";
 import type { PTone } from "@/utils/pemohon-status";
@@ -50,6 +35,7 @@ interface Row {
 }
 
 const pemohon = usePemohonStore();
+const todayLabel = new Date().toLocaleDateString("ms-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 const { snapshots, loading, refresh } = useApplicationStatuses(() => pemohon.permohonanSaya);
 
 const BULAN: Record<string, number> = { jan: 0, feb: 1, mac: 2, apr: 3, mei: 4, jun: 5, jul: 6, ogos: 7, ogo: 7, sep: 8, okt: 9, nov: 10, dis: 11 };
@@ -167,67 +153,84 @@ function setSemula() {
 <template>
   <PemohonLayout>
     <div class="space-y-6">
-      <PPageHeader title="Permohonan saya" subtitle="Jejak status setiap permohonan pembiayaan anda — dari penghantaran hingga keputusan.">
-        <template #actions>
-          <PButton to="/pemohon/permohonan/baru"><Plus class="h-4 w-4" aria-hidden="true" /> Mohon pembiayaan</PButton>
-        </template>
-      </PPageHeader>
+      <header class="flex flex-col gap-3 pt-6 sm:flex-row sm:items-end sm:justify-between lg:pt-2">
+        <div class="min-w-0">
+          <p class="text-sm capitalize text-slate-500">{{ todayLabel }}</p>
+          <h1 class="mt-1 text-[28px] font-bold tracking-tight text-ink-950 sm:text-[32px]">Permohonan saya</h1>
+          <p class="mt-1 text-sm text-slate-500">Jejak setiap permohonan pembiayaan anda — dari penghantaran hingga keputusan.</p>
+        </div>
+        <router-link
+          to="/pemohon/permohonan/baru"
+          class="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-ink-800 transition-colors hover:border-brand-300 hover:bg-brand-50 sm:self-auto"
+        >
+          <component :is="pemohon.draftPermohonan ? PenLine : Plus" class="h-4 w-4 text-brand-600" aria-hidden="true" />
+          {{ pemohon.draftPermohonan ? "Sambung draf" : "Mohon pembiayaan" }}
+        </router-link>
+      </header>
 
-      <div v-if="!rows.length" class="rounded-2xl border border-slate-200/80 bg-white">
+      <div v-if="!rows.length" class="rounded-3xl border border-slate-200 bg-white">
         <PEmptyState :icon="FileText" title="Belum ada permohonan" description="Mulakan permohonan pembiayaan pertama anda. Ia hanya mengambil masa beberapa minit.">
           <PButton to="/pemohon/permohonan/baru"><Plus class="h-4 w-4" aria-hidden="true" /> Mohon pembiayaan</PButton>
         </PEmptyState>
       </div>
 
       <template v-else>
-        <!-- Summary strip -->
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <PStatCard label="Jumlah permohonan" :value="stats.jumlah" :icon="FileText" tone="neutral" />
-          <PStatCard label="Dalam proses" :value="stats.proses" :icon="Hourglass" tone="info" />
-          <PStatCard label="Diluluskan" :value="stats.lulus" :icon="CheckCircle2" tone="success" />
-          <PStatCard label="Jumlah dipohon" :value="formatRinggit(stats.nilai).replace('.00', '')" :icon="Wallet" tone="brand" />
-        </div>
+        <!-- Bento: 2×2 stats + latest application -->
+        <div class="grid grid-cols-2 gap-4 xl:grid-cols-[1fr_1fr_2.4fr]">
+          <div class="relative rounded-3xl bg-brand-600 p-5 text-white shadow-lg shadow-brand-600/25">
+            <MoreVertical class="absolute right-4 top-5 h-5 w-5 text-white/70" aria-hidden="true" />
+            <p class="text-[34px] font-bold leading-none">{{ stats.jumlah }}</p>
+            <p class="mt-3 text-[15px] text-white/90">Jumlah permohonan</p>
+            <p class="mt-2 text-xs text-white/75">{{ pemohon.permohonanSaya.length }} dihantar dalam talian</p>
+          </div>
+          <div class="relative rounded-3xl border border-slate-200 bg-white p-5">
+            <MoreVertical class="absolute right-4 top-5 h-5 w-5 text-slate-300" aria-hidden="true" />
+            <p class="text-[34px] font-bold leading-none text-ink-950">{{ stats.proses }}</p>
+            <p class="mt-3 text-[15px] text-ink-800">Dalam proses</p>
+            <p class="mt-2 text-xs text-slate-500">Sedang dinilai</p>
+          </div>
+          <div class="relative col-start-1 rounded-3xl border border-slate-200 bg-white p-5 xl:row-start-2">
+            <MoreVertical class="absolute right-4 top-5 h-5 w-5 text-slate-300" aria-hidden="true" />
+            <p class="text-[34px] font-bold leading-none text-ink-950">{{ stats.lulus }}</p>
+            <p class="mt-3 text-[15px] text-ink-800">Diluluskan</p>
+            <p class="mt-2 text-xs text-slate-500">Pembiayaan diterima</p>
+          </div>
+          <div class="relative rounded-3xl bg-brand-50 p-5 xl:col-start-2 xl:row-start-2">
+            <MoreVertical class="absolute right-4 top-5 h-5 w-5 text-brand-300" aria-hidden="true" />
+            <p class="text-[26px] font-bold leading-none text-brand-800">{{ formatRinggit(stats.nilai).replace(".00", "") }}</p>
+            <p class="mt-3 text-[15px] text-brand-800">Jumlah dipohon</p>
+            <p class="mt-2 text-xs text-brand-800/70">Semua permohonan</p>
+          </div>
 
-        <!-- Latest application -->
-        <router-link
-          v-if="terkini"
-          :to="`/pemohon/permohonan/${terkini.routeId}`"
-          class="group relative block overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.12)] transition-shadow hover:shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-12px_rgba(16,24,40,0.18)] sm:p-6"
-        >
-          <span class="absolute inset-y-0 left-0 w-1 bg-brand-600" aria-hidden="true" />
-          <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-semibold uppercase tracking-wider text-brand-600">Permohonan terkini</span>
-                <PBadge v-if="terkini.contoh" tone="neutral">contoh</PBadge>
-              </div>
-              <div class="mt-3 flex items-start gap-3.5">
-                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
-                  <Store class="h-6 w-6" aria-hidden="true" />
-                </span>
-                <div class="min-w-0">
-                  <p class="truncate text-lg font-semibold text-ink-900">{{ terkini.produk }}</p>
-                  <p class="font-mono text-xs text-slate-500">{{ terkini.noRujukan }} · Dihantar {{ terkini.tarikhLabel }}</p>
-                </div>
-              </div>
-              <div class="mt-4 flex flex-wrap items-end gap-x-6 gap-y-2">
-                <div>
-                  <p class="text-xs text-slate-500">Jumlah dipohon</p>
-                  <p class="text-2xl font-bold tracking-tight text-ink-900">{{ formatRinggit(terkini.jumlah) }}</p>
-                </div>
+          <router-link
+            v-if="terkini"
+            :to="`/pemohon/permohonan/${terkini.routeId}`"
+            class="group col-span-2 flex flex-col justify-between rounded-3xl bg-[#e2edff] p-6 transition-transform hover:-translate-y-0.5 sm:p-7 xl:col-span-1 xl:col-start-3 xl:row-span-2 xl:row-start-1"
+          >
+            <div>
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-xs font-bold uppercase tracking-wider text-brand-700">Permohonan terkini</p>
                 <PBadge :tone="terkini.tone" dot size="md">{{ terkini.memuat ? "Memuatkan…" : terkini.statusLabel }}</PBadge>
               </div>
-            </div>
-            <div class="lg:w-[44%]">
-              <StageTracker :stage="terkini.stage" :outcome="terkini.outcome" />
-              <p v-if="terkini.mesej" class="mt-3 text-sm text-slate-600">{{ terkini.mesej }}</p>
-              <p class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 group-hover:gap-2.5 transition-all">
-                Lihat butiran <ArrowRight class="h-4 w-4" aria-hidden="true" />
+              <h2 class="mt-3 text-[26px] font-bold leading-tight tracking-tight text-ink-950 sm:text-[30px]">
+                {{ terkini.produk }} · <span class="text-brand-600">{{ formatRinggit(terkini.jumlah).replace(".00", "") }}</span>
+              </h2>
+              <p class="mt-1 font-mono text-xs text-ink-700">
+                {{ terkini.noRujukan }} · Dihantar {{ terkini.tarikhLabel }}
+                <span v-if="terkini.contoh" class="ml-1 rounded bg-white/70 px-1.5 font-sans text-[10px] font-medium uppercase tracking-wide text-slate-500">contoh</span>
               </p>
             </div>
-          </div>
-        </router-link>
+            <div class="mt-6 rounded-2xl bg-white/70 p-4">
+              <StageTracker :stage="terkini.stage" :outcome="terkini.outcome" />
+              <p v-if="terkini.mesej" class="mt-3 text-sm text-ink-700">{{ terkini.mesej }}</p>
+            </div>
+            <p class="mt-5 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-950 transition-all group-hover:gap-3">
+              Lihat butiran <ArrowRight class="h-5 w-5" aria-hidden="true" />
+            </p>
+          </router-link>
+        </div>
 
+        <section class="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="Senarai permohonan">
         <!-- Toolbar -->
         <div class="space-y-3">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -273,7 +276,7 @@ function setSemula() {
           </div>
         </div>
 
-        <div v-if="!senarai.length" class="rounded-2xl border border-slate-200/80 bg-white">
+        <div v-if="!senarai.length" class="mt-4">
           <PEmptyState :icon="SearchX" title="Tiada padanan" description="Tiada permohonan sepadan dengan carian atau penapis anda.">
             <PButton variant="outline" size="sm" @click="setSemula">Set semula penapis</PButton>
           </PEmptyState>
@@ -281,7 +284,7 @@ function setSemula() {
 
         <template v-else>
           <!-- Desktop table -->
-          <div class="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:block">
+          <div class="mt-4 hidden overflow-hidden rounded-2xl border border-slate-100 md:block">
             <table class="w-full text-left text-sm">
               <thead class="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
@@ -330,11 +333,11 @@ function setSemula() {
           </div>
 
           <!-- Mobile cards -->
-          <ul class="space-y-3 md:hidden">
+          <ul class="mt-4 space-y-3 md:hidden">
             <li v-for="r in senarai" :key="r.key">
               <router-link
                 :to="`/pemohon/permohonan/${r.routeId}`"
-                class="block rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] active:bg-slate-50"
+                class="block rounded-2xl bg-[#f3f6fc] p-4 active:bg-brand-50"
               >
                 <div class="flex items-start gap-3">
                   <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" :class="r.contoh ? 'bg-slate-100 text-slate-500' : 'bg-brand-50 text-brand-600'">
@@ -361,6 +364,7 @@ function setSemula() {
             </li>
           </ul>
         </template>
+        </section>
       </template>
     </div>
   </PemohonLayout>

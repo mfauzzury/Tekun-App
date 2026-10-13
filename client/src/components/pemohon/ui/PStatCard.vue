@@ -8,7 +8,7 @@ withDefaults(defineProps<{ label: string; value: string | number; hint?: string;
 </script>
 
 <template>
-  <div class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+  <div class="rounded-3xl border border-slate-200 bg-white p-5">
     <div class="flex items-center gap-2.5">
       <span
         v-if="icon"
@@ -26,7 +26,7 @@ withDefaults(defineProps<{ label: string; value: string | number; hint?: string;
       </span>
       <p class="text-sm font-medium text-slate-500">{{ label }}</p>
     </div>
-    <p class="mt-3 text-2xl font-bold tracking-tight text-ink-900">{{ value }}</p>
+    <p class="mt-3 text-[28px] font-bold leading-none tracking-tight text-ink-950">{{ value }}</p>
     <p v-if="hint" class="mt-0.5 text-xs text-slate-500">{{ hint }}</p>
   </div>
 </template>

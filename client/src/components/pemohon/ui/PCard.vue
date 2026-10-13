@@ -7,17 +7,17 @@ withDefaults(defineProps<{ title?: string; subtitle?: string; padded?: boolean; 
 
 <template>
   <section
-    class="overflow-hidden rounded-2xl"
+    class="overflow-hidden rounded-3xl"
     :class="{
-      'border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_4px_16px_-8px_rgba(16,24,40,0.08)]': tone === 'default',
-      'border border-slate-200/70 bg-slate-50': tone === 'muted',
+      'border border-slate-200 bg-white': tone === 'default',
+      'bg-[#f3f6fc]': tone === 'muted',
       'bg-ink-900 text-white shadow-lg shadow-ink-900/20': tone === 'ink',
     }"
   >
     <header v-if="title || $slots.header || $slots.actions" class="flex items-start justify-between gap-3 px-5 pt-5" :class="padded ? '' : 'pb-4'">
       <slot name="header">
         <div class="min-w-0">
-          <h2 class="text-[15px] font-semibold" :class="tone === 'ink' ? 'text-white' : 'text-ink-900'">{{ title }}</h2>
+          <h2 class="text-[17px] font-semibold" :class="tone === 'ink' ? 'text-white' : 'text-ink-900'">{{ title }}</h2>
           <p v-if="subtitle" class="mt-0.5 text-sm" :class="tone === 'ink' ? 'text-ink-200' : 'text-slate-500'">{{ subtitle }}</p>
         </div>
       </slot>
