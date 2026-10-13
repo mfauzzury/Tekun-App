@@ -113,7 +113,7 @@ function logout() {
                 {{ userInitials }}
               </span>
               <div class="min-w-0 flex-1">
-                <p class="text-[15px] font-semibold leading-snug">{{ pemohon.profil.nama || "Pemohon" }}</p>
+                <p class="text-[13px] font-semibold leading-snug">{{ pemohon.profil.nama || "Pemohon" }}</p>
                 <span class="mt-1.5 inline-flex rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800">Usahawan TEKUN</span>
               </div>
             </div>
