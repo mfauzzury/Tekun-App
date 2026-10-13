@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BiroKreditToggle from "@/components/sppt/penilaian-pantas/BiroKreditToggle.vue";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AlertTriangle, Building2, CreditCard, Gauge, Layers, Loader2, MousePointerClick, Scale, Sparkles } from "lucide-vue-next";
@@ -349,6 +350,8 @@ onBeforeUnmount(() => {
             POC 1 · Hantar → cadangan keputusan &lt; 7 minit · Keputusan akhir oleh pegawai (human-in-the-loop)
           </p>
         </div>
+        <div class="flex flex-wrap items-center gap-2">
+        <BiroKreditToggle />
         <nav class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
           <button
             v-for="t in TABS"
@@ -361,6 +364,7 @@ onBeforeUnmount(() => {
             <component :is="t.icon" class="h-4 w-4" /> {{ t.label }}
           </button>
         </nav>
+        </div>
       </div>
 
       <!-- Penilaian -->

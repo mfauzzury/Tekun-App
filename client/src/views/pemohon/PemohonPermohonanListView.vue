@@ -312,7 +312,7 @@ function setSemula() {
                         <router-link :to="`/pemohon/permohonan/${r.routeId}`" class="font-semibold text-ink-900 hover:text-brand-700" @click.stop>
                           {{ r.produk }}
                         </router-link>
-                        <p class="flex items-center gap-1.5 font-mono text-xs text-slate-500">
+                        <p class="flex items-center gap-1.5 whitespace-nowrap font-mono text-xs text-slate-500">
                           {{ r.noRujukan }}
                           <span v-if="r.contoh" class="rounded bg-slate-100 px-1.5 font-sans text-[10px] font-medium uppercase tracking-wide text-slate-500">contoh</span>
                         </p>

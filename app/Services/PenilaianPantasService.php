@@ -31,6 +31,7 @@ class PenilaianPantasService
         protected HardRuleCheckService $hardRules,
         protected FraudNetworkService $fraud,
         protected AlternativeCreditScoringService $creditScoring,
+        protected CreditBureauSimulatorService $creditBureau,
     ) {}
 
     public function start(Permohonan $permohonan, ?int $userId, string $sumber = 'pegawai'): PenilaianPantas
@@ -297,7 +298,10 @@ class PenilaianPantasService
      */
     protected function stepSkorKredit(Permohonan $permohonan): array
     {
+        $details = is_array($permohonan->details) ? $permohonan->details : [];
+        $biro = $this->creditBureau->query($details);
         $result = $this->creditScoring->score($permohonan);
+        $result['biro_kredit'] = $biro;
         $tahap = (string) ($result['tahap_risiko'] ?? 'tinggi');
 
         return [
@@ -307,7 +311,9 @@ class PenilaianPantasService
                 default => 'gagal',
             },
             'ringkasan' => 'Skor '.($result['skor'] ?? 0).'/100 (gred '.($result['gred'] ?? '-').', risiko '.$tahap.')'
-                .(($result['fail_nipis'] ?? false) ? ' · fail nipis, dinilai dengan data alternatif' : ''),
+                .($biro['status'] === 'terputus'
+                    ? ' · biro kredit terputus, dinilai dengan data alternatif sahaja'
+                    : (($result['fail_nipis'] ?? false) ? ' · fail nipis, dinilai dengan data alternatif' : '')),
             'hasil' => $result,
         ];
     }
@@ -355,6 +361,9 @@ class PenilaianPantasService
             }
         }
 
+        if (($skor['biro_kredit']['status'] ?? null) === 'terputus') {
+            $syarat[] = 'Sahkan rekod CCRIS / CTOS apabila sambungan biro kredit pulih, sebelum pengeluaran dana.';
+        }
         if (($skor['fail_nipis'] ?? false) === true) {
             $syarat[] = 'Fail nipis: pantau 3 bulan pertama melalui aliran e-dompet/QR.';
         }

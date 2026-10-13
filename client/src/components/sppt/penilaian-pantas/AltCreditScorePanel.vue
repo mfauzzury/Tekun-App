@@ -36,13 +36,26 @@ function sign(n?: number | null) {
   const v = Number(n ?? 0);
   return `${v > 0 ? "+" : ""}${Number.isInteger(v) ? v : v.toFixed(1)}`;
 }
+
+/** K4 — bureau lookup result attached to the credit step by the pipeline. */
+const biro = computed(() => (props.hasil as unknown as { biroKredit?: { status: string; mesej: string; latencyMs: number } } | null)?.biroKredit ?? null);
 </script>
 
 <template>
   <PpCard title="Skor kredit data alternatif" subtitle="C1 · Boleh-jelas (explainable) — sesuai untuk usahawan fail nipis" :icon="TrendingUp" icon-class="text-emerald-600">
     <template #actions>
+      <PpBadge v-if="biro?.status === 'terputus'" tone="rose">Biro kredit terputus</PpBadge>
       <PpBadge v-if="hasil?.failNipis" tone="sky">Fail nipis — dinilai dengan data alternatif</PpBadge>
     </template>
+
+    <p
+      v-if="biro"
+      class="mb-3 flex items-start gap-2 rounded-md px-3 py-2 text-xs"
+      :class="biro.status === 'terputus' ? 'bg-rose-50 text-rose-800' : biro.status === 'tiada_rekod' ? 'bg-sky-50 text-sky-800' : 'bg-emerald-50 text-emerald-800'"
+    >
+      <span class="font-semibold">Biro kredit:</span>
+      <span>{{ biro.mesej }} <span class="opacity-70">({{ biro.latencyMs }} ms)</span></span>
+    </p>
 
     <p v-if="!hasil" class="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">Skor kredit akan dipaparkan selepas langkah 4 selesai.</p>
 

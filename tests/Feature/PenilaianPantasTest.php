@@ -261,4 +261,53 @@ class PenilaianPantasTest extends TestCase
         $this->assertStringNotContainsString('laluan', $response->getContent());
         $this->assertSame('pemohon', PenilaianPantas::where('permohonan_id', $permohonan->id)->value('sumber'));
     }
+
+    public function test_bureau_switch_requires_permission_and_validates(): void
+    {
+        $this->getJson('/api/sppt/penilaian-pantas/biro-kredit')->assertStatus(401);
+
+        $this->actingAsOfficer(['sppt.view']);
+        $this->getJson('/api/sppt/penilaian-pantas/biro-kredit')->assertOk()->assertJsonPath('data.tersambung', true);
+        $this->putJson('/api/sppt/penilaian-pantas/biro-kredit', ['tersambung' => false])->assertStatus(403);
+
+        $this->actingAsOfficer();
+        $this->putJson('/api/sppt/penilaian-pantas/biro-kredit', ['tersambung' => 'mungkin'])
+            ->assertStatus(422)->assertJsonPath('error.code', 'VALIDATION_ERROR');
+        $this->putJson('/api/sppt/penilaian-pantas/biro-kredit', ['tersambung' => false])
+            ->assertOk()->assertJsonPath('data.tersambung', false);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'biro_kredit.diputuskan']);
+    }
+
+    public function test_k4_pipeline_continues_on_alternative_data_when_bureau_is_cut(): void
+    {
+        $permohonan = $this->permohonan(['data_alternatif' => array_merge(
+            $this->permohonan()->details['data_alternatif'],
+            ['ccris_tersedia' => true],
+        )]);
+        $this->actingAsOfficer();
+
+        // Connected: bureau report attached.
+        $run = $this->runAllSteps($permohonan);
+        $this->assertSame('tersambung', $run['langkah']['skorKredit']['hasil']['biroKredit']['status']);
+
+        // Cut: credit step still completes, flagged, and the recommendation asks to re-check CCRIS.
+        $this->putJson('/api/sppt/penilaian-pantas/biro-kredit', ['tersambung' => false])->assertOk();
+        $run = $this->runAllSteps($permohonan);
+
+        $this->assertSame('selesai', $run['status']);
+        $this->assertSame('selesai', $run['langkah']['skorKredit']['status']);
+        $this->assertSame('terputus', $run['langkah']['skorKredit']['hasil']['biroKredit']['status']);
+        $this->assertStringContainsString('biro kredit terputus', $run['langkah']['skorKredit']['ringkasan']);
+        $this->assertNotNull($run['cadangan']['laluan']);
+        $this->assertTrue(collect($run['cadangan']['syarat'])->contains(fn ($s) => str_contains($s, 'biro kredit pulih')));
+    }
+
+    public function test_thin_file_applicant_has_no_bureau_record(): void
+    {
+        $permohonan = $this->permohonan();
+        $this->actingAsOfficer();
+
+        $run = $this->runAllSteps($permohonan);
+        $this->assertSame('tiada_rekod', $run['langkah']['skorKredit']['hasil']['biroKredit']['status']);
+    }
 }

@@ -10,7 +10,10 @@ use App\Http\Requests\VerifyPenilaianPantasWajahRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\PenilaianPantas;
 use App\Models\Permohonan;
+use App\Http\Requests\UpdateBiroKreditRequest;
 use App\Services\AlternativeCreditScoringService;
+use App\Services\AuditService;
+use App\Services\CreditBureauSimulatorService;
 use App\Services\FraudNetworkService;
 use App\Services\PenilaianPantasService;
 use App\Services\PenilaianService;
@@ -29,7 +32,27 @@ class PenilaianPantasController extends Controller
         protected AlternativeCreditScoringService $creditScoring,
         protected FraudNetworkService $fraud,
         protected PenilaianService $penilaianService,
+        protected CreditBureauSimulatorService $creditBureau,
+        protected AuditService $auditService,
     ) {}
+
+    /**
+     * K4 — credit bureau simulator connection state.
+     */
+    public function biroKredit(): JsonResponse
+    {
+        return $this->sendOk(['tersambung' => $this->creditBureau->connected()]);
+    }
+
+    public function updateBiroKredit(UpdateBiroKreditRequest $request): JsonResponse
+    {
+        $before = $this->creditBureau->connected();
+        $after = (bool) $request->validated()['tersambung'];
+        $this->creditBureau->setConnected($after);
+        $this->auditService->log('biro_kredit.'.($after ? 'disambung' : 'diputuskan'), $request->user(), 'BiroKredit', null, ['tersambung' => $before], ['tersambung' => $after]);
+
+        return $this->sendOk(['tersambung' => $after]);
+    }
 
     /**
      * Submitted applications with their latest pipeline run.

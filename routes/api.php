@@ -166,6 +166,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('penilaian-pantas')->group(function () {
             Route::get('/', [PenilaianPantasController::class, 'index']);
             Route::get('/keadilan', [PenilaianPantasController::class, 'fairness']);
+            Route::get('/biro-kredit', [PenilaianPantasController::class, 'biroKredit']);
+            Route::put('/biro-kredit', [PenilaianPantasController::class, 'updateBiroKredit'])->middleware('permission:sppt.edit');
             Route::get('/permohonan/{permohonan}', [PenilaianPantasController::class, 'show']);
             Route::get('/permohonan/{permohonan}/semakan-pengeluaran', [PenilaianPantasController::class, 'disbursementCheck']);
             Route::get('/run/{run}', [PenilaianPantasController::class, 'run']);

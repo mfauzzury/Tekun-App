@@ -588,3 +588,15 @@ export async function getPenilaianPantasSemakanPengeluaran(permohonanId: number)
 export async function getPenilaianPantasKeadilan() {
   return apiRequest<{ data: PpKeadilan }>(`${PP_BASE}/keadilan`);
 }
+
+/** K4 — credit bureau simulator connection (panel can cut it during the POC). */
+export async function getBiroKredit() {
+  return apiRequest<{ data: { tersambung: boolean } }>(`${PP_BASE}/biro-kredit`);
+}
+
+export async function setBiroKredit(tersambung: boolean) {
+  return apiRequest<{ data: { tersambung: boolean } }>(`${PP_BASE}/biro-kredit`, {
+    method: "PUT",
+    body: JSON.stringify({ tersambung }),
+  });
+}
