@@ -282,21 +282,14 @@ export const STATUS_TIMELINE: Record<string, StatusMilestone[]> = {
 };
 
 /**
- * Full step taxonomy matching views/sppt/PermohonanBaruView.vue (staff-side form),
- * dropping only staff-only fields marked "(diisi TEKUN)" within steps (e.g. PERKESO sektor/kelas,
- * wasiat nama syarikat) — the step set itself now has full parity.
+ * Portal pemohon — 6-step application journey. Covers the full staff-side field set
+ * (views/sppt/PermohonanBaruView.vue) grouped into fewer, friendlier steps, plus e-KYC and data alternatif.
  */
 export const PERMOHONAN_BARU_STEPS = [
-  { id: "asas", label: "Asas" },
-  { id: "pemohon", label: "Pemohon" },
-  { id: "alamat", label: "Alamat" },
-  { id: "pekerjaan", label: "Pekerjaan" },
-  { id: "pasangan", label: "Pasangan" },
-  { id: "perniagaan", label: "Perniagaan" },
   { id: "pembiayaan", label: "Pembiayaan" },
-  { id: "sokongan", label: "Sokongan" },
-  { id: "takaful", label: "Takaful" },
-  { id: "wasiat", label: "Wasiat" },
-  { id: "kebenaran", label: "Kebenaran" },
-  { id: "dokumen", label: "Dokumen" },
+  { id: "identiti", label: "Identiti & e-KYC" },
+  { id: "diri", label: "Maklumat Diri" },
+  { id: "perniagaan", label: "Perniagaan & Pendapatan" },
+  { id: "sokongan", label: "Sokongan & Perlindungan" },
+  { id: "hantar", label: "Dokumen & Hantar" },
 ] as const;

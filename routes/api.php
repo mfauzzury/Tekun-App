@@ -70,6 +70,7 @@ Route::prefix('public')->group(function () {
         Route::post('/permohonan/dokumen/verify', [PemohonPermohonanController::class, 'verifyDocument']);
         Route::post('/permohonan/{permohonan}/penilaian-pantas', [PemohonPermohonanController::class, 'penilaianPantas']);
         Route::get('/permohonan/{permohonan}/penilaian-pantas', [PemohonPermohonanController::class, 'penilaianPantasStatus']);
+        Route::post('/permohonan/{permohonan}/penilaian-pantas/langkah/{kod}', [PemohonPermohonanController::class, 'penilaianPantasLangkah']);
         Route::put('/permohonan/{permohonan}/data-alternatif', [PemohonPermohonanController::class, 'saveDataAlternatif']);
         Route::middleware('throttle:20,1')->group(function () {
             Route::post('/permohonan/{permohonan}/ekyc/mykad', [PemohonPermohonanController::class, 'scanMyKad']);

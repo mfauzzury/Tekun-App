@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AlertTriangle, ArrowRight, CheckCircle2, Sparkles, XCircle } from "lucide-vue-next";
+import { AlertTriangle, ArrowRight, CheckCircle2, ListChecks, Sparkles, XCircle } from "lucide-vue-next";
 import AppToastRegion from "@/components/AppToastRegion.vue";
+import PButton from "@/components/pemohon/ui/PButton.vue";
+import PField from "@/components/pemohon/ui/PField.vue";
 import { evaluateAiRiskFromInput, formatRecommendedLimit, riskCategoryClass } from "@/composables/useAiRiskScoring";
 import { fetchHardRulesSummary } from "@/api/pemohon";
 import { usePemohonStore } from "@/stores/pemohon";
 import { ELIGIBILITY_RULES } from "@/data/portal-dummy";
+import { pInputClass } from "@/utils/pemohon-ui";
 import type { AiRiskScoringResult, HardRuleCheckResult, HardRulePublicSummary } from "@/types";
 
 const router = useRouter();
@@ -62,149 +65,121 @@ function proceed() {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-[#f6f9fc] px-4 py-10">
-    <div class="w-full max-w-[480px]">
-      <div class="mb-6 flex justify-center">
-        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
+  <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#f6f7fb] px-4 py-10">
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(214,32,42,0.10),transparent_70%)]"
+    />
+
+    <div class="relative w-full max-w-[480px]">
+      <div class="mb-8 flex justify-center">
+        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-10 w-auto" />
       </div>
 
-      <div class="rounded-lg border border-[#e3e8ee] bg-white px-8 pb-8 pt-6 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.06)]">
-        <h1 class="mb-1 text-center text-xl font-semibold tracking-tight text-[#1a1f36]">Semakan Kelayakan Awalan</h1>
-        <p class="mb-6 text-center text-[13px] text-[#697386]">
-          Enjin saringan automatik (Hard Rules Check) akan menyemak kelayakan asas anda sebelum meneruskan permohonan.
-        </p>
+      <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_16px_48px_-16px_rgba(16,24,40,0.16)] sm:p-8">
+        <div class="mb-6 text-center">
+          <span class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+            <ListChecks class="h-6 w-6" />
+          </span>
+          <h1 class="text-2xl font-bold tracking-tight text-ink-900">Semakan kelayakan awal</h1>
+          <p class="mx-auto mt-1.5 max-w-sm text-sm text-slate-500">
+            Enjin saringan automatik (Hard Rules Check) akan menyemak kelayakan asas anda sebelum meneruskan permohonan.
+          </p>
+        </div>
 
         <div
           v-if="rulesSummary?.active && rulesSummary.rules.length"
-          class="mb-5 rounded-md border border-slate-100 bg-slate-50 p-3"
+          class="mb-6 rounded-2xl border border-slate-200/70 bg-slate-50 p-4"
         >
-          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Peraturan Mandatori</p>
-          <ul class="space-y-1 text-xs text-slate-600">
-            <li v-for="rule in rulesSummary.rules" :key="rule.code">
-              {{ rule.label }}<span v-if="rule.hint" class="text-slate-400"> — {{ rule.hint }}</span>
+          <p class="mb-2.5 text-xs font-semibold uppercase tracking-wider text-ink-600">Peraturan mandatori</p>
+          <ul class="space-y-1.5 text-sm text-ink-800">
+            <li v-for="rule in rulesSummary.rules" :key="rule.code" class="flex items-start gap-2">
+              <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              <span>{{ rule.label }}<span v-if="rule.hint" class="text-slate-500"> — {{ rule.hint }}</span></span>
             </li>
           </ul>
         </div>
 
         <form v-if="!result" class="space-y-4" @submit.prevent="submit">
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">Umur</label>
-            <input
-              v-model.number="form.umur"
-              type="number"
-              min="1"
-              max="120"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            />
-            <p class="text-[12px] text-slate-400">Kelayakan: {{ ageRule.min }}–{{ ageRule.max }} tahun</p>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">No. Kad Pengenalan</label>
-            <input
-              v-model="form.noKp"
-              type="text"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="850101-14-5678"
-            />
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <label class="text-[13px] font-medium text-[#1a1f36]">Pendapatan Bulanan (RM)</label>
-              <input
-                v-model.number="form.pendapatanBulanan"
-                type="number"
-                min="0"
-                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <label class="text-[13px] font-medium text-[#1a1f36]">Komitmen Sedia Ada (RM)</label>
-              <input
-                v-model.number="form.jumlahKomitmenSediaAda"
-                type="number"
-                min="0"
-                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              />
-            </div>
+          <PField label="Umur" for="sk-umur" :hint="`Kelayakan: ${ageRule.min}–${ageRule.max} tahun`">
+            <input id="sk-umur" v-model.number="form.umur" type="number" min="1" max="120" inputmode="numeric" :class="pInputClass" />
+          </PField>
+          <PField label="No. kad pengenalan" for="sk-nokp">
+            <input id="sk-nokp" v-model="form.noKp" type="text" inputmode="numeric" :class="pInputClass" placeholder="850101-14-5678" />
+          </PField>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <PField label="Pendapatan bulanan (RM)" for="sk-pendapatan">
+              <input id="sk-pendapatan" v-model.number="form.pendapatanBulanan" type="number" min="0" inputmode="decimal" :class="pInputClass" />
+            </PField>
+            <PField label="Komitmen sedia ada (RM)" for="sk-komitmen">
+              <input id="sk-komitmen" v-model.number="form.jumlahKomitmenSediaAda" type="number" min="0" inputmode="decimal" :class="pInputClass" />
+            </PField>
           </div>
 
-          <button
-            type="submit"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
-            :disabled="checking"
-          >
-            {{ checking ? "Menyemak..." : "Semak Kelayakan" }}
+          <PButton type="submit" block size="lg" class="mt-2" :loading="checking">
+            {{ checking ? "Menyemak..." : "Semak kelayakan" }}
             <ArrowRight v-if="!checking" class="h-4 w-4" />
-          </button>
+          </PButton>
         </form>
 
-        <div v-else class="space-y-4 text-center">
+        <div v-else class="space-y-5 text-center">
           <div v-if="result.eligible" class="flex flex-col items-center gap-2">
-            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
-              <CheckCircle2 class="h-8 w-8 text-emerald-600" />
-            </div>
-            <h2 class="text-lg font-semibold text-emerald-700">Anda Layak Meneruskan Permohonan</h2>
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/60">
+              <CheckCircle2 class="h-9 w-9 text-emerald-600" />
+            </span>
+            <h2 class="mt-3 text-xl font-bold tracking-tight text-ink-900">Anda layak meneruskan permohonan</h2>
             <p class="text-sm text-slate-500">Profil awal anda memenuhi kriteria kelayakan asas SPPT.</p>
 
-            <div
-              v-if="aiRisk"
-              class="mt-4 w-full rounded-lg border border-violet-200 bg-violet-50/60 p-4 text-left"
-            >
+            <div v-if="aiRisk" class="mt-4 w-full rounded-2xl border border-ink-100 bg-ink-50/70 p-4 text-left">
               <div class="mb-3 flex items-center gap-2">
-                <Sparkles class="h-4 w-4 text-violet-600" />
-                <p class="text-sm font-semibold text-violet-900">AI Risk Scoring (Spec 1.6.3)</p>
+                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-ink-900 text-white">
+                  <Sparkles class="h-3.5 w-3.5" />
+                </span>
+                <p class="text-sm font-semibold text-ink-900">AI Risk Scoring (Spec 1.6.3)</p>
               </div>
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <p class="text-[11px] font-medium uppercase text-slate-500">Skor Risiko</p>
-                  <p class="text-lg font-bold text-slate-900">{{ aiRisk.riskScore }}/100</p>
+                <div class="rounded-xl bg-white p-3 ring-1 ring-ink-100">
+                  <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Skor risiko</p>
+                  <p class="mt-0.5 text-xl font-bold text-ink-900">{{ aiRisk.riskScore }}<span class="text-sm font-medium text-slate-400">/100</span></p>
                 </div>
-                <div>
-                  <p class="text-[11px] font-medium uppercase text-slate-500">Kategori</p>
-                  <span class="mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium" :class="riskCategoryClass(aiRisk.riskCategory)">
+                <div class="rounded-xl bg-white p-3 ring-1 ring-ink-100">
+                  <p class="text-[11px] font-medium uppercase tracking-wide text-slate-500">Kategori</p>
+                  <span class="mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium" :class="riskCategoryClass(aiRisk.riskCategory)">
                     {{ aiRisk.riskCategory }}
                   </span>
                 </div>
               </div>
-              <p class="mt-3 text-xs text-slate-600">
-                Had pembiayaan dicadangkan: <span class="font-semibold">{{ formatRecommendedLimit(aiRisk.recommendedLimit) }}</span>
+              <p class="mt-3 text-sm text-ink-700">
+                Had pembiayaan dicadangkan: <span class="font-semibold text-ink-900">{{ formatRecommendedLimit(aiRisk.recommendedLimit) }}</span>
               </p>
-              <p class="mt-2 text-[11px] text-violet-600/80">Sokongan keputusan — pegawai TEKUN membuat keputusan muktamad.</p>
+              <p class="mt-2 text-xs text-slate-500">Sokongan keputusan — pegawai TEKUN membuat keputusan muktamad.</p>
             </div>
           </div>
           <div v-else class="flex flex-col items-center gap-2">
-            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-rose-50">
-              <XCircle class="h-8 w-8 text-rose-600" />
-            </div>
-            <h2 class="text-lg font-semibold text-rose-700">Permohonan Tidak Dapat Diteruskan (Auto-Reject)</h2>
-            <p class="text-sm text-slate-500">Profil anda tidak memenuhi syarat mandatori berikut:</p>
-            <ul class="w-full space-y-1.5 rounded-md border border-rose-100 bg-rose-50 p-3 text-left text-sm text-rose-700">
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 ring-8 ring-rose-50/60">
+              <XCircle class="h-9 w-9 text-rose-600" />
+            </span>
+            <h2 class="mt-3 text-xl font-bold tracking-tight text-ink-900">Permohonan tidak dapat diteruskan</h2>
+            <p class="text-sm text-slate-500">Profil anda tidak memenuhi syarat mandatori berikut (Auto-Reject):</p>
+            <ul class="mt-2 w-full space-y-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left text-sm text-rose-800">
               <li v-for="reason in result.reasons" :key="reason" class="flex items-start gap-2">
-                <AlertTriangle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
                 {{ reason }}
               </li>
             </ul>
           </div>
 
-          <button
-            v-if="result.eligible"
-            type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-            @click="proceed"
-          >
-            Teruskan ke Pengesahan Identiti
+          <PButton v-if="result.eligible" block size="lg" @click="proceed">
+            Teruskan ke pengesahan identiti
             <ArrowRight class="h-4 w-4" />
-          </button>
-          <button
-            v-else
-            type="button"
-            class="w-full rounded-md border border-slate-300 px-4 py-[9px] text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            @click="result = null; aiRisk = null"
-          >
-            Cuba Semula
-          </button>
+          </PButton>
+          <PButton v-else block size="lg" variant="outline" @click="result = null; aiRisk = null">
+            Cuba semula
+          </PButton>
         </div>
       </div>
+
+      <p class="mt-6 text-center text-xs text-slate-400">© TEKUN Nasional · Portal Usahawan</p>
     </div>
 
     <div class="fixed right-4 top-4 z-50 h-16">

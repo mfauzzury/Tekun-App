@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Mail, MessageSquare } from "lucide-vue-next";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Mail, MessageSquare, ShieldCheck } from "lucide-vue-next";
 
 import PemohonMiniStepper from "@/components/pemohon/PemohonMiniStepper.vue";
 import PemohonOtpInput from "@/components/pemohon/PemohonOtpInput.vue";
 import AppToastRegion from "@/components/AppToastRegion.vue";
+import PButton from "@/components/pemohon/ui/PButton.vue";
+import PField from "@/components/pemohon/ui/PField.vue";
 import { useToast } from "@/composables/useToast";
 import { usePemohonStore } from "@/stores/pemohon";
+import { pInputClass } from "@/utils/pemohon-ui";
 import type { OtpChannel } from "@/api/otp";
 
 const router = useRouter();
@@ -93,156 +96,158 @@ async function resendOtp() {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-[#f6f9fc] px-4 py-10">
-    <div class="w-full max-w-[440px]">
-      <div class="mb-6 flex justify-center">
-        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
+  <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#f6f7fb] px-4 py-10">
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(214,32,42,0.10),transparent_70%)]"
+    />
+
+    <div class="relative w-full max-w-[440px]">
+      <div class="mb-8 flex justify-center">
+        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-10 w-auto" />
       </div>
 
-      <div class="rounded-lg border border-[#e3e8ee] bg-white px-8 pb-8 pt-6 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.06)]">
-        <h1 class="mb-1 text-center text-xl font-semibold tracking-tight text-[#1a1f36]">Daftar Akaun Pemohon</h1>
-        <p class="mb-6 text-center text-[13px] text-[#697386]">Portal Pemohon SPPT TEKUN Nasional</p>
+      <div class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_16px_48px_-16px_rgba(16,24,40,0.16)] sm:p-8">
+        <div class="mb-6 text-center">
+          <h1 class="text-2xl font-bold tracking-tight text-ink-900">Daftar akaun pemohon</h1>
+          <p class="mt-1.5 text-sm text-slate-500">Portal Pemohon SPPT TEKUN Nasional</p>
+        </div>
 
-        <div class="mb-6">
+        <div class="mb-7 px-2">
           <PemohonMiniStepper :steps="STEPS" :current-step="currentStep" />
         </div>
 
-        <form v-if="currentStep === 0" class="space-y-4" @submit.prevent="submitAccountDetails">
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">Nama Penuh</label>
-            <input
-              v-model="form.nama"
-              type="text"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="cth: Ahmad bin Abdullah"
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">Emel</label>
-            <input
-              v-model="form.email"
-              type="email"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="nama@email.com"
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">No. Telefon</label>
-            <input
-              v-model="form.telefon"
-              type="tel"
-              class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="012-3456789"
-            />
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">Kata Laluan</label>
-            <div class="relative">
-              <input
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
-                class="w-full rounded-md border border-[#d8dee4] bg-white px-3 py-[9px] pr-10 text-sm text-[#1a1f36] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                placeholder="Sekurang-kurangnya 8 aksara"
-              />
-              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#a3acb9] hover:text-[#697386]" @click="showPassword = !showPassword">
-                <EyeOff v-if="showPassword" class="h-4 w-4" />
-                <Eye v-else class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+        <template v-if="currentStep === 0">
+          <PButton block size="lg" variant="outline" :loading="loadingMyDigitalId" @click="registerWithMyDigitalId">
+            <img v-if="!loadingMyDigitalId" src="/mydigital-id-logo.png" alt="" class="h-6 w-6 rounded-sm" />
+            {{ loadingMyDigitalId ? "Menyambung..." : "Daftar dengan MyDigital ID" }}
+          </PButton>
 
-          <div class="space-y-1.5">
-            <label class="text-[13px] font-medium text-[#1a1f36]">Hantar OTP Melalui</label>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                class="flex items-center justify-center gap-1.5 rounded-md border px-3 py-[9px] text-sm font-medium transition-colors"
-                :class="channel === 'sms' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-[#d8dee4] text-[#697386] hover:bg-slate-50'"
-                @click="channel = 'sms'"
-              >
-                <MessageSquare class="h-4 w-4" />
-                SMS
-              </button>
-              <button
-                type="button"
-                class="flex items-center justify-center gap-1.5 rounded-md border px-3 py-[9px] text-sm font-medium transition-colors"
-                :class="channel === 'email' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-[#d8dee4] text-[#697386] hover:bg-slate-50'"
-                @click="channel = 'email'"
-              >
-                <Mail class="h-4 w-4" />
-                Emel
-              </button>
-            </div>
-          </div>
-
-          <div v-if="error" class="flex items-center gap-2 rounded-md border border-[#f8d7da] bg-[#fdf2f2] px-3.5 py-2.5 text-[13px] text-[#cd3d64]">
-            <AlertCircle class="h-4 w-4 shrink-0" />
-            {{ error }}
-          </div>
-
-          <button
-            type="submit"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
-            :disabled="submittingAccount"
-          >
-            {{ submittingAccount ? "Menghantar OTP..." : "Seterusnya" }}
-            <ArrowRight v-if="!submittingAccount" class="h-4 w-4" />
-          </button>
-
-          <div class="relative my-2">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-[#e3e8ee]" />
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+              <div class="w-full border-t border-slate-200" />
             </div>
             <div class="relative flex justify-center">
-              <span class="bg-white px-3 text-[12px] text-[#8792a2]">Atau</span>
+              <span class="bg-white px-3 text-xs font-medium text-slate-400">atau daftar dengan emel</span>
             </div>
           </div>
 
-          <button
-            type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-md border border-[#d8dee4] bg-white px-4 py-[9px] text-sm font-medium text-[#1a1f36] shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60"
-            :disabled="loadingMyDigitalId"
-            @click="registerWithMyDigitalId"
-          >
-            <Loader2 v-if="loadingMyDigitalId" class="h-6 w-6 animate-spin" />
-            <img v-else src="/mydigital-id-logo.png" alt="" class="h-6 w-6 rounded-sm" />
-            {{ loadingMyDigitalId ? "Menyambung..." : "Daftar dengan MyDigital ID" }}
-          </button>
-        </form>
+          <form class="space-y-4" @submit.prevent="submitAccountDetails">
+            <PField label="Nama penuh" for="daftar-nama">
+              <input id="daftar-nama" v-model="form.nama" type="text" autocomplete="name" :class="pInputClass" placeholder="cth: Ahmad bin Abdullah" />
+            </PField>
+            <PField label="Emel" for="daftar-email">
+              <input id="daftar-email" v-model="form.email" type="email" autocomplete="email" :class="pInputClass" placeholder="nama@email.com" />
+            </PField>
+            <PField label="No. telefon" for="daftar-telefon">
+              <input id="daftar-telefon" v-model="form.telefon" type="tel" autocomplete="tel" :class="pInputClass" placeholder="012-3456789" />
+            </PField>
+            <PField label="Kata laluan" for="daftar-password" hint="Sekurang-kurangnya 8 aksara.">
+              <div class="relative">
+                <input
+                  id="daftar-password"
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  :class="[pInputClass, 'pr-11!']"
+                  placeholder="Sekurang-kurangnya 8 aksara"
+                />
+                <button
+                  type="button"
+                  class="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                  :aria-label="showPassword ? 'Sembunyikan kata laluan' : 'Tunjuk kata laluan'"
+                  @click="showPassword = !showPassword"
+                >
+                  <EyeOff v-if="showPassword" class="h-4 w-4" />
+                  <Eye v-else class="h-4 w-4" />
+                </button>
+              </div>
+            </PField>
 
-        <form v-else class="space-y-4" @submit.prevent="verifyOtp">
-          <p class="text-center text-sm text-slate-600">
-            Kod pengesahan telah dihantar ke {{ otpDestination }} melalui {{ channelLabel }}. Sila masukkan kod 6 digit di bawah.
-          </p>
+            <fieldset class="space-y-1.5">
+              <legend class="mb-1.5 block text-sm font-medium text-ink-800">Hantar OTP melalui</legend>
+              <div role="radiogroup" aria-label="Saluran OTP" class="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  role="radio"
+                  :aria-checked="channel === 'sms'"
+                  class="flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+                  :class="channel === 'sms' ? 'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'"
+                  @click="channel = 'sms'"
+                >
+                  <MessageSquare class="h-4 w-4" />
+                  SMS
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  :aria-checked="channel === 'email'"
+                  class="flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
+                  :class="channel === 'email' ? 'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/20' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'"
+                  @click="channel = 'email'"
+                >
+                  <Mail class="h-4 w-4" />
+                  Emel
+                </button>
+              </div>
+            </fieldset>
+
+            <div v-if="error" role="alert" class="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
+              <AlertCircle class="h-4 w-4 shrink-0" />
+              {{ error }}
+            </div>
+
+            <PButton type="submit" block size="lg" class="mt-2" :loading="submittingAccount">
+              {{ submittingAccount ? "Menghantar OTP..." : "Seterusnya" }}
+              <ArrowRight v-if="!submittingAccount" class="h-4 w-4" />
+            </PButton>
+          </form>
+        </template>
+
+        <form v-else class="space-y-5" @submit.prevent="verifyOtp">
+          <div class="text-center">
+            <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+              <ShieldCheck class="h-6 w-6" />
+            </span>
+            <p class="text-sm text-slate-600">
+              Kod pengesahan telah dihantar ke <span class="font-semibold text-ink-900">{{ otpDestination }}</span> melalui {{ channelLabel }}.
+              Sila masukkan kod 6 digit di bawah.
+            </p>
+          </div>
 
           <div class="flex justify-center">
             <PemohonOtpInput v-model="otpValue" :length="6" />
           </div>
 
-          <div v-if="otpError" class="flex items-center gap-2 rounded-md border border-[#f8d7da] bg-[#fdf2f2] px-3.5 py-2.5 text-[13px] text-[#cd3d64]">
+          <div v-if="otpError" role="alert" class="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
             <AlertCircle class="h-4 w-4 shrink-0" />
             {{ otpError }}
           </div>
 
-          <button
-            type="submit"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
-            :disabled="otpValue.length !== 6 || verifying"
-          >
-            {{ verifying ? "Mengesahkan..." : "Sahkan & Log Masuk" }}
+          <PButton type="submit" block size="lg" :loading="verifying" :disabled="otpValue.length !== 6">
+            {{ verifying ? "Mengesahkan..." : "Sahkan & log masuk" }}
             <ArrowRight v-if="!verifying" class="h-4 w-4" />
-          </button>
+          </PButton>
 
-          <button type="button" class="w-full text-center text-[13px] font-medium text-blue-600 hover:text-blue-700 disabled:opacity-60" :disabled="resending" @click="resendOtp">
-            {{ resending ? "Menghantar semula..." : "Hantar semula kod OTP" }}
-          </button>
+          <p class="text-center text-sm text-slate-500">
+            Tidak menerima kod?
+            <button
+              type="button"
+              class="rounded font-semibold text-brand-600 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200 disabled:opacity-60"
+              :disabled="resending"
+              @click="resendOtp"
+            >
+              {{ resending ? "Menghantar semula..." : "Hantar semula" }}
+            </button>
+          </p>
         </form>
       </div>
 
-      <p class="mt-6 text-center text-[13px] text-[#697386]">
+      <p class="mt-6 text-center text-sm text-slate-500">
         Sudah ada akaun?
-        <router-link to="/pemohon/log-masuk" class="font-medium text-blue-600 hover:text-blue-700">Log Masuk</router-link>
+        <router-link to="/pemohon/log-masuk" class="font-semibold text-brand-600 hover:text-brand-700">Log masuk</router-link>
       </p>
+      <p class="mt-6 text-center text-xs text-slate-400">© TEKUN Nasional · Portal Usahawan</p>
     </div>
 
     <div class="fixed right-4 top-4 z-50 h-16">

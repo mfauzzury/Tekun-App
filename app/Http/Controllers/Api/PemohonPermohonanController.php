@@ -122,14 +122,36 @@ class PemohonPermohonanController extends Controller
                 $spouseName,
             );
 
-            $identityError = $this->myKadVerification->firstIdentityValidationError($attachments);
-            if ($identityError !== null) {
-                return $this->sendError(422, 'VALIDATION_ERROR', 'Validation failed', [
-                    'attachments' => [$identityError],
-                ]);
+            // When the AI e-KYC has read the MyKad, it is authoritative for identity and coverage;
+            // the image-fingerprint check remains the fallback for applications without it.
+            $aiOcr = is_array($existingDetails['ekyc_mykad']['ocr'] ?? null) ? $existingDetails['ekyc_mykad']['ocr'] : [];
+            $aiVerified = ($aiOcr['ok'] ?? false) && ($aiOcr['adalah_mykad'] ?? false);
+
+            if ($aiVerified) {
+                $padanan = $this->ekyc->compareWithApplication(is_array($aiOcr['data'] ?? null) ? $aiOcr['data'] : [], $details);
+                $icRow = collect($padanan['padanan'])->firstWhere('medan', 'no_ic');
+                if ($icRow && $icRow['nilai_borang'] && $icRow['nilai_mykad'] && ! $icRow['padan']) {
+                    return $this->sendError(422, 'VALIDATION_ERROR', 'Validation failed', [
+                        'attachments' => ['No. MyKad yang dibaca daripada kad ('.$icRow['nilai_mykad'].') tidak sepadan dengan No. MyKad dalam borang.'],
+                    ]);
+                }
+
+                $classes = array_column(array_filter($attachments, 'is_array'), 'document_class');
+                $coverage = [
+                    'has_front' => (bool) array_intersect($classes, [DocumentClassificationService::CLASS_IC_PEMOHON_DEPAN, DocumentClassificationService::CLASS_IC_PEMOHON_COMBINED]),
+                    'has_back' => (bool) array_intersect($classes, [DocumentClassificationService::CLASS_IC_PEMOHON_BELAKANG, DocumentClassificationService::CLASS_IC_PEMOHON_COMBINED]),
+                ];
+            } else {
+                $identityError = $this->myKadVerification->firstIdentityValidationError($attachments);
+                if ($identityError !== null) {
+                    return $this->sendError(422, 'VALIDATION_ERROR', 'Validation failed', [
+                        'attachments' => [$identityError],
+                    ]);
+                }
+
+                $coverage = $this->myKadVerification->summarizeApplicantIcCoverage($attachments);
             }
 
-            $coverage = $this->myKadVerification->summarizeApplicantIcCoverage($attachments);
             if (! $coverage['has_front'] || ! $coverage['has_back']) {
                 return $this->sendError(422, 'VALIDATION_ERROR', 'Validation failed', [
                     'attachments' => ['Sila lampirkan salinan MyKad depan dan belakang pemohon dalam dokumen sokongan.'],
@@ -363,6 +385,41 @@ class PemohonPermohonanController extends Controller
             $run = $this->penilaianPantas->start($record, null, 'pemohon');
         }
         $run = $this->penilaianPantas->runAll($run);
+
+        return $this->sendOk($this->progressPayload($record->fresh(), $run));
+    }
+
+    /**
+     * Run one pipeline step for the applicant's latest run (creates it if needed), so the portal can
+     * show each step completing live. Steps still run strictly in order; finished runs are not re-run.
+     */
+    public function penilaianPantasLangkah(StartPemohonPenilaianPantasRequest $request, int $permohonan, string $kod): JsonResponse
+    {
+        $record = $this->resolveOwned($permohonan, $request->validated()['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+        if ($record->status === 'Draf') {
+            return $this->sendError(409, 'CONFLICT', 'Permohonan belum dihantar.');
+        }
+        if (! array_key_exists($kod, PenilaianPantasService::LANGKAH)) {
+            return $this->sendError(404, 'NOT_FOUND', 'Langkah tidak dikenali');
+        }
+
+        ignore_user_abort(true);
+        set_time_limit(200);
+
+        $run = PenilaianPantas::where('permohonan_id', $record->id)->orderByDesc('id')->first();
+        if (! $run) {
+            $run = $this->penilaianPantas->start($record, null, 'pemohon');
+        }
+        if ($run->status !== 'selesai' && ($run->langkah[$kod]['status'] ?? null) !== 'selesai') {
+            try {
+                $run = $this->penilaianPantas->runStep($run, $kod);
+            } catch (\RuntimeException $e) {
+                return $this->sendError(409, 'CONFLICT', $e->getMessage());
+            }
+        }
 
         return $this->sendOk($this->progressPayload($record->fresh(), $run));
     }

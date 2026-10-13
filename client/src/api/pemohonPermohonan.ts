@@ -138,6 +138,14 @@ export async function startPemohonPenilaianPantas(id: number, accessToken: strin
   });
 }
 
+/** Runs one AI assessment step (in order) so the portal can show each step completing live. */
+export async function runPemohonPenilaianLangkah(id: number, accessToken: string, kod: string) {
+  return apiRequest<{ data: PemohonAiProgress }>(`/api/public/pemohon/permohonan/${id}/penilaian-pantas/langkah/${kod}`, {
+    method: "POST",
+    body: JSON.stringify({ accessToken }),
+  });
+}
+
 export async function getPemohonPenilaianPantas(id: number, accessToken: string) {
   return apiRequest<{ data: PemohonAiProgress }>(
     `/api/public/pemohon/permohonan/${id}/penilaian-pantas?accessToken=${encodeURIComponent(accessToken)}`,

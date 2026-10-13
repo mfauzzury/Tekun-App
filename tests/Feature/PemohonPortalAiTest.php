@@ -179,4 +179,76 @@ class PemohonPortalAiTest extends TestCase
             $this->assertStringNotContainsString('"'.$forbidden.'":', $body, "leaked key {$forbidden}");
         }
     }
+
+    public function test_applicant_can_drive_steps_in_order(): void
+    {
+        config(['services.anthropic.key' => null]);
+        Http::fake();
+        $p = $this->permohonan(['dihantar_pada' => now()->toIso8601String()], 'Dalam Semakan');
+        $base = "/api/public/pemohon/permohonan/{$p->id}/penilaian-pantas/langkah";
+
+        $this->postJson("$base/cadangan", ['accessToken' => self::TOKEN])->assertStatus(409);
+        $this->postJson("$base/tak-wujud", ['accessToken' => self::TOKEN])->assertStatus(404);
+        $this->postJson("$base/ekyc", ['accessToken' => 'wrong'])->assertStatus(404);
+
+        foreach (['ekyc', 'peraturan', 'penipuan', 'skor_kredit', 'cadangan'] as $kod) {
+            $last = $this->postJson("$base/$kod", ['accessToken' => self::TOKEN])->assertOk();
+        }
+        $last->assertJsonPath('data.status', 'selesai');
+
+        // Re-running a finished step is a no-op, not an error.
+        $this->postJson("$base/ekyc", ['accessToken' => self::TOKEN])->assertOk()->assertJsonPath('data.status', 'selesai');
+    }
+
+    public function test_draft_cannot_start_assessment(): void
+    {
+        $p = $this->permohonan();
+        $this->postJson("/api/public/pemohon/permohonan/{$p->id}/penilaian-pantas/langkah/ekyc", ['accessToken' => self::TOKEN])
+            ->assertStatus(409);
+    }
+
+    private function aiScannedDraft(string $ocrIc): Permohonan
+    {
+        Storage::fake('public');
+        $p = $this->permohonan();
+        foreach (['depan' => 'ic_pemohon_depan', 'belakang' => 'ic_pemohon_belakang'] as $side => $class) {
+            Storage::disk('public')->put("permohonan/{$p->id}/{$side}.png", base64_decode(self::PNG));
+        }
+        $details = $p->details;
+        $details['attachments'] = [
+            ['id' => 'a1', 'name' => 'depan.png', 'url' => "/storage/permohonan/{$p->id}/depan.png", 'mime_type' => 'image/png', 'document_class' => 'ic_pemohon_depan'],
+            ['id' => 'a2', 'name' => 'belakang.png', 'url' => "/storage/permohonan/{$p->id}/belakang.png", 'mime_type' => 'image/png', 'document_class' => 'ic_pemohon_belakang'],
+        ];
+        $details['ekyc_mykad'] = ['ocr' => ['ok' => true, 'adalah_mykad' => true, 'data' => ['no_ic' => $ocrIc, 'nama' => 'SITI AMINAH BINTI ALI']]];
+        $p->update(['details' => $details]);
+
+        return $p;
+    }
+
+    public function test_ai_read_mykad_allows_hantar_without_fingerprint_match(): void
+    {
+        $p = $this->aiScannedDraft('900215-10-5372');
+
+        $this->putJson("/api/public/pemohon/permohonan/{$p->id}", [
+            'accessToken' => self::TOKEN,
+            'status' => 'Dalam Semakan',
+            'details' => ['nama' => 'Siti Aminah Binti Ali', 'noIcBaru' => '900215-10-5372'],
+        ])->assertOk();
+
+        $this->assertSame('Dalam Semakan', $p->fresh()->status);
+        $this->assertNotEmpty($p->fresh()->details['dihantar_pada']);
+    }
+
+    public function test_ai_read_mykad_number_must_match_form(): void
+    {
+        $p = $this->aiScannedDraft('880101-14-5371');
+
+        $this->putJson("/api/public/pemohon/permohonan/{$p->id}", [
+            'accessToken' => self::TOKEN,
+            'status' => 'Dalam Semakan',
+            'details' => ['nama' => 'Siti Aminah Binti Ali', 'noIcBaru' => '900215-10-5372'],
+        ])->assertStatus(422)->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->assertSame('Draf', $p->fresh()->status);
+    }
 }

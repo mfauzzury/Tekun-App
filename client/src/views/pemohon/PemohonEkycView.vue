@@ -1,265 +1,193 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { AlertTriangle, ArrowRight, Camera, CheckCircle2, Loader2, Upload, XCircle } from "lucide-vue-next";
+import { computed, ref, watch } from "vue";
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, CreditCard, Home, RotateCcw, ScanFace, ShieldCheck, XCircle } from "lucide-vue-next";
 
-import PemohonMiniStepper from "@/components/pemohon/PemohonMiniStepper.vue";
-import AppToastRegion from "@/components/AppToastRegion.vue";
+import PemohonLayout from "@/layouts/PemohonLayout.vue";
+import EkycFaceResultCard from "@/components/pemohon/ekyc/EkycFaceResultCard.vue";
+import EkycLivenessCheck from "@/components/pemohon/ekyc/EkycLivenessCheck.vue";
+import EkycMyKadScan from "@/components/pemohon/ekyc/EkycMyKadScan.vue";
+import PBadge from "@/components/pemohon/ui/PBadge.vue";
+import PButton from "@/components/pemohon/ui/PButton.vue";
+import PCard from "@/components/pemohon/ui/PCard.vue";
+import PPageHeader from "@/components/pemohon/ui/PPageHeader.vue";
+import PProgressSteps from "@/components/pemohon/ui/PProgressSteps.vue";
+import {
+  autofillFromMyKad,
+  createPermohonanForm,
+  isMyKadBack,
+  isMyKadFront,
+  type AttachmentRow,
+} from "@/components/pemohon/permohonan/permohonan-form";
+import { usePemohonDraft } from "@/composables/usePemohonDraft";
+import { useToast } from "@/composables/useToast";
 import { usePemohonStore } from "@/stores/pemohon";
-import type { EkycSimulationResult } from "@/data/portal-dummy";
+import type { PemohonMyKadScan, PpFaceResult } from "@/types";
 
-const router = useRouter();
 const pemohon = usePemohonStore();
+const toast = useToast();
+const draft = usePemohonDraft();
 
 const STEPS = [
-  { id: "dokumen", label: "Muat Naik Dokumen" },
-  { id: "wajah", label: "Pengesahan Wajah" },
+  { id: "mykad", label: "Muat naik MyKad" },
+  { id: "wajah", label: "Pengesahan wajah" },
   { id: "keputusan", label: "Keputusan" },
 ];
-const currentStep = ref(0);
 
-const idFrontPreview = ref<string | null>(null);
-const idBackPreview = ref<string | null>(null);
-const selfieCaptured = ref(false);
-const selfiePreview = ref<string | null>(null);
-const processing = ref(false);
-const result = ref<EkycSimulationResult | null>(null);
+// Shared draft with the application form — e-KYC results carry over into Permohonan Baharu.
+const saved = draft.read();
+const attachments = ref<AttachmentRow[]>((saved?.attachments ?? []).map((a) => ({ ...a, verifying: false })));
+const scan = ref<PemohonMyKadScan | null>(saved?.ekycMyKad ?? null);
+const face = ref<PpFaceResult | null>(saved?.ekycWajah ?? null);
+const filledFields = ref<string[]>([]);
+const currentStep = ref(face.value ? 2 : 0);
 
-const videoEl = ref<HTMLVideoElement | null>(null);
-const cameraStream = ref<MediaStream | null>(null);
-const cameraError = ref("");
-const cameraReady = ref(false);
+watch([attachments, scan, face], () => {
+  draft.save({ attachments: attachments.value.map(({ verifying: _v, classifying: _c, ...a }) => a), ekycMyKad: scan.value, ekycWajah: face.value });
+}, { deep: true });
 
-function onFileSelected(event: Event, side: "front" | "back") {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  if (side === "front") idFrontPreview.value = url;
-  else idBackPreview.value = url;
+let pendingRecord: Promise<{ id: number; token: string } | null> | null = null;
+function ensureRecord() {
+  if (draft.backendId.value && draft.accessToken.value) return Promise.resolve({ id: draft.backendId.value, token: draft.accessToken.value });
+  pendingRecord ??= draft.ensureBackendRecord(pemohon.profil.nama).finally(() => (pendingRecord = null));
+  return pendingRecord;
 }
 
-const canProceedToFace = computed(() => Boolean(idFrontPreview.value && idBackPreview.value));
+const hasFront = computed(() => attachments.value.some(isMyKadFront));
+const hasBack = computed(() => attachments.value.some(isMyKadBack));
+const myKadIssue = computed(() => Boolean(scan.value?.ocr?.tandaPalsu?.length) || scan.value?.ocr?.adalahMykad === false || scan.value?.ic?.valid === false);
 
-function goToFaceStep() {
-  currentStep.value = 1;
-}
-
-function stopCamera() {
-  cameraStream.value?.getTracks().forEach((track) => track.stop());
-  cameraStream.value = null;
-  cameraReady.value = false;
-}
-
-async function startCamera() {
-  cameraError.value = "";
-  cameraReady.value = false;
-  if (!navigator.mediaDevices?.getUserMedia) {
-    cameraError.value = "Kamera tidak disokong pada pelayar ini.";
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-    cameraStream.value = stream;
-    await nextTick();
-    if (videoEl.value) {
-      videoEl.value.srcObject = stream;
-      videoEl.value.onloadeddata = () => {
-        cameraReady.value = true;
-      };
-    }
-  } catch {
-    cameraError.value = "Tidak dapat mengakses kamera. Sila benarkan kebenaran kamera pada pelayar anda.";
-  }
-}
-
-function captureSelfie() {
-  if (videoEl.value && cameraStream.value && cameraReady.value) {
-    const canvas = document.createElement("canvas");
-    canvas.width = videoEl.value.videoWidth || 320;
-    canvas.height = videoEl.value.videoHeight || 320;
-    const ctx = canvas.getContext("2d");
-    ctx?.drawImage(videoEl.value, 0, 0, canvas.width, canvas.height);
-    selfiePreview.value = canvas.toDataURL("image/png");
-  }
-  selfieCaptured.value = true;
-  stopCamera();
-}
-
-function retakeSelfie() {
-  selfieCaptured.value = false;
-  selfiePreview.value = null;
-  startCamera();
-}
-
-watch(currentStep, (step) => {
-  if (step === 1) startCamera();
-  else stopCamera();
+/** Overall e-KYC: the face decision, downgraded to "semak" when the MyKad read raised flags. */
+const overall = computed<"lulus" | "semak" | "gagal" | null>(() => {
+  const k = face.value?.keputusan;
+  if (!k) return null;
+  return k === "lulus" && myKadIssue.value ? "semak" : k;
 });
 
-onBeforeUnmount(() => stopCamera());
+const overallMeta = computed(() => {
+  if (overall.value === "lulus") return { icon: CheckCircle2, ring: "bg-emerald-50 text-emerald-600", title: "Identiti anda telah disahkan", text: "Tahniah! Permohonan anda kini layak untuk penilaian pantas AI." };
+  if (overall.value === "gagal") return { icon: XCircle, ring: "bg-rose-50 text-rose-600", title: "Pengesahan tidak berjaya", text: "Cuba sekali lagi di tempat yang terang. Anda masih boleh memohon — permohonan akan disemak secara manual." };
+  return { icon: CircleAlert, ring: "bg-amber-50 text-amber-600", title: "Perlu semakan pegawai", text: "Pengesahan anda direkodkan. Pegawai TEKUN akan membuat semakan tambahan." };
+});
 
-function runVerification() {
-  currentStep.value = 2;
-  processing.value = true;
-  result.value = null;
-  window.setTimeout(() => {
-    result.value = pemohon.runEkyc({
-      idFrontUploaded: Boolean(idFrontPreview.value),
-      idBackUploaded: Boolean(idBackPreview.value),
-      selfieCaptured: selfieCaptured.value,
-    });
-    processing.value = false;
-  }, 1400);
+function onAutofill(s: PemohonMyKadScan) {
+  const form = Object.assign(createPermohonanForm(pemohon.profil), draft.read()?.form ?? {});
+  const filled = autofillFromMyKad(form, s);
+  filledFields.value = filled;
+  draft.save({ form: { ...form } });
+  if (filled.length) toast.success("Borang permohonan diisi", `${filled.length} medan diisi daripada MyKad anda.`);
+  else toast.info("Tiada medan diisi", "AI tidak menemui maklumat yang boleh digunakan.");
 }
 
-function proceed() {
-  router.push({ name: "pemohon-dashboard" });
+function onVerified(result: PpFaceResult) {
+  face.value = result;
+  const k = result.keputusan === "lulus" && myKadIssue.value ? "semak" : result.keputusan;
+  if (k) pemohon.setEkycResult(k);
+  goTo(2);
+}
+
+function goTo(i: number) {
+  currentStep.value = i;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-[#f6f9fc] px-4 py-10">
-    <div class="w-full max-w-[520px]">
-      <div class="mb-6 flex justify-center">
-        <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
-      </div>
+  <PemohonLayout>
+    <div class="mx-auto max-w-3xl pb-6">
+      <PPageHeader
+        eyebrow="e-KYC"
+        title="Pengesahan identiti"
+        subtitle="Sahkan identiti anda secara digital dengan MyKad dan wajah — kurang 2 minit."
+        :back="{ name: 'pemohon-dashboard' }"
+        back-label="Utama"
+      />
 
-      <div class="rounded-lg border border-[#e3e8ee] bg-white px-8 pb-8 pt-6 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.06)]">
-        <h1 class="mb-1 text-center text-xl font-semibold tracking-tight text-[#1a1f36]">Pengesahan Identiti (eKYC)</h1>
-        <p class="mb-6 text-center text-[13px] text-[#697386]">Simulasi imbasan dokumen dan padanan wajah.</p>
+      <PCard class="mt-5">
+        <PProgressSteps :steps="STEPS" :current="currentStep" @select="goTo" />
+      </PCard>
 
-        <div class="mb-6">
-          <PemohonMiniStepper :steps="STEPS" :current-step="currentStep" />
-        </div>
-
-        <div v-if="currentStep === 0" class="space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 p-4 text-center transition-colors hover:border-blue-400 hover:bg-blue-50">
-              <img v-if="idFrontPreview" :src="idFrontPreview" alt="Pratonton hadapan" class="h-20 w-full rounded object-cover" />
-              <Upload v-else class="h-6 w-6 text-slate-400" />
-              <span class="text-xs font-medium text-slate-600">Kad Pengenalan (Hadapan)</span>
-              <input type="file" accept="image/*" class="hidden" @change="onFileSelected($event, 'front')" />
-            </label>
-            <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 p-4 text-center transition-colors hover:border-blue-400 hover:bg-blue-50">
-              <img v-if="idBackPreview" :src="idBackPreview" alt="Pratonton belakang" class="h-20 w-full rounded object-cover" />
-              <Upload v-else class="h-6 w-6 text-slate-400" />
-              <span class="text-xs font-medium text-slate-600">Kad Pengenalan (Belakang)</span>
-              <input type="file" accept="image/*" class="hidden" @change="onFileSelected($event, 'back')" />
-            </label>
-          </div>
-
-          <button
-            type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
-            :disabled="!canProceedToFace"
-            @click="goToFaceStep"
-          >
-            Seterusnya
-            <ArrowRight class="h-4 w-4" />
-          </button>
-        </div>
-
-        <div v-else-if="currentStep === 1" class="space-y-4 text-center">
-          <div
-            class="mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full border-4 bg-slate-100"
-            :class="selfieCaptured ? 'border-emerald-400' : 'border-slate-200'"
-          >
-            <img v-if="selfiePreview" :src="selfiePreview" alt="Imej wajah ditangkap" class="h-full w-full object-cover" />
-            <video
-              v-else-if="cameraStream"
-              ref="videoEl"
-              autoplay
-              muted
-              playsinline
-              class="h-full w-full scale-x-[-1] object-cover"
-            />
-            <CheckCircle2 v-else-if="selfieCaptured" class="h-14 w-14 text-emerald-600" />
-            <Camera v-else class="h-14 w-14 text-slate-400" />
-          </div>
-
-          <div v-if="cameraError" class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-left text-[13px] text-amber-700">
-            <AlertTriangle class="h-4 w-4 shrink-0" />
-            {{ cameraError }}
-          </div>
-          <p v-else-if="cameraStream && !cameraReady" class="flex items-center justify-center gap-1.5 text-sm text-slate-500">
-            <Loader2 class="h-3.5 w-3.5 animate-spin" />
-            Memulakan kamera...
-          </p>
-          <p v-else class="text-sm text-slate-500">
-            {{ selfieCaptured ? "Imej wajah berjaya ditangkap." : "Letakkan wajah anda dalam bulatan dan tangkap imej." }}
-          </p>
-
-          <button
-            v-if="!selfieCaptured"
-            type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
-            :disabled="!cameraReady"
-            @click="captureSelfie"
-          >
-            <Camera class="h-4 w-4" />
-            Tangkap Imej Wajah
-          </button>
-          <template v-else>
-            <button
-              type="button"
-              class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-              @click="runVerification"
-            >
-              Sahkan Identiti
-              <ArrowRight class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              class="w-full rounded-md border border-slate-300 px-4 py-[9px] text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-              @click="retakeSelfie"
-            >
-              Tangkap Semula
-            </button>
-          </template>
-        </div>
-
-        <div v-else class="space-y-4 text-center">
-          <div v-if="processing" class="flex flex-col items-center gap-3 py-6">
-            <Loader2 class="h-10 w-10 animate-spin text-blue-600" />
-            <p class="text-sm text-slate-500">Memproses pengesahan identiti...</p>
-          </div>
-          <div v-else-if="result" class="flex flex-col items-center gap-2">
-            <div class="flex h-14 w-14 items-center justify-center rounded-full" :class="result.status === 'lulus' ? 'bg-emerald-50' : 'bg-rose-50'">
-              <CheckCircle2 v-if="result.status === 'lulus'" class="h-8 w-8 text-emerald-600" />
-              <XCircle v-else class="h-8 w-8 text-rose-600" />
+      <!-- 1: MyKad -->
+      <PCard v-if="currentStep === 0" class="mt-5">
+        <template #header>
+          <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><CreditCard class="h-5 w-5" /></span>
+            <div>
+              <h2 class="text-[15px] font-semibold text-ink-900">Muat naik MyKad</h2>
+              <p class="mt-0.5 text-sm text-slate-500">Ambil gambar bahagian depan dan belakang MyKad anda.</p>
             </div>
-            <h2 class="text-lg font-semibold" :class="result.status === 'lulus' ? 'text-emerald-700' : 'text-rose-700'">
-              {{ result.status === 'lulus' ? "Pengesahan Berjaya" : "Pengesahan Gagal" }}
-            </h2>
-            <p class="text-sm text-slate-500">Tahap keyakinan: {{ Math.round(result.confidence * 100) }}%</p>
-            <ul class="w-full space-y-1 text-left text-sm text-slate-600">
-              <li v-for="reason in result.reasons" :key="reason">• {{ reason }}</li>
-            </ul>
-
-            <button
-              v-if="result.status === 'lulus'"
-              type="button"
-              class="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-[9px] text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-              @click="proceed"
-            >
-              Teruskan ke Dashboard
-              <ArrowRight class="h-4 w-4" />
-            </button>
-            <button
-              v-else
-              type="button"
-              class="mt-2 w-full rounded-md border border-slate-300 px-4 py-[9px] text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-              @click="currentStep = 0"
-            >
-              Cuba Semula
-            </button>
           </div>
+        </template>
+        <template #actions>
+          <PBadge :tone="hasFront && hasBack ? 'success' : 'neutral'" dot>{{ Number(hasFront) + Number(hasBack) }}/2</PBadge>
+        </template>
+        <EkycMyKadScan
+          v-model:attachments="attachments"
+          :ensure-record="ensureRecord"
+          :scan="scan"
+          :filled-fields="filledFields"
+          @scanned="scan = $event"
+          @autofill="onAutofill"
+        />
+        <template #footer>
+          <div class="flex items-center justify-between gap-3">
+            <p class="hidden text-xs text-slate-500 sm:block"><ShieldCheck class="mr-1 inline h-3.5 w-3.5" />Data anda dienkripsi dan dilindungi.</p>
+            <PButton class="w-full sm:w-auto" :disabled="!hasFront || !hasBack" @click="goTo(1)">
+              Seterusnya <ArrowRight class="h-4 w-4" />
+            </PButton>
+          </div>
+        </template>
+      </PCard>
+
+      <!-- 2: Wajah -->
+      <PCard v-else-if="currentStep === 1" class="mt-5">
+        <template #header>
+          <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><ScanFace class="h-5 w-5" /></span>
+            <div>
+              <h2 class="text-[15px] font-semibold text-ink-900">Pengesahan wajah</h2>
+              <p class="mt-0.5 text-sm text-slate-500">Kami akan memadankan wajah anda dengan foto pada MyKad.</p>
+            </div>
+          </div>
+        </template>
+        <EkycLivenessCheck :ensure-record="ensureRecord" :result="face" :has-my-kad="hasFront" @verified="onVerified" />
+        <template #footer>
+          <div class="flex items-center justify-between gap-3">
+            <PButton variant="ghost" size="sm" @click="goTo(0)"><ArrowLeft class="h-4 w-4" /> Kembali</PButton>
+            <PButton v-if="face" size="sm" @click="goTo(2)">Lihat keputusan <ArrowRight class="h-4 w-4" /></PButton>
+          </div>
+        </template>
+      </PCard>
+
+      <!-- 3: Keputusan -->
+      <div v-else class="mt-5 space-y-5">
+        <PCard v-if="face">
+          <div class="flex flex-col items-center px-2 py-4 text-center">
+            <span class="flex h-16 w-16 items-center justify-center rounded-full" :class="overallMeta.ring">
+              <component :is="overallMeta.icon" class="h-9 w-9" />
+            </span>
+            <h2 class="mt-4 text-xl font-bold tracking-tight text-ink-900">{{ overallMeta.title }}</h2>
+            <p class="mt-1 max-w-md text-sm text-slate-500">{{ overallMeta.text }}</p>
+          </div>
+          <div class="mt-2 space-y-3">
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm">
+              <span class="flex items-center gap-2 text-ink-800"><CreditCard class="h-4 w-4 text-slate-400" /> MyKad</span>
+              <PBadge v-if="scan?.ocr?.ok && !myKadIssue" tone="success" dot>Dibaca & sah</PBadge>
+              <PBadge v-else-if="scan?.ocr?.ok" tone="warning" dot>Perlu semakan</PBadge>
+              <PBadge v-else :tone="hasFront && hasBack ? 'info' : 'neutral'" dot>{{ hasFront && hasBack ? "Dimuat naik" : "Tidak lengkap" }}</PBadge>
+            </div>
+            <EkycFaceResultCard :result="face" />
+          </div>
+        </PCard>
+        <PCard v-else>
+          <p class="py-6 text-center text-sm text-slate-500">Belum ada keputusan. Sila lengkapkan pengesahan wajah dahulu.</p>
+        </PCard>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <PButton size="lg" to="/pemohon/permohonan/baru">Teruskan permohonan <ArrowRight class="h-4 w-4" /></PButton>
+          <PButton v-if="overall !== 'lulus'" variant="outline" size="lg" @click="goTo(1)"><RotateCcw class="h-4 w-4" /> Cuba semula</PButton>
+          <PButton variant="ghost" size="lg" to="/pemohon/dashboard"><Home class="h-4 w-4" /> Ke halaman utama</PButton>
         </div>
       </div>
     </div>
-
-    <div class="fixed right-4 top-4 z-50 h-16">
-      <AppToastRegion />
-    </div>
-  </div>
+  </PemohonLayout>
 </template>

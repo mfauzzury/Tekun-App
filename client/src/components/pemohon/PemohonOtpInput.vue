@@ -58,7 +58,7 @@ function onPaste(event: ClipboardEvent) {
 </script>
 
 <template>
-  <div class="flex items-center gap-2" @paste="onPaste">
+  <div class="flex items-center gap-2 sm:gap-2.5" role="group" aria-label="Kod OTP" @paste="onPaste">
     <input
       v-for="(digit, index) in digits"
       :key="index"
@@ -67,7 +67,10 @@ function onPaste(event: ClipboardEvent) {
       type="text"
       inputmode="numeric"
       maxlength="1"
-      class="h-12 w-10 rounded-lg border border-slate-300 text-center text-lg font-semibold text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+      :autocomplete="index === 0 ? 'one-time-code' : 'off'"
+      :aria-label="`Digit ${index + 1}`"
+      class="h-12 w-10 rounded-xl border text-center text-xl font-semibold text-ink-900 shadow-xs transition-colors focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 sm:h-14 sm:w-12"
+      :class="digit ? 'border-brand-300 bg-brand-50/40' : 'border-slate-300 bg-white'"
       @input="onInput(index, $event)"
       @keydown="onKeydown(index, $event)"
     />
