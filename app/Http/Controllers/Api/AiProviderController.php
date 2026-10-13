@@ -33,7 +33,7 @@ class AiProviderController extends Controller
         $after = $this->aiProviderService->status();
 
         // Never log key values — only that they changed and the masked hint.
-        $fields = array_flip(['key_source', 'key_hint', 'model', 'chat_model', 'base_url', 'vision']);
+        $fields = array_flip(['key_source', 'key_hint', 'model', 'chat_model', 'vision_model', 'base_url', 'vision']);
         $this->auditService->log(
             'ai_provider.updated',
             $request->user(),
@@ -49,15 +49,16 @@ class AiProviderController extends Controller
     public function setActive(SetActiveAiProviderRequest $request): JsonResponse
     {
         $provider = $request->validated()['provider'];
-        $previous = $this->aiProviderService->status()['aktif'];
+        $untuk = $request->validated()['untuk'] ?? 'teks';
+        $field = $untuk === 'imej' ? 'aktif_imej' : 'aktif';
+        $previous = $this->aiProviderService->status()[$field];
 
-        if (! $this->aiProviderService->setActive($provider)) {
-            return $this->sendError(422, 'VALIDATION_ERROR', 'Penyedia ini belum dikonfigurasi sepenuhnya.', [
-                'provider' => ['Lengkapkan API key / alamat pelayan dan model sebelum mengaktifkan penyedia ini.'],
-            ]);
+        $error = $this->aiProviderService->setActive($provider, $untuk);
+        if ($error !== null) {
+            return $this->sendError(422, 'VALIDATION_ERROR', $error, ['provider' => [$error]]);
         }
 
-        $this->auditService->log('ai_provider.activated', $request->user(), 'AiProvider', null, ['aktif' => $previous], ['aktif' => $provider]);
+        $this->auditService->log('ai_provider.activated', $request->user(), 'AiProvider', null, [$field => $previous], [$field => $provider]);
 
         return $this->sendOk($this->aiProviderService->status());
     }

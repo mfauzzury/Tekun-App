@@ -15,6 +15,7 @@ class SetActiveAiProviderRequest extends BaseFormRequest
     {
         return [
             'provider' => 'required|string|in:'.implode(',', array_keys(AiProviderService::PROVIDERS)),
+            'untuk' => 'nullable|string|in:teks,imej',
         ];
     }
 }

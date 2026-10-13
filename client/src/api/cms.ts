@@ -310,10 +310,10 @@ export async function updateAiProvider(provider: AiProviderKod, input: AiProvide
   });
 }
 
-export async function setActiveAiProvider(provider: AiProviderKod) {
+export async function setActiveAiProvider(provider: AiProviderKod, untuk: "teks" | "imej" = "teks") {
   return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers/aktif", {
     method: "PUT",
-    body: JSON.stringify({ provider }),
+    body: JSON.stringify({ provider, untuk }),
   });
 }
 

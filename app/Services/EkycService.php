@@ -143,7 +143,7 @@ class EkycService
             'message' => '',
         ];
 
-        if (! $this->claude->isConfigured()) {
+        if (! $this->claude->isConfigured(true)) {
             $result['message'] = self::NOT_CONFIGURED;
 
             return $result;
@@ -311,7 +311,7 @@ PROMPT;
             return $result;
         }
 
-        if (! $this->claude->isConfigured()) {
+        if (! $this->claude->isConfigured(true)) {
             $result['message'] = self::NOT_CONFIGURED;
 
             return $result;

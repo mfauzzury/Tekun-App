@@ -191,17 +191,17 @@ class AlternativeCreditScoringService
         if (! isset(self::STATEMENT_FIELDS[$jenis])) {
             return $fail('Jenis penyata tidak disokong: '.$jenis.'.');
         }
-        if (! $this->anthropic->isConfigured()) {
+        $mime = strtolower(trim($mime));
+        $extension = strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
+        $isText = str_starts_with($mime, 'text/') || in_array($mime, ['application/csv', 'application/vnd.ms-excel'], true)
+            || in_array($extension, ['csv', 'txt', 'tsv'], true);
+
+        if (! $this->anthropic->isConfigured(! $isText)) {
             return $fail('Penyedia AI tidak dikonfigurasi — sila isi data alternatif secara manual.');
         }
         if (! is_readable($absolutePath)) {
             return $fail('Fail penyata tidak dapat dibaca.');
         }
-
-        $mime = strtolower(trim($mime));
-        $extension = strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
-        $isText = str_starts_with($mime, 'text/') || in_array($mime, ['application/csv', 'application/vnd.ms-excel'], true)
-            || in_array($extension, ['csv', 'txt', 'tsv'], true);
 
         $fields = self::STATEMENT_FIELDS[$jenis];
         $schema = json_encode(array_map(fn (string $type) => match ($type) {

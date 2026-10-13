@@ -27,6 +27,10 @@ class AiProviderService
 
     public const KEY_ACTIVE = 'aiProviderActive';
 
+    public const KEY_ACTIVE_VISION = 'aiProviderActiveVision';
+
+    public const KEY_VISION_MODEL = 'aiAnthropicVisionModel';
+
     /**
      * @var array<string, array{label: string, penerangan: string, base_url: ?string, on_premise: bool, cadangan_model: list<string>}>
      */
@@ -160,6 +164,10 @@ class AiProviderService
         if ($timeout > 0) {
             config(['services.anthropic.timeout' => $timeout]);
         }
+        $visionModel = $rows[self::KEY_VISION_MODEL] ?? null;
+        if ($visionModel && isset(self::MODELS[$visionModel])) {
+            config(['services.anthropic.vision_model' => $visionModel]);
+        }
 
         foreach (self::COMPATIBLE as $p) {
             $pKey = $this->decryptKey($rows[self::settingKey($p, 'Key')] ?? null);
@@ -183,6 +191,10 @@ class AiProviderService
         if ($active && isset(self::PROVIDERS[$active])) {
             config(['services.ai.active' => $active]);
         }
+        $activeVision = $rows[self::KEY_ACTIVE_VISION] ?? null;
+        if ($activeVision && isset(self::PROVIDERS[$activeVision])) {
+            config(['services.ai.active_vision' => $activeVision]);
+        }
     }
 
     /**
@@ -193,15 +205,19 @@ class AiProviderService
     public function status(): array
     {
         $rows = $this->rows();
-        $active = (string) config('services.ai.active', 'anthropic');
+        $client = app(AiClient::class);
+        $active = $client->provider();
+        $activeImage = $client->provider(true);
 
         $penyedia = [];
         foreach (array_keys(self::PROVIDERS) as $p) {
-            $penyedia[$p] = $this->providerStatus($p, $rows, $p === $active);
+            $penyedia[$p] = $this->providerStatus($p, $rows, $p === $active) + ['aktif_imej' => $p === $activeImage];
         }
 
         return [
             'aktif' => $active,
+            'aktif_imej' => $activeImage,
+            'imej_disokong' => $client->supportsFiles(),
             'timeout' => (int) config('services.anthropic.timeout'),
             'penyedia' => $penyedia,
         ];
@@ -237,6 +253,7 @@ class AiProviderService
             return $base + [
                 'model' => (string) config('services.anthropic.model'),
                 'chat_model' => (string) config('services.anthropic.chat_model'),
+                'vision_model' => (string) (config('services.anthropic.vision_model') ?: config('services.anthropic.model')),
                 'base_url' => $meta['base_url'],
                 'vision' => true,
                 'models' => collect(self::MODELS)->map(fn (array $m, string $id) => ['id' => $id] + $m)->values()->all(),
@@ -251,6 +268,7 @@ class AiProviderService
         return $base + [
             'model' => $model,
             'chat_model' => null,
+            'vision_model' => null,
             'base_url' => $baseUrl,
             'vision' => (bool) config("services.ai.{$p}.vision", false),
             'models' => [],
@@ -284,7 +302,7 @@ class AiProviderService
         }
 
         $fields = $provider === 'anthropic'
-            ? ['model' => self::KEY_MODEL, 'chat_model' => self::KEY_CHAT_MODEL, 'timeout' => self::KEY_TIMEOUT]
+            ? ['model' => self::KEY_MODEL, 'chat_model' => self::KEY_CHAT_MODEL, 'vision_model' => self::KEY_VISION_MODEL, 'timeout' => self::KEY_TIMEOUT]
             : ['model' => self::settingKey($provider, 'Model')];
         if ($provider === 'onprem') {
             $fields += ['base_url' => self::settingKey('onprem', 'BaseUrl'), 'vision' => self::settingKey('onprem', 'Vision')];
@@ -304,19 +322,23 @@ class AiProviderService
     }
 
     /**
-     * Make a configured provider the one used by the AI services.
+     * Make a configured provider the one used for text work ('teks') or for image/document work ('imej').
+     * Returns an error message, or null on success.
      */
-    public function setActive(string $provider): bool
+    public function setActive(string $provider, string $untuk = 'teks'): ?string
     {
         $status = $this->providerStatus($provider, $this->rows(), false);
         if (! $status['dikonfigurasi']) {
-            return false;
+            return 'Lengkapkan API key / alamat pelayan dan model sebelum mengaktifkan penyedia ini.';
+        }
+        if ($untuk === 'imej' && ! $status['vision']) {
+            return self::PROVIDERS[$provider]['label'].' tidak menyokong analisis imej.';
         }
 
-        $this->settingService->set(self::KEY_ACTIVE, $provider);
+        $this->settingService->set($untuk === 'imej' ? self::KEY_ACTIVE_VISION : self::KEY_ACTIVE, $provider);
         $this->applyToConfig();
 
-        return true;
+        return null;
     }
 
     /**
@@ -431,7 +453,7 @@ class AiProviderService
     {
         return DB::table('settings')
             ->where(function ($q) {
-                $q->whereIn('key', [self::KEY_API_KEY, self::KEY_MODEL, self::KEY_CHAT_MODEL, self::KEY_TIMEOUT, self::KEY_ACTIVE])
+                $q->whereIn('key', [self::KEY_API_KEY, self::KEY_MODEL, self::KEY_CHAT_MODEL, self::KEY_TIMEOUT, self::KEY_VISION_MODEL, self::KEY_ACTIVE])
                     ->orWhere('key', 'like', 'aiProvider%');
             })
             ->pluck('value', 'key')

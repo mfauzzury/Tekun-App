@@ -27,6 +27,7 @@ class UpdateAiProviderRequest extends BaseFormRequest
                 'api_key' => 'nullable|string|min:20|max:255',
                 'model' => "required|string|in:{$claudeModels}",
                 'chat_model' => "required|string|in:{$claudeModels}",
+                'vision_model' => "nullable|string|in:{$claudeModels}",
                 'timeout' => 'required|integer|min:10|max:600',
             ],
             'onprem' => $rules + [

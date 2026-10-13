@@ -224,7 +224,7 @@ PROMPT
      */
     private function callAnthropic(string $apiKey, array $contentParts): string
     {
-        $model = (string) config('services.anthropic.model', 'claude-haiku-4-5');
+        $model = (string) (config('services.anthropic.vision_model') ?: config('services.anthropic.model', 'claude-haiku-4-5'));
         $timeout = (int) config('services.anthropic.timeout', 300);
 
         $response = Http::withHeaders([

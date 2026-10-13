@@ -17,16 +17,30 @@ class AiClient
         protected AnthropicClient $anthropic,
     ) {}
 
-    public function provider(): string
+    /**
+     * Provider for a task: text work uses the active provider; image/document work uses the chosen
+     * image provider, else the active one. Never silently falls back to a cloud provider, so an
+     * on-premise setup cannot leak MyKad images — json() refuses instead.
+     */
+    public function provider(bool $forFiles = false): string
     {
         $active = (string) config('services.ai.active', 'anthropic');
+        $active = array_key_exists($active, AiProviderService::PROVIDERS) ? $active : 'anthropic';
+        if (! $forFiles) {
+            return $active;
+        }
 
-        return array_key_exists($active, AiProviderService::PROVIDERS) ? $active : 'anthropic';
+        $vision = (string) config('services.ai.active_vision', '');
+        if (array_key_exists($vision, AiProviderService::PROVIDERS) && $this->providerReadsImages($vision)) {
+            return $vision;
+        }
+
+        return $active;
     }
 
-    public function isConfigured(): bool
+    public function isConfigured(bool $forFiles = false): bool
     {
-        $provider = $this->provider();
+        $provider = $this->provider($forFiles);
         if ($provider === 'anthropic') {
             return $this->anthropic->isConfigured();
         }
@@ -39,20 +53,29 @@ class AiClient
         return ! empty($cfg['key']) && ! empty($cfg['model']);
     }
 
-    public function model(): string
+    public function model(bool $forFiles = false): string
     {
-        $provider = $this->provider();
+        $provider = $this->provider($forFiles);
+        if ($provider === 'anthropic') {
+            return $forFiles ? $this->anthropicVisionModel() : $this->anthropic->model();
+        }
 
-        return $provider === 'anthropic'
-            ? $this->anthropic->model()
-            : (string) config("services.ai.{$provider}.model", '');
+        return (string) config("services.ai.{$provider}.model", '');
     }
 
     public function supportsFiles(): bool
     {
-        $provider = $this->provider();
+        return $this->providerReadsImages($this->provider(true));
+    }
 
+    protected function providerReadsImages(string $provider): bool
+    {
         return $provider === 'anthropic' || (bool) config("services.ai.{$provider}.vision", false);
+    }
+
+    protected function anthropicVisionModel(): string
+    {
+        return (string) (config('services.anthropic.vision_model') ?: $this->anthropic->model());
     }
 
     /**
@@ -63,16 +86,16 @@ class AiClient
      */
     public function json(string $system, string $prompt, array $files = [], int $maxTokens = 4096): array
     {
-        $provider = $this->provider();
+        $provider = $this->provider($files !== []);
         if ($provider === 'anthropic') {
-            return $this->anthropic->json($system, $prompt, $files, $maxTokens);
+            return $this->anthropic->json($system, $prompt, $files, $maxTokens, $files !== [] ? $this->anthropicVisionModel() : null);
         }
 
-        if (! $this->isConfigured()) {
+        if (! $this->isConfigured($files !== [])) {
             throw new RuntimeException('Penyedia AI ('.AiProviderService::PROVIDERS[$provider]['label'].') belum dikonfigurasi.');
         }
         if ($files !== [] && ! $this->supportsFiles()) {
-            throw new RuntimeException('Penyedia AI aktif ('.AiProviderService::PROVIDERS[$provider]['label'].') tidak menyokong analisis imej atau dokumen.');
+            throw new RuntimeException('Penyedia AI aktif ('.AiProviderService::PROVIDERS[$provider]['label'].') tidak menyokong analisis imej atau dokumen. Pilih penyedia untuk imej di Integrasi AI > Penyedia AI.');
         }
 
         $cfg = (array) config("services.ai.{$provider}");

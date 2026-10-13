@@ -259,9 +259,9 @@ class AiProviderTest extends TestCase
         });
     }
 
-    public function test_ai_client_refuses_images_on_text_only_provider(): void
+    public function test_ai_client_refuses_images_on_text_only_provider_without_image_provider(): void
     {
-        config(['services.ai.active' => 'deepseek', 'services.ai.deepseek.key' => 'sk-deepseek-12345678', 'services.ai.deepseek.model' => 'deepseek-chat']);
+        config(['services.ai.active' => 'deepseek', 'services.ai.active_vision' => null, 'services.ai.deepseek.key' => 'sk-deepseek-12345678', 'services.ai.deepseek.model' => 'deepseek-chat']);
         Http::fake();
 
         $this->expectExceptionMessage('tidak menyokong analisis imej');
@@ -270,6 +270,55 @@ class AiProviderTest extends TestCase
         } finally {
             Http::assertNothingSent();
         }
+    }
+
+    public function test_text_and_image_tasks_use_separate_providers_and_models(): void
+    {
+        config([
+            'services.ai.active' => 'onprem',
+            'services.ai.active_vision' => 'anthropic',
+            'services.ai.onprem.base_url' => 'http://localhost:11434/v1',
+            'services.ai.onprem.model' => 'llama3:latest',
+            'services.anthropic.key' => self::KEY,
+            'services.anthropic.model' => 'claude-haiku-4-5',
+            'services.anthropic.vision_model' => 'claude-sonnet-5-5',
+        ]);
+        Http::fake([
+            'localhost:11434/v1/chat/completions' => Http::response(['model' => 'llama3:latest', 'choices' => [['message' => ['content' => '{"jenis":"teks"}']]]]),
+            'api.anthropic.com/v1/messages' => Http::response(['model' => 'claude-sonnet-5-5', 'content' => [['type' => 'text', 'text' => '{"jenis":"imej"}']], 'stop_reason' => 'end_turn']),
+        ]);
+
+        $client = app(AiClient::class);
+        $this->assertSame(['jenis' => 'teks'], $client->json('S', 'teks')['data']);
+        $this->assertSame(['jenis' => 'imej'], $client->json('S', 'imej', [['base64' => 'aGVsbG8=', 'mime' => 'image/png']])['data']);
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'localhost:11434') && $r->data()['model'] === 'llama3:latest');
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'api.anthropic.com') && $r->data()['model'] === 'claude-sonnet-5-5');
+    }
+
+    public function test_activate_image_provider_requires_vision(): void
+    {
+        config(['services.ai.deepseek.key' => 'sk-deepseek-12345678', 'services.ai.deepseek.model' => 'deepseek-chat']);
+        $this->actingAsUser();
+        $this->putJson('/api/platform/ai/providers/anthropic', $this->anthropicPayload(['visionModel' => 'claude-sonnet-5-5']))
+            ->assertOk()
+            ->assertJsonPath('data.penyedia.anthropic.visionModel', 'claude-sonnet-5-5');
+
+        $this->putJson('/api/platform/ai/providers/aktif', ['provider' => 'deepseek', 'untuk' => 'imej'])
+            ->assertStatus(422)->assertJsonPath('error.code', 'VALIDATION_ERROR');
+
+        $this->putJson('/api/platform/ai/providers/aktif', ['provider' => 'deepseek', 'untuk' => 'teks'])
+            ->assertOk()
+            ->assertJsonPath('data.aktif', 'deepseek')
+            ->assertJsonPath('data.aktifImej', 'deepseek')
+            ->assertJsonPath('data.imejDisokong', false);
+
+        $this->putJson('/api/platform/ai/providers/aktif', ['provider' => 'anthropic', 'untuk' => 'imej'])
+            ->assertOk()
+            ->assertJsonPath('data.aktif', 'deepseek')
+            ->assertJsonPath('data.aktifImej', 'anthropic')
+            ->assertJsonPath('data.imejDisokong', true)
+            ->assertJsonPath('data.penyedia.anthropic.aktifImej', true);
     }
 
     public function test_sampling_params_dropped_for_models_that_reject_temperature(): void

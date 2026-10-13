@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { Bot, Cloud, Loader2, Server, ShieldCheck, Sparkles } from "lucide-vue-next";
+import { Bot, Cloud, Image as ImageIcon, Loader2, Server, ShieldCheck, Sparkles, Type } from "lucide-vue-next";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import ProviderPanel from "@/components/ai-provider/ProviderPanel.vue";
@@ -21,6 +21,33 @@ const tab = ref<AiProviderKod>("anthropic");
 
 const active = computed(() => (status.value ? status.value.penyedia[status.value.aktif] : null));
 
+const routing = computed(() => {
+  const s = status.value;
+  if (!s) return [];
+  const teks = s.penyedia[s.aktif];
+  const imej = s.penyedia[s.aktifImej];
+  return [
+    {
+      untuk: "teks",
+      tajuk: "Tugasan teks",
+      icon: Type,
+      info: teks,
+      model: teks.model,
+      ok: true,
+      kegunaan: "Penjelasan skor kredit, penyata CSV, ringkasan.",
+    },
+    {
+      untuk: "imej",
+      tajuk: "Analisis imej & dokumen",
+      icon: ImageIcon,
+      info: imej,
+      model: imej.kod === "anthropic" ? imej.visionModel : imej.model,
+      ok: s.imejDisokong,
+      kegunaan: "OCR MyKad, pengesahan wajah & liveness, semakan dokumen jualan.",
+    },
+  ];
+});
+
 async function load() {
   loading.value = true;
   error.value = "";
@@ -37,7 +64,7 @@ async function load() {
 
 function dotClass(kod: AiProviderKod) {
   const info = status.value?.penyedia[kod];
-  if (info?.aktif) return "bg-emerald-500";
+  if (info?.aktif || info?.aktifImej) return "bg-emerald-500";
   return info?.dikonfigurasi ? "bg-blue-500" : "bg-slate-300";
 }
 
@@ -56,28 +83,30 @@ onMounted(load);
       <div v-if="loading" class="flex items-center gap-2 text-sm text-slate-500"><Loader2 class="h-4 w-4 animate-spin" /> Memuatkan…</div>
 
       <template v-else-if="status && active">
-        <!-- Active provider -->
-        <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex flex-wrap items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <ShieldCheck class="h-5 w-5" />
-            </span>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs text-slate-400">Penyedia aktif</p>
-              <p class="text-base font-semibold text-slate-900">
-                {{ active.label }} <span class="font-mono text-sm font-normal text-slate-500">· {{ active.model || "—" }}</span>
-              </p>
+        <!-- Active providers: text + image -->
+        <article class="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="grid divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0">
+            <div v-for="row in routing" :key="row.untuk" class="flex items-start gap-3 p-4">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" :class="row.ok ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                <component :is="row.icon" class="h-5 w-5" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-slate-400">{{ row.tajuk }}</p>
+                <p class="text-base font-semibold text-slate-900">
+                  {{ row.info.label }} <span class="font-mono text-sm font-normal text-slate-500">· {{ row.model || "—" }}</span>
+                </p>
+                <p class="mt-1 text-xs text-slate-500">{{ row.kegunaan }}</p>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="row.info.onPremise ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'">
+                    {{ row.info.onPremise ? "On-premise — data kekal dalam TEKUN" : "Awan" }}
+                  </span>
+                  <span v-if="!row.ok" class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Tidak menyokong imej — pilih penyedia imej</span>
+                </div>
+              </div>
             </div>
-            <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="active.onPremise ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'">
-              {{ active.onPremise ? "On-premise — data kekal dalam TEKUN" : "Awan" }}
-            </span>
-            <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="active.vision ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
-              {{ active.vision ? "Imej disokong" : "Teks sahaja" }}
-            </span>
           </div>
-          <p class="mt-3 text-xs text-slate-500">
-            Digunakan oleh <span class="font-medium text-slate-700">Penilaian Pantas AI</span> (e-KYC MyKad &amp; wajah, skor kredit data alternatif,
-            semakan dokumen jualan) dan e-KYC portal pemohon. OCR borang penuh, skor risiko lama dan pembantu chat AINA masih menggunakan Anthropic Claude.
+          <p class="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">
+            Digunakan oleh Penilaian Pantas AI dan e-KYC portal pemohon. Pembantu chat AINA dan skor risiko lama masih menggunakan Anthropic Claude.
           </p>
         </article>
 

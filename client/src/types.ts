@@ -878,6 +878,7 @@ export type AiProviderInfo = {
   penerangan: string;
   onPremise: boolean;
   aktif: boolean;
+  aktifImej: boolean;
   keyConfigured: boolean;
   keySource: "database" | "env" | "none";
   keyHint: string | null;
@@ -885,6 +886,7 @@ export type AiProviderInfo = {
   keyWajib: boolean;
   model: string;
   chatModel: string | null;
+  visionModel: string | null;
   baseUrl: string | null;
   vision: boolean;
   models: AiProviderModel[];
@@ -894,6 +896,8 @@ export type AiProviderInfo = {
 
 export type AiProviderStatus = {
   aktif: AiProviderKod;
+  aktifImej: AiProviderKod;
+  imejDisokong: boolean;
   timeout: number;
   penyedia: Record<AiProviderKod, AiProviderInfo>;
 };
@@ -903,6 +907,7 @@ export type AiProviderInput = {
   clearApiKey?: boolean;
   model: string;
   chatModel?: string;
+  visionModel?: string;
   timeout?: number;
   baseUrl?: string;
   vision?: boolean;

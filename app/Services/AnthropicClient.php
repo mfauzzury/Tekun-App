@@ -34,14 +34,14 @@ class AnthropicClient
      *
      * @throws RuntimeException when the key is missing, the call fails, or the reply is not JSON
      */
-    public function json(string $system, string $prompt, array $files = [], int $maxTokens = 4096): array
+    public function json(string $system, string $prompt, array $files = [], int $maxTokens = 4096, ?string $model = null): array
     {
         $apiKey = (string) config('services.anthropic.key', '');
         if ($apiKey === '') {
             throw new RuntimeException('Anthropic API key tidak dikonfigurasi.');
         }
 
-        $model = $this->model();
+        $model = $model ?: $this->model();
         $content = [];
         foreach ($files as $file) {
             $content[] = $this->fileBlock($file);

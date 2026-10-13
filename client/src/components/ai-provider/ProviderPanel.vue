@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { CheckCircle2, Eye, EyeOff, Loader2, PlugZap, Power, Save, Server, Trash2, XCircle } from "lucide-vue-next";
+import { CheckCircle2, Eye, EyeOff, Image as ImageIcon, Loader2, PlugZap, Save, Server, Trash2, Type, XCircle } from "lucide-vue-next";
 
 import { setActiveAiProvider, testAiProvider, updateAiProvider } from "@/api/cms";
 import { useConfirmDialog } from "@/composables/useConfirmDialog";
@@ -16,11 +16,11 @@ const confirmDialog = useConfirmDialog();
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition-colors focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200";
 
-const form = ref({ apiKey: "", model: "", chatModel: "", timeout: 300, baseUrl: "", vision: false });
+const form = ref({ apiKey: "", model: "", chatModel: "", visionModel: "", timeout: 300, baseUrl: "", vision: false });
 const showKey = ref(false);
 const saving = ref(false);
 const testing = ref(false);
-const activating = ref(false);
+const activating = ref<"teks" | "imej" | null>(null);
 const testResult = ref<AiProviderTestResult | null>(null);
 const errors = ref<Record<string, string>>({});
 
@@ -29,6 +29,7 @@ function reset() {
     apiKey: "",
     model: props.info.model ?? "",
     chatModel: props.info.chatModel ?? "",
+    visionModel: props.info.visionModel ?? "",
     timeout: props.timeout,
     baseUrl: props.info.baseUrl ?? "",
     vision: props.info.vision,
@@ -48,7 +49,7 @@ function payload() {
   return {
     apiKey: form.value.apiKey.trim() || null,
     model: form.value.model.trim(),
-    ...(isClaude.value ? { chatModel: form.value.chatModel, timeout: Number(form.value.timeout) } : {}),
+    ...(isClaude.value ? { chatModel: form.value.chatModel, visionModel: form.value.visionModel, timeout: Number(form.value.timeout) } : {}),
     ...(isOnprem.value ? { baseUrl: form.value.baseUrl.trim(), vision: form.value.vision } : {}),
   };
 }
@@ -113,16 +114,19 @@ async function runTest() {
   }
 }
 
-async function activate() {
-  activating.value = true;
+async function activate(untuk: "teks" | "imej") {
+  activating.value = untuk;
   try {
-    const res = await setActiveAiProvider(props.info.kod);
+    const res = await setActiveAiProvider(props.info.kod, untuk);
     emit("updated", res.data);
-    toast.success("Penyedia aktif ditukar", `Ciri AI kini menggunakan ${props.info.label}.`);
+    toast.success(
+      "Penyedia ditukar",
+      untuk === "imej" ? `Analisis imej kini menggunakan ${props.info.label}.` : `Tugasan teks kini menggunakan ${props.info.label}.`,
+    );
   } catch (e: unknown) {
     toast.error("Tidak dapat diaktifkan", e instanceof Error ? e.message : undefined);
   } finally {
-    activating.value = false;
+    activating.value = null;
   }
 }
 </script>
@@ -215,11 +219,18 @@ async function activate() {
 
       <template v-if="isClaude">
         <div class="space-y-1.5">
-          <label class="text-sm font-medium text-slate-700" for="claude-model">Model utama</label>
+          <label class="text-sm font-medium text-slate-700" for="claude-model">Model teks</label>
           <select id="claude-model" v-model="form.model" :class="inputClass">
             <option v-for="m in info.models" :key="m.id" :value="m.id">{{ m.label }} — {{ m.tier }}</option>
           </select>
-          <p class="text-xs text-slate-400">Penilaian pantas, OCR borang dan skor risiko.</p>
+          <p class="text-xs text-slate-400">Penjelasan skor kredit, penyata CSV dan skor risiko.</p>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-sm font-medium text-slate-700" for="claude-vision-model">Model imej</label>
+          <select id="claude-vision-model" v-model="form.visionModel" :class="inputClass">
+            <option v-for="m in info.models" :key="m.id" :value="m.id">{{ m.label }} — {{ m.tier }}</option>
+          </select>
+          <p class="text-xs text-slate-400">OCR MyKad &amp; borang, pengesahan wajah, semakan dokumen. Disyorkan: Sonnet 5.5.</p>
         </div>
         <div class="space-y-1.5">
           <label class="text-sm font-medium text-slate-700" for="claude-chat-model">Model chat</label>
@@ -295,21 +306,26 @@ async function activate() {
         Simpan
       </button>
       <span class="flex-1" />
-      <span v-if="info.aktif" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-        <CheckCircle2 class="h-3.5 w-3.5" /> Penyedia aktif
-      </span>
-      <button
-        v-else
-        type="button"
-        class="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-        :disabled="!info.dikonfigurasi || activating"
-        :title="info.dikonfigurasi ? '' : 'Simpan konfigurasi dahulu'"
-        @click="activate"
-      >
-        <Loader2 v-if="activating" class="h-4 w-4 animate-spin" />
-        <Power v-else class="h-4 w-4" />
-        Jadikan penyedia aktif
-      </button>
+      <template v-for="u in (['teks', 'imej'] as const)" :key="u">
+        <span
+          v-if="u === 'teks' ? info.aktif : info.aktifImej"
+          class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+        >
+          <CheckCircle2 class="h-3.5 w-3.5" /> Aktif untuk {{ u }}
+        </span>
+        <button
+          v-else
+          type="button"
+          class="flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="!info.dikonfigurasi || (u === 'imej' && !info.vision) || activating !== null"
+          :title="!info.dikonfigurasi ? 'Simpan konfigurasi dahulu' : u === 'imej' && !info.vision ? 'Penyedia ini tidak menyokong imej' : ''"
+          @click="activate(u)"
+        >
+          <Loader2 v-if="activating === u" class="h-4 w-4 animate-spin" />
+          <component :is="u === 'teks' ? Type : ImageIcon" v-else class="h-4 w-4" />
+          Guna untuk {{ u }}
+        </button>
+      </template>
     </div>
   </div>
 </template>

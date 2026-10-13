@@ -42,6 +42,8 @@ return [
         'env_key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5'),
         'chat_model' => env('ANTHROPIC_CHAT_MODEL', env('ANTHROPIC_MODEL', 'claude-haiku-4-5')),
+        // Model for image/document work (MyKad OCR, face check, documents); falls back to 'model'.
+        'vision_model' => env('ANTHROPIC_VISION_MODEL'),
         'timeout' => (int) env('ANTHROPIC_TIMEOUT', 300),
     ],
 
@@ -50,6 +52,8 @@ return [
     // (Ollama, vLLM, LM Studio…) are called through the OpenAI-compatible chat completions API.
     'ai' => [
         'active' => env('AI_PROVIDER', 'anthropic'),
+        // Provider for image/document tasks; null = same as 'active' when it supports images, else Anthropic.
+        'active_vision' => env('AI_PROVIDER_VISION'),
         'openai' => [
             'key' => env('OPENAI_API_KEY'),
             'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),

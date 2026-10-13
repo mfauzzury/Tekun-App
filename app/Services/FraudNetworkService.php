@@ -170,7 +170,7 @@ class FraudNetworkService
             'message' => $message,
         ];
 
-        if (! $this->claude->isConfigured()) {
+        if (! $this->claude->isConfigured(true)) {
             return $fallback('Penyedia AI tidak dikonfigurasi. Semakan dokumen jualan perlu dibuat secara manual.');
         }
 
