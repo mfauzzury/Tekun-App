@@ -38,6 +38,8 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
+        // Untouched .env key; 'key' may be overridden from Integrasi AI > Penyedia AI (AiProviderService).
+        'env_key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5'),
         'chat_model' => env('ANTHROPIC_CHAT_MODEL', env('ANTHROPIC_MODEL', 'claude-haiku-4-5')),
         'timeout' => (int) env('ANTHROPIC_TIMEOUT', 300),

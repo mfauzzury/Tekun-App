@@ -1,5 +1,8 @@
 import { apiRequest } from "./client";
 import type {
+  AiProviderInput,
+  AiProviderStatus,
+  AiProviderTestResult,
   AuditLog,
   Category,
   CategoryInput,
@@ -293,4 +296,19 @@ export async function toggleUserChatMessageFavorite(messageId: number) {
 
 export async function getUserChatSuggestions() {
   return apiRequest<{ data: ChatSuggestion[] }>("/api/chat/user/suggestions");
+}
+
+export async function getAiProvider() {
+  return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers");
+}
+
+export async function updateAiProvider(input: AiProviderInput) {
+  return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers", { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function testAiProvider(input: { apiKey?: string | null; model?: string }) {
+  return apiRequest<{ data: AiProviderTestResult }>("/api/platform/ai/providers/test", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

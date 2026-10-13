@@ -37,7 +37,12 @@ class SettingController extends Controller
         $raw = $request->all();
         $data = [];
         foreach ($raw as $key => $value) {
-            $data[Str::camel($key)] = $value;
+            $key = Str::camel($key);
+            // AI provider keys are managed only via AiProviderController (settings.edit, encrypted).
+            if (str_starts_with($key, 'aiAnthropic')) {
+                continue;
+            }
+            $data[$key] = $value;
         }
 
         $this->settingService->update($data);

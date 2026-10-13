@@ -34,8 +34,7 @@ class PemohonChatService
             'system' => $this->systemPrompt(),
             'messages' => $this->buildMessages($history, $message),
             'max_tokens' => 1024,
-            'temperature' => 0.3,
-        ]);
+        ] + AiProviderService::samplingParams($model, 0.3));
 
         if (! $response->successful()) {
             $error = $response->json('error.message') ?? $response->body();

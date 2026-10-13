@@ -23,6 +23,7 @@ import WebfrontSettingsView from "@/views/WebfrontSettingsView.vue";
 import AuditLogsView from "@/views/AuditLogsView.vue";
 import QueueMonitorView from "@/views/QueueMonitorView.vue";
 import ComingSoonView from "@/views/ComingSoonView.vue";
+import AiProvidersView from "@/views/AiProvidersView.vue";
 import PlaceholderView from "@/views/PlaceholderView.vue";
 import PermohonanListView from "@/views/sppt/PermohonanListView.vue";
 import PermohonanBaruView from "@/views/sppt/PermohonanBaruView.vue";
@@ -327,7 +328,7 @@ const router = createRouter({
 
     // ── Core Platform: AI Integration ──
     { path: "/admin/platform/ai", redirect: "/admin/platform/ai/providers" },
-    { path: "/admin/platform/ai/providers", name: "platform-ai-providers", component: ComingSoonView, meta: { requiresAuth: true, title: "AI Providers" } },
+    { path: "/admin/platform/ai/providers", name: "platform-ai-providers", component: AiProvidersView, meta: { requiresAuth: true, title: "AI Providers" } },
     { path: "/admin/platform/ai/models", name: "platform-ai-models", component: ComingSoonView, meta: { requiresAuth: true, title: "AI Models" } },
     { path: "/admin/platform/ai/prompts", name: "platform-ai-prompts", component: ComingSoonView, meta: { requiresAuth: true, title: "Prompt Templates" } },
     { path: "/admin/platform/ai/usage", name: "platform-ai-usage", component: ComingSoonView, meta: { requiresAuth: true, title: "AI Usage & Billing" } },
