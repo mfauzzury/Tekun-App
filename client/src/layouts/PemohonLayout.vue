@@ -81,13 +81,6 @@ function logout() {
 
         <div class="ml-auto flex items-center gap-2">
           <AppToastRegion />
-          <router-link
-            to="/pemohon/permohonan/baru"
-            class="hidden h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition-colors hover:bg-brand-700 md:flex"
-          >
-            <Plus class="h-4 w-4" />
-            Mohon Pembiayaan
-          </router-link>
 
           <div ref="menuRef" class="relative">
             <button
