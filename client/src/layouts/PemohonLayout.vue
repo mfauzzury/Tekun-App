@@ -181,7 +181,7 @@ function logout() {
         <div class="hidden items-center justify-end gap-4 px-10 pt-6 lg:flex">
           <AppToastRegion />
           <router-link to="/pemohon/dashboard" aria-label="TEKUN Nasional — Utama">
-            <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-10 w-auto" />
+            <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
           </router-link>
         </div>
 
