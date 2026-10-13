@@ -79,8 +79,9 @@ function logout() {
       <!-- Sidebar (desktop) -->
       <aside class="hidden w-[272px] shrink-0 flex-col bg-ink-950 px-5 pb-5 pt-6 text-white lg:flex" aria-label="Menu portal">
         <div class="flex items-center justify-between">
-          <router-link to="/pemohon/dashboard" class="flex items-center rounded-2xl bg-white px-3 py-2" aria-label="TEKUN Nasional — Utama">
-            <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-7 w-auto" />
+          <router-link to="/pemohon/dashboard" class="min-w-0 px-1" aria-label="Portal Usahawan — Utama">
+            <span class="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">TEKUN Nasional</span>
+            <span class="block text-lg font-bold leading-tight text-white">Portal Usahawan</span>
           </router-link>
           <router-link
             to="/pemohon/permohonan"
@@ -92,8 +93,7 @@ function logout() {
           </router-link>
         </div>
 
-        <p class="mt-8 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">Portal Usahawan</p>
-        <nav class="mt-3 space-y-1.5" aria-label="Navigasi utama">
+        <nav class="mt-10 space-y-1.5" aria-label="Navigasi utama">
           <router-link
             v-for="item in sideNav"
             :key="item.to"
@@ -178,16 +178,10 @@ function logout() {
         </header>
 
         <!-- Desktop toolbar -->
-        <div class="hidden items-center justify-end gap-3 px-10 pt-6 lg:flex">
+        <div class="hidden items-center justify-end gap-4 px-10 pt-6 lg:flex">
           <AppToastRegion />
-          <span class="text-sm text-slate-500">{{ email }}</span>
-          <router-link
-            to="/pemohon/permohonan/baru"
-            class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-ink-900 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-            aria-label="Mohon pembiayaan baharu"
-            title="Mohon pembiayaan baharu"
-          >
-            <Plus class="h-5 w-5" />
+          <router-link to="/pemohon/dashboard" aria-label="TEKUN Nasional — Utama">
+            <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-10 w-auto" />
           </router-link>
         </div>
 
