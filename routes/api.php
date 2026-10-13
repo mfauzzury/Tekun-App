@@ -138,8 +138,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Integrasi AI — Penyedia AI (Anthropic Claude)
     Route::get('/platform/ai/providers', [AiProviderController::class, 'show'])->middleware('permission:settings.view');
-    Route::put('/platform/ai/providers', [AiProviderController::class, 'update'])->middleware('permission:settings.edit');
-    Route::post('/platform/ai/providers/test', [AiProviderController::class, 'test'])
+    Route::put('/platform/ai/providers/aktif', [AiProviderController::class, 'setActive'])->middleware('permission:settings.edit');
+    Route::put('/platform/ai/providers/{provider}', [AiProviderController::class, 'update'])
+        ->whereIn('provider', ['anthropic', 'openai', 'deepseek', 'onprem'])
+        ->middleware('permission:settings.edit');
+    Route::post('/platform/ai/providers/{provider}/test', [AiProviderController::class, 'test'])
+        ->whereIn('provider', ['anthropic', 'openai', 'deepseek', 'onprem'])
         ->middleware(['permission:settings.edit', 'throttle:10,1']);
 
     // SPPT — Pengurusan Pembiayaan

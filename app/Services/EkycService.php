@@ -43,7 +43,7 @@ class EkycService
 
     protected const ADDRESS_FILLERS = ['NO', 'DAN'];
 
-    public function __construct(protected AnthropicClient $claude) {}
+    public function __construct(protected AiClient $claude) {}
 
     /**
      * @return array{valid: bool, no_ic: string, tarikh_lahir: ?string, umur: ?int, jantina: ?string, kod_negeri: ?string, negeri_lahir: ?string, isu: list<string>}

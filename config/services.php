@@ -45,6 +45,31 @@ return [
         'timeout' => (int) env('ANTHROPIC_TIMEOUT', 300),
     ],
 
+    // Integrasi AI > Penyedia AI — provider used by the POC 1 AI services (AiClient). Values saved on the
+    // page override these at boot (AiProviderService). OpenAI, DeepSeek and on-premise servers
+    // (Ollama, vLLM, LM Studio…) are called through the OpenAI-compatible chat completions API.
+    'ai' => [
+        'active' => env('AI_PROVIDER', 'anthropic'),
+        'openai' => [
+            'key' => env('OPENAI_API_KEY'),
+            'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+            'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+            'vision' => true,
+        ],
+        'deepseek' => [
+            'key' => env('DEEPSEEK_API_KEY'),
+            'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
+            'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+            'vision' => false,
+        ],
+        'onprem' => [
+            'key' => env('AI_ONPREM_API_KEY'),
+            'model' => env('AI_ONPREM_MODEL'),
+            'base_url' => env('AI_ONPREM_BASE_URL'),
+            'vision' => (bool) env('AI_ONPREM_VISION', false),
+        ],
+    ],
+
     'twilio' => [
         'sid' => env('TWILIO_ACCOUNT_SID'),
         'token' => env('TWILIO_AUTH_TOKEN'),

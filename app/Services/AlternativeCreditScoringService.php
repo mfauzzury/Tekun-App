@@ -55,7 +55,7 @@ class AlternativeCreditScoringService
     ];
 
     public function __construct(
-        protected AnthropicClient $anthropic,
+        protected AiClient $anthropic,
         protected PembiayaanFormulaService $formula,
     ) {}
 

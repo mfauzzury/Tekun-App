@@ -39,7 +39,7 @@ class SettingController extends Controller
         foreach ($raw as $key => $value) {
             $key = Str::camel($key);
             // AI provider keys are managed only via AiProviderController (settings.edit, encrypted).
-            if (str_starts_with($key, 'aiAnthropic')) {
+            if (str_starts_with($key, 'aiAnthropic') || str_starts_with($key, 'aiProvider')) {
                 continue;
             }
             $data[$key] = $value;

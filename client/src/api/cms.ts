@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 import type {
   AiProviderInput,
+  AiProviderKod,
   AiProviderStatus,
   AiProviderTestResult,
   AuditLog,
@@ -302,12 +303,22 @@ export async function getAiProvider() {
   return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers");
 }
 
-export async function updateAiProvider(input: AiProviderInput) {
-  return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers", { method: "PUT", body: JSON.stringify(input) });
+export async function updateAiProvider(provider: AiProviderKod, input: AiProviderInput) {
+  return apiRequest<{ data: AiProviderStatus }>(`/api/platform/ai/providers/${provider}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
 }
 
-export async function testAiProvider(input: { apiKey?: string | null; model?: string }) {
-  return apiRequest<{ data: AiProviderTestResult }>("/api/platform/ai/providers/test", {
+export async function setActiveAiProvider(provider: AiProviderKod) {
+  return apiRequest<{ data: AiProviderStatus }>("/api/platform/ai/providers/aktif", {
+    method: "PUT",
+    body: JSON.stringify({ provider }),
+  });
+}
+
+export async function testAiProvider(provider: AiProviderKod, input: { apiKey?: string | null; model?: string; baseUrl?: string }) {
+  return apiRequest<{ data: AiProviderTestResult }>(`/api/platform/ai/providers/${provider}/test`, {
     method: "POST",
     body: JSON.stringify(input),
   });

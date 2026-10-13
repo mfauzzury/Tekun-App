@@ -864,31 +864,48 @@ export type ChatFavoriteItem = {
 };
 
 // Integrasi AI — Penyedia AI
+export type AiProviderKod = "anthropic" | "openai" | "deepseek" | "onprem";
+
 export type AiProviderModel = {
   id: string;
   label: string;
   tier: string;
 };
 
-export type AiProviderStatus = {
-  provider: "anthropic";
-  name: string;
+export type AiProviderInfo = {
+  kod: AiProviderKod;
+  label: string;
+  penerangan: string;
+  onPremise: boolean;
+  aktif: boolean;
   keyConfigured: boolean;
   keySource: "database" | "env" | "none";
   keyHint: string | null;
   keyUnreadable: boolean;
+  keyWajib: boolean;
   model: string;
-  chatModel: string;
-  timeout: number;
+  chatModel: string | null;
+  baseUrl: string | null;
+  vision: boolean;
   models: AiProviderModel[];
+  cadanganModel: string[];
+  dikonfigurasi: boolean;
+};
+
+export type AiProviderStatus = {
+  aktif: AiProviderKod;
+  timeout: number;
+  penyedia: Record<AiProviderKod, AiProviderInfo>;
 };
 
 export type AiProviderInput = {
   apiKey?: string | null;
   clearApiKey?: boolean;
   model: string;
-  chatModel: string;
-  timeout: number;
+  chatModel?: string;
+  timeout?: number;
+  baseUrl?: string;
+  vision?: boolean;
 };
 
 export type AiProviderTestResult = {
@@ -898,6 +915,7 @@ export type AiProviderTestResult = {
   model: string;
   displayName: string | null;
   message: string;
+  modelTersedia: string[];
 };
 
 // ─── POC 1 — Enjin Penilaian Pantas AI (C1–C4) ───────────────────────────────

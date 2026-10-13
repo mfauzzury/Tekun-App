@@ -13,14 +13,30 @@ class UpdateAiProviderRequest extends BaseFormRequest
 
     public function rules(): array
     {
-        $models = implode(',', array_keys(AiProviderService::MODELS));
+        $provider = (string) $this->route('provider');
+        $claudeModels = implode(',', array_keys(AiProviderService::MODELS));
+        $modelPattern = 'regex:/^[A-Za-z0-9._:\/@-]+$/';
 
-        return [
-            'api_key' => 'nullable|string|min:20|max:255',
+        $rules = [
+            'api_key' => 'nullable|string|min:8|max:255',
             'clear_api_key' => 'nullable|boolean',
-            'model' => "required|string|in:{$models}",
-            'chat_model' => "required|string|in:{$models}",
-            'timeout' => 'required|integer|min:10|max:600',
         ];
+
+        return match ($provider) {
+            'anthropic' => $rules + [
+                'api_key' => 'nullable|string|min:20|max:255',
+                'model' => "required|string|in:{$claudeModels}",
+                'chat_model' => "required|string|in:{$claudeModels}",
+                'timeout' => 'required|integer|min:10|max:600',
+            ],
+            'onprem' => $rules + [
+                'model' => ['required', 'string', 'max:120', $modelPattern],
+                'base_url' => 'required|url:http,https|max:255',
+                'vision' => 'nullable|boolean',
+            ],
+            default => $rules + [
+                'model' => ['required', 'string', 'max:120', $modelPattern],
+            ],
+        };
     }
 }

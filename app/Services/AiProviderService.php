@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Anthropic (Claude) provider configuration managed from Integrasi AI > Penyedia AI.
+ * AI provider configuration managed from Integrasi AI > Penyedia AI: Anthropic Claude, OpenAI ChatGPT,
+ * DeepSeek and an on-premise OpenAI-compatible server (Ollama, vLLM, LM Studio…).
  *
- * Values saved here override the ANTHROPIC_* env values at boot, so every
- * service that reads config('services.anthropic.*') picks them up unchanged.
- * The API key is stored encrypted (APP_KEY) and never returned to the client.
+ * Values saved here override the env values at boot (config('services.anthropic.*') and
+ * config('services.ai.*')), so services pick them up unchanged. API keys are stored encrypted
+ * (APP_KEY) and never returned to the client. The active provider drives AiClient.
  */
 class AiProviderService
 {
@@ -24,8 +25,44 @@ class AiProviderService
 
     public const KEY_TIMEOUT = 'aiAnthropicTimeout';
 
+    public const KEY_ACTIVE = 'aiProviderActive';
+
     /**
-     * Models selectable from the admin page.
+     * @var array<string, array{label: string, penerangan: string, base_url: ?string, on_premise: bool, cadangan_model: list<string>}>
+     */
+    public const PROVIDERS = [
+        'anthropic' => [
+            'label' => 'Anthropic Claude',
+            'penerangan' => 'Model Claude melalui API awan Anthropic. Menyokong analisis imej MyKad dan dokumen.',
+            'base_url' => 'https://api.anthropic.com/v1',
+            'on_premise' => false,
+            'cadangan_model' => [],
+        ],
+        'openai' => [
+            'label' => 'OpenAI ChatGPT',
+            'penerangan' => 'Model GPT melalui API awan OpenAI. Menyokong analisis imej dan PDF.',
+            'base_url' => 'https://api.openai.com/v1',
+            'on_premise' => false,
+            'cadangan_model' => ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+        ],
+        'deepseek' => [
+            'label' => 'DeepSeek',
+            'penerangan' => 'Model DeepSeek melalui API awan. Teks sahaja — OCR MyKad dan pengesahan wajah tidak disokong.',
+            'base_url' => 'https://api.deepseek.com',
+            'on_premise' => false,
+            'cadangan_model' => ['deepseek-chat', 'deepseek-reasoner'],
+        ],
+        'onprem' => [
+            'label' => 'On-premise',
+            'penerangan' => 'Pelayan model dalam pusat data TEKUN (Ollama, vLLM, LM Studio) melalui API serasi OpenAI. Data tidak keluar dari rangkaian TEKUN.',
+            'base_url' => null,
+            'on_premise' => true,
+            'cadangan_model' => ['qwen2.5vl:7b', 'llama3.2-vision:11b', 'gemma3:12b', 'llama3.1:8b'],
+        ],
+    ];
+
+    /**
+     * Claude models selectable from the admin page.
      *
      * @var array<string, array{label: string, tier: string}>
      */
@@ -36,6 +73,9 @@ class AiProviderService
         'claude-sonnet-4-6' => ['label' => 'Claude Sonnet 4.6', 'tier' => 'Generasi terdahulu'],
         'claude-haiku-4-5' => ['label' => 'Claude Haiku 4.5', 'tier' => 'Generasi terdahulu'],
     ];
+
+    /** OpenAI-compatible providers configured through services.ai.{provider}. */
+    protected const COMPATIBLE = ['openai', 'deepseek', 'onprem'];
 
     /**
      * Models that still accept a non-default `temperature`. Newer models reject it with a 400.
@@ -84,113 +124,270 @@ class AiProviderService
         return null;
     }
 
+    /** Settings key for an OpenAI-compatible provider field (Key, Model, BaseUrl, Vision). */
+    public static function settingKey(string $provider, string $field): string
+    {
+        return 'aiProvider'.ucfirst($provider).$field;
+    }
+
     /**
-     * Overlay saved settings onto config('services.anthropic.*').
+     * Overlay saved settings onto config('services.anthropic.*') and config('services.ai.*').
      */
     public function applyToConfig(): void
     {
         $rows = $this->rows();
 
+        // Remember the untouched env values once, so clearing a saved key falls back to them.
+        foreach (self::COMPATIBLE as $p) {
+            if (! config()->has("services.ai.{$p}.env_key")) {
+                config(["services.ai.{$p}.env_key" => config("services.ai.{$p}.key")]);
+            }
+        }
+
         $key = $this->decryptKey($rows[self::KEY_API_KEY] ?? null);
         if ($key !== null) {
             config(['services.anthropic.key' => $key]);
         }
-
         $model = $rows[self::KEY_MODEL] ?? null;
         if ($model && isset(self::MODELS[$model])) {
             config(['services.anthropic.model' => $model]);
         }
-
         $chatModel = $rows[self::KEY_CHAT_MODEL] ?? null;
         if ($chatModel && isset(self::MODELS[$chatModel])) {
             config(['services.anthropic.chat_model' => $chatModel]);
         }
-
         $timeout = (int) ($rows[self::KEY_TIMEOUT] ?? 0);
         if ($timeout > 0) {
             config(['services.anthropic.timeout' => $timeout]);
         }
+
+        foreach (self::COMPATIBLE as $p) {
+            $pKey = $this->decryptKey($rows[self::settingKey($p, 'Key')] ?? null);
+            if ($pKey !== null) {
+                config(["services.ai.{$p}.key" => $pKey]);
+            }
+            $pModel = trim((string) ($rows[self::settingKey($p, 'Model')] ?? ''));
+            if ($pModel !== '') {
+                config(["services.ai.{$p}.model" => $pModel]);
+            }
+        }
+        $baseUrl = trim((string) ($rows[self::settingKey('onprem', 'BaseUrl')] ?? ''));
+        if ($baseUrl !== '') {
+            config(['services.ai.onprem.base_url' => $baseUrl]);
+        }
+        if (isset($rows[self::settingKey('onprem', 'Vision')])) {
+            config(['services.ai.onprem.vision' => $rows[self::settingKey('onprem', 'Vision')] === '1']);
+        }
+
+        $active = $rows[self::KEY_ACTIVE] ?? null;
+        if ($active && isset(self::PROVIDERS[$active])) {
+            config(['services.ai.active' => $active]);
+        }
     }
 
     /**
-     * Current provider status for the admin page (API key masked).
+     * Status of every provider for the admin page (API keys masked).
      *
      * @return array<string, mixed>
      */
     public function status(): array
     {
         $rows = $this->rows();
-        $stored = $rows[self::KEY_API_KEY] ?? null;
-        $dbKey = $this->decryptKey($stored);
-        $envKey = (string) config('services.anthropic.env_key', '');
+        $active = (string) config('services.ai.active', 'anthropic');
 
-        if ($dbKey !== null) {
-            $source = 'database';
-            $activeKey = $dbKey;
-        } elseif ($envKey !== '') {
-            $source = 'env';
-            $activeKey = $envKey;
-        } else {
-            $source = 'none';
-            $activeKey = '';
+        $penyedia = [];
+        foreach (array_keys(self::PROVIDERS) as $p) {
+            $penyedia[$p] = $this->providerStatus($p, $rows, $p === $active);
         }
 
         return [
-            'provider' => 'anthropic',
-            'name' => 'Anthropic Claude',
-            'key_configured' => $activeKey !== '',
-            'key_source' => $source,
-            'key_hint' => $activeKey !== '' ? '••••'.substr($activeKey, -4) : null,
-            'key_unreadable' => $stored !== null && $stored !== '' && $dbKey === null,
-            'model' => (string) config('services.anthropic.model'),
-            'chat_model' => (string) config('services.anthropic.chat_model'),
+            'aktif' => $active,
             'timeout' => (int) config('services.anthropic.timeout'),
-            'models' => collect(self::MODELS)
-                ->map(fn (array $meta, string $id) => ['id' => $id] + $meta)
-                ->values()
-                ->all(),
+            'penyedia' => $penyedia,
         ];
     }
 
     /**
-     * Persist provider settings. Returns the field names that changed (never values of the key).
+     * @param  array<string, string|null>  $rows
+     * @return array<string, mixed>
+     */
+    protected function providerStatus(string $p, array $rows, bool $isActive): array
+    {
+        $meta = self::PROVIDERS[$p];
+        $storedKeyName = $p === 'anthropic' ? self::KEY_API_KEY : self::settingKey($p, 'Key');
+        $stored = $rows[$storedKeyName] ?? null;
+        $dbKey = $this->decryptKey($stored);
+        $envKey = (string) ($p === 'anthropic' ? config('services.anthropic.env_key', '') : config("services.ai.{$p}.env_key", ''));
+        [$source, $activeKey] = $dbKey !== null ? ['database', $dbKey] : ($envKey !== '' ? ['env', $envKey] : ['none', '']);
+
+        $base = [
+            'kod' => $p,
+            'label' => $meta['label'],
+            'penerangan' => $meta['penerangan'],
+            'on_premise' => $meta['on_premise'],
+            'aktif' => $isActive,
+            'key_configured' => $activeKey !== '',
+            'key_source' => $source,
+            'key_hint' => $activeKey !== '' ? '••••'.substr($activeKey, -4) : null,
+            'key_unreadable' => $stored !== null && $stored !== '' && $dbKey === null,
+            'key_wajib' => $p !== 'onprem',
+        ];
+
+        if ($p === 'anthropic') {
+            return $base + [
+                'model' => (string) config('services.anthropic.model'),
+                'chat_model' => (string) config('services.anthropic.chat_model'),
+                'base_url' => $meta['base_url'],
+                'vision' => true,
+                'models' => collect(self::MODELS)->map(fn (array $m, string $id) => ['id' => $id] + $m)->values()->all(),
+                'cadangan_model' => [],
+                'dikonfigurasi' => $activeKey !== '',
+            ];
+        }
+
+        $model = (string) config("services.ai.{$p}.model", '');
+        $baseUrl = (string) config("services.ai.{$p}.base_url", $meta['base_url'] ?? '');
+
+        return $base + [
+            'model' => $model,
+            'chat_model' => null,
+            'base_url' => $baseUrl,
+            'vision' => (bool) config("services.ai.{$p}.vision", false),
+            'models' => [],
+            'cadangan_model' => $meta['cadangan_model'],
+            'dikonfigurasi' => $p === 'onprem' ? ($baseUrl !== '' && $model !== '') : ($activeKey !== '' && $model !== ''),
+        ];
+    }
+
+    /**
+     * Persist one provider's settings. Returns the field names that changed (never key values).
      *
-     * @param  array{api_key?: ?string, clear_api_key?: bool, model?: string, chat_model?: string, timeout?: int}  $data
+     * @param  array<string, mixed>  $data  api_key, clear_api_key, model, chat_model, timeout, base_url, vision
      * @return list<string>
      */
-    public function update(array $data): array
+    public function update(string $provider, array $data): array
     {
         $changed = [];
+        $keyName = $provider === 'anthropic' ? self::KEY_API_KEY : self::settingKey($provider, 'Key');
 
         if (! empty($data['clear_api_key'])) {
-            DB::table('settings')->where('key', self::KEY_API_KEY)->delete();
+            DB::table('settings')->where('key', $keyName)->delete();
             $changed[] = 'api_key_cleared';
+            if ($provider === 'anthropic') {
+                config(['services.anthropic.key' => config('services.anthropic.env_key')]);
+            } else {
+                config(["services.ai.{$provider}.key" => config("services.ai.{$provider}.env_key")]);
+            }
         } elseif (! empty($data['api_key'])) {
-            $this->settingService->set(self::KEY_API_KEY, Crypt::encryptString(trim($data['api_key'])));
+            $this->settingService->set($keyName, Crypt::encryptString(trim((string) $data['api_key'])));
             $changed[] = 'api_key';
         }
 
-        foreach (['model' => self::KEY_MODEL, 'chat_model' => self::KEY_CHAT_MODEL, 'timeout' => self::KEY_TIMEOUT] as $field => $settingKey) {
+        $fields = $provider === 'anthropic'
+            ? ['model' => self::KEY_MODEL, 'chat_model' => self::KEY_CHAT_MODEL, 'timeout' => self::KEY_TIMEOUT]
+            : ['model' => self::settingKey($provider, 'Model')];
+        if ($provider === 'onprem') {
+            $fields += ['base_url' => self::settingKey('onprem', 'BaseUrl'), 'vision' => self::settingKey('onprem', 'Vision')];
+        }
+
+        foreach ($fields as $field => $settingKey) {
             if (array_key_exists($field, $data) && $data[$field] !== null) {
-                $this->settingService->set($settingKey, (string) $data[$field]);
+                $value = is_bool($data[$field]) ? ($data[$field] ? '1' : '0') : trim((string) $data[$field]);
+                $this->settingService->set($settingKey, $value);
                 $changed[] = $field;
             }
         }
 
-        if (in_array('api_key_cleared', $changed, true)) {
-            config(['services.anthropic.key' => config('services.anthropic.env_key')]);
-        }
         $this->applyToConfig();
 
         return $changed;
     }
 
     /**
-     * Verify the key and model by retrieving the model from the Models API (no tokens billed).
-     *
-     * @return array{ok: bool, status: ?int, latency_ms: int, model: string, display_name: ?string, message: string}
+     * Make a configured provider the one used by the AI services.
      */
-    public function testConnection(?string $apiKey = null, ?string $model = null): array
+    public function setActive(string $provider): bool
+    {
+        $status = $this->providerStatus($provider, $this->rows(), false);
+        if (! $status['dikonfigurasi']) {
+            return false;
+        }
+
+        $this->settingService->set(self::KEY_ACTIVE, $provider);
+        $this->applyToConfig();
+
+        return true;
+    }
+
+    /**
+     * Verify credentials and model availability without spending tokens (Models API).
+     *
+     * @return array{ok: bool, status: ?int, latency_ms: int, model: string, display_name: ?string, message: string, model_tersedia: list<string>}
+     */
+    public function testConnection(string $provider = 'anthropic', ?string $apiKey = null, ?string $model = null, ?string $baseUrl = null): array
+    {
+        if ($provider === 'anthropic') {
+            return $this->testAnthropic($apiKey, $model);
+        }
+
+        $cfg = (array) config("services.ai.{$provider}", []);
+        $apiKey = trim((string) ($apiKey ?: ($cfg['key'] ?? '')));
+        $model = trim((string) ($model ?: ($cfg['model'] ?? '')));
+        $baseUrl = rtrim(trim((string) ($baseUrl ?: ($cfg['base_url'] ?? ''))), '/');
+
+        if ($baseUrl === '') {
+            return $this->testResult(false, null, 0, $model, null, 'Alamat pelayan (base URL) belum ditetapkan.');
+        }
+        if ($provider !== 'onprem' && $apiKey === '') {
+            return $this->testResult(false, null, 0, $model, null, 'Tiada API key dikonfigurasi.');
+        }
+
+        $request = Http::acceptJson()->timeout(15);
+        if ($apiKey !== '') {
+            $request = $request->withToken($apiKey);
+        }
+
+        $started = microtime(true);
+        try {
+            $response = $request->get($baseUrl.'/models');
+        } catch (\Throwable $e) {
+            return $this->testResult(false, null, $this->elapsed($started), $model, null, 'Gagal menghubungi pelayan: '.$e->getMessage());
+        }
+        $latency = $this->elapsed($started);
+        $status = $response->status();
+
+        if (! $response->successful()) {
+            $message = match ($status) {
+                401 => 'API key tidak sah.',
+                403 => 'Akses ditolak oleh pelayan.',
+                404 => 'Endpoint /models tidak ditemui — semak base URL (contoh: http://pelayan:11434/v1).',
+                429 => 'Had kadar dicapai. Cuba sebentar lagi.',
+                default => (string) ($response->json('error.message') ?? 'Ralat tidak dijangka daripada pelayan.'),
+            };
+
+            return $this->testResult(false, $status, $latency, $model, null, $message);
+        }
+
+        $ids = collect((array) $response->json('data', []))->pluck('id')->filter()->map(fn ($id) => (string) $id)->values();
+        $found = $model === '' || $ids->isEmpty() || $ids->contains($model);
+
+        return $this->testResult(
+            $found,
+            $status,
+            $latency,
+            $model,
+            null,
+            $found
+                ? 'Sambungan berjaya.'.($model !== '' ? ' Model tersedia.' : '')
+                : "Sambungan berjaya, tetapi model \"{$model}\" tiada dalam senarai pelayan.",
+            $ids->take(30)->all(),
+        );
+    }
+
+    /**
+     * @return array{ok: bool, status: ?int, latency_ms: int, model: string, display_name: ?string, message: string, model_tersedia: list<string>}
+     */
+    protected function testAnthropic(?string $apiKey, ?string $model): array
     {
         $apiKey = trim((string) ($apiKey ?: config('services.anthropic.key', '')));
         $model = $model ?: (string) config('services.anthropic.model');
@@ -233,7 +430,10 @@ class AiProviderService
     protected function rows(): array
     {
         return DB::table('settings')
-            ->whereIn('key', [self::KEY_API_KEY, self::KEY_MODEL, self::KEY_CHAT_MODEL, self::KEY_TIMEOUT])
+            ->where(function ($q) {
+                $q->whereIn('key', [self::KEY_API_KEY, self::KEY_MODEL, self::KEY_CHAT_MODEL, self::KEY_TIMEOUT, self::KEY_ACTIVE])
+                    ->orWhere('key', 'like', 'aiProvider%');
+            })
             ->pluck('value', 'key')
             ->toArray();
     }
@@ -260,9 +460,10 @@ class AiProviderService
     }
 
     /**
-     * @return array{ok: bool, status: ?int, latency_ms: int, model: string, display_name: ?string, message: string}
+     * @param  list<string>  $models
+     * @return array{ok: bool, status: ?int, latency_ms: int, model: string, display_name: ?string, message: string, model_tersedia: list<string>}
      */
-    protected function testResult(bool $ok, ?int $status, int $latency, string $model, ?string $displayName, string $message): array
+    protected function testResult(bool $ok, ?int $status, int $latency, string $model, ?string $displayName, string $message, array $models = []): array
     {
         return [
             'ok' => $ok,
@@ -271,6 +472,7 @@ class AiProviderService
             'model' => $model,
             'display_name' => $displayName,
             'message' => $message,
+            'model_tersedia' => $models,
         ];
     }
 }

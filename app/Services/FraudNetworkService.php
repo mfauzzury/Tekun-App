@@ -53,7 +53,7 @@ class FraudNetworkService
     protected array $displayValues = [];
 
     public function __construct(
-        protected AnthropicClient $claude,
+        protected AiClient $claude,
     ) {}
 
     /**
