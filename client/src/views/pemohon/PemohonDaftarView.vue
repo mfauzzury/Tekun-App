@@ -99,7 +99,7 @@ async function resendOtp() {
   <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#f6f7fb] px-4 py-10">
     <div
       aria-hidden="true"
-      class="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(214,32,42,0.10),transparent_70%)]"
+      class="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(10,47,214,0.10),transparent_70%)]"
     />
 
     <div class="relative w-full max-w-[440px]">

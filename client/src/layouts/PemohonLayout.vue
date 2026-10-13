@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { ChevronDown, FileText, HelpCircle, Home, LogOut, Plus, User, Wallet } from "lucide-vue-next";
+import { ChevronDown, Clock, FileText, HelpCircle, Home, LogOut, Mail, Phone, Plus, ShieldCheck, User, Wallet } from "lucide-vue-next";
 
 import AppToastRegion from "@/components/AppToastRegion.vue";
 import { useToast } from "@/composables/useToast";
+import { HUBUNGI_TEKUN } from "@/data/portal-dummy";
 import { usePemohonStore } from "@/stores/pemohon";
 import { initials } from "@/utils/pemohon-ui";
 
@@ -139,9 +140,47 @@ function logout() {
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl px-4 pb-32 sm:px-6 md:pb-12">
+    <main class="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6">
       <slot />
     </main>
+
+    <footer class="border-t border-brand-100 bg-brand-50 pb-28 md:pb-0">
+      <div class="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1.2fr]">
+        <div>
+          <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-9 w-auto" />
+          <p class="mt-4 max-w-sm text-sm leading-relaxed text-brand-800/80">
+            Rakan pembangunan usahawan — pembiayaan mikro yang pantas, telus dan dibantu AI, dengan keputusan akhir oleh pegawai TEKUN.
+          </p>
+          <p class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-brand-800 ring-1 ring-brand-100">
+            <ShieldCheck class="h-3.5 w-3.5" /> Dilindungi Akta Perlindungan Data Peribadi 2010
+          </p>
+        </div>
+
+        <nav aria-label="Pautan pantas">
+          <h2 class="text-sm font-semibold text-brand-800">Pautan pantas</h2>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li v-for="item in desktopNav" :key="item.to">
+              <router-link :to="item.to" class="text-brand-800/75 transition-colors hover:text-brand-800">{{ item.label }}</router-link>
+            </li>
+            <li><router-link to="/pemohon/profil" class="text-brand-800/75 transition-colors hover:text-brand-800">Profil saya</router-link></li>
+          </ul>
+        </nav>
+
+        <div>
+          <h2 class="text-sm font-semibold text-brand-800">Hubungi kami</h2>
+          <ul class="mt-3 space-y-2.5 text-sm text-brand-800/75">
+            <li class="flex items-center gap-2"><Phone class="h-4 w-4 shrink-0 text-brand-600" /> {{ HUBUNGI_TEKUN.telefon }}</li>
+            <li class="flex items-center gap-2"><Mail class="h-4 w-4 shrink-0 text-brand-600" /> {{ HUBUNGI_TEKUN.emel }}</li>
+            <li v-for="w in HUBUNGI_TEKUN.waktuOperasi" :key="w" class="flex items-center gap-2"><Clock class="h-4 w-4 shrink-0 text-brand-600" /> {{ w }}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-brand-100">
+        <p class="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-brand-800/60 sm:px-6">
+          © {{ new Date().getFullYear() }} Tabung Ekonomi Kumpulan Usaha Niaga (TEKUN Nasional). Hak cipta terpelihara.
+        </p>
+      </div>
+    </footer>
 
     <!-- Mobile bottom tab bar -->
     <nav
