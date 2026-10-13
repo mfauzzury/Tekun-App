@@ -338,12 +338,12 @@ async function submit() {
 
       <!-- Action bar: fixed above the layout's bottom nav on mobile (right gap keeps clear of the chat launcher), inline on md+ -->
       <div
-        class="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 px-3 md:static md:mt-8 md:px-0"
+        class="fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 px-3 lg:static lg:mt-8 lg:px-0"
         role="group"
         aria-label="Navigasi langkah"
       >
         <div
-          class="mr-[64px] flex max-w-4xl items-center gap-2 rounded-2xl md:mx-auto border border-slate-200/80 bg-white/95 p-2 shadow-[0_8px_30px_-12px_rgba(16,24,40,0.25)] backdrop-blur md:rounded-none md:border-0 md:border-t md:bg-transparent md:p-0 md:pt-6 md:shadow-none"
+          class="mr-[64px] flex max-w-4xl items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-[0_8px_30px_-12px_rgba(16,24,40,0.25)] backdrop-blur lg:mx-auto lg:mr-auto lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:p-0 lg:pt-6 lg:shadow-none"
         >
           <PButton variant="outline" :disabled="currentStep === 0" aria-label="Kembali" @click="back">
             <ArrowLeft class="h-4 w-4" /> <span class="hidden sm:inline">Kembali</span>

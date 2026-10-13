@@ -55,7 +55,7 @@ async function send() {
 </script>
 
 <template>
-  <div class="fixed bottom-24 right-4 z-50 md:bottom-6 md:right-6">
+  <div class="fixed bottom-24 right-4 z-50 lg:bottom-6 lg:right-6">
     <div
       v-if="open"
       class="mb-3 flex h-[28rem] max-h-[70vh] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"

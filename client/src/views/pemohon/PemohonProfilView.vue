@@ -63,7 +63,7 @@ function save() {
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <!-- Avatar card -->
         <div class="lg:col-span-1">
-          <PCard class="lg:sticky lg:top-24">
+          <PCard class="lg:sticky lg:top-6">
             <div class="flex flex-col items-center text-center">
               <div class="relative">
                 <img
@@ -185,7 +185,7 @@ function save() {
           </PCard>
 
           <!-- Sticky save bar -->
-          <div class="sticky bottom-24 z-30 md:bottom-4">
+          <div class="sticky bottom-24 z-30 lg:bottom-4">
             <div
               class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/95 p-3 pl-4 shadow-[0_8px_30px_-8px_rgba(16,24,40,0.18)] backdrop-blur"
             >
