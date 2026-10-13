@@ -2,10 +2,7 @@
 import { computed } from "vue";
 import { ArrowRight, MoreVertical, PenLine } from "lucide-vue-next";
 
-import PemohonHebahanSlider from "@/components/pemohon/PemohonHebahanSlider.vue";
 import ActivityTimeline, { type TimelineEvent } from "@/components/pemohon/status/ActivityTimeline.vue";
-import FinancingSummary from "@/components/pemohon/status/FinancingSummary.vue";
-import LatestApplicationCard from "@/components/pemohon/status/LatestApplicationCard.vue";
 import OnboardingChecklist from "@/components/pemohon/status/OnboardingChecklist.vue";
 import { deriveView, useApplicationStatuses } from "@/components/pemohon/status/useApplicationStatus";
 import PemohonLayout from "@/layouts/PemohonLayout.vue";
@@ -139,6 +136,8 @@ const events = computed<TimelineEvent[]>(() => {
         </router-link>
       </header>
 
+      <OnboardingChecklist />
+
       <!-- Bento -->
       <div class="grid grid-cols-2 gap-4 xl:grid-cols-[1fr_1fr_1.75fr_1fr]">
         <!-- 2×2 stats -->
@@ -215,21 +214,6 @@ const events = computed<TimelineEvent[]>(() => {
 
       <!-- Timeline -->
       <ActivityTimeline :events="events" />
-
-      <!-- Details -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div class="space-y-6 lg:col-span-2">
-          <LatestApplicationCard />
-          <FinancingSummary />
-        </div>
-        <aside class="space-y-6" aria-label="Maklumat tambahan">
-          <OnboardingChecklist />
-          <div>
-            <h2 class="mb-3 text-[15px] font-semibold text-ink-900">Hebahan</h2>
-            <PemohonHebahanSlider />
-          </div>
-        </aside>
-      </div>
     </div>
   </PemohonLayout>
 </template>
