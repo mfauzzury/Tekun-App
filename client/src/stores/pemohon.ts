@@ -59,6 +59,16 @@ export interface PermohonanItem {
   statusKey: string;
 }
 
+/** A real application submitted to the backend; the token is the per-application access token. */
+export interface PermohonanSaya {
+  id: number;
+  token: string;
+  noRujukan: string;
+  produk: string;
+  jumlah: number;
+  dihantarPada: string;
+}
+
 export const usePemohonStore = defineStore("pemohon", () => {
   const isLoggedIn = ref(false);
   const account = ref<PemohonAccount | null>(null);
@@ -80,6 +90,7 @@ export const usePemohonStore = defineStore("pemohon", () => {
   });
 
   const permohonanList = ref<PermohonanItem[]>([...PERMOHONAN_DUMMY]);
+  const permohonanSaya = ref<PermohonanSaya[]>([]);
   const draftPermohonan = ref<Record<string, unknown> | null>(null);
 
   const pembiayaanList = ref<PembiayaanAkaun[]>(PEMBIAYAAN_DUMMY.map((a) => ({ ...a })));
@@ -98,6 +109,7 @@ export const usePemohonStore = defineStore("pemohon", () => {
       onboarding: onboarding.value,
       otp: otp.value,
       permohonanList: permohonanList.value,
+      permohonanSaya: permohonanSaya.value,
       draftPermohonan: draftPermohonan.value,
       pembiayaanList: pembiayaanList.value,
       transaksiMap: transaksiMap.value,
@@ -119,6 +131,7 @@ export const usePemohonStore = defineStore("pemohon", () => {
       onboarding.value = snapshot.onboarding ?? onboarding.value;
       otp.value = snapshot.otp ?? otp.value;
       permohonanList.value = snapshot.permohonanList ?? [...PERMOHONAN_DUMMY];
+      permohonanSaya.value = Array.isArray(snapshot.permohonanSaya) ? snapshot.permohonanSaya : [];
       draftPermohonan.value = snapshot.draftPermohonan ?? null;
       pembiayaanList.value = snapshot.pembiayaanList ?? PEMBIAYAAN_DUMMY.map((a) => ({ ...a }));
       transaksiMap.value = snapshot.transaksiMap
@@ -228,6 +241,17 @@ export const usePemohonStore = defineStore("pemohon", () => {
     onboarding.value.ekycVerified = true;
     onboarding.value.ekycResult = result.status;
     return result;
+  }
+
+  /** Real e-KYC result (MyKad OCR + liveness) from the backend. */
+  function setEkycResult(result: "lulus" | "semak" | "gagal") {
+    onboarding.value.ekycVerified = result === "lulus";
+    onboarding.value.ekycResult = result === "gagal" ? "gagal" : result === "lulus" ? "lulus" : null;
+  }
+
+  function addPermohonanSaya(item: PermohonanSaya) {
+    permohonanSaya.value = [item, ...permohonanSaya.value.filter((p) => p.id !== item.id)];
+    clearDraft();
   }
 
   function saveDraft(data: Record<string, unknown>) {
@@ -366,7 +390,7 @@ export const usePemohonStore = defineStore("pemohon", () => {
   }
 
   watch(
-    [isLoggedIn, account, profil, onboarding, otp, permohonanList, draftPermohonan, pembiayaanList, transaksiMap],
+    [isLoggedIn, account, profil, onboarding, otp, permohonanList, permohonanSaya, draftPermohonan, pembiayaanList, transaksiMap],
     persist,
     { deep: true },
   );
@@ -378,6 +402,7 @@ export const usePemohonStore = defineStore("pemohon", () => {
     onboarding,
     otp,
     permohonanList,
+    permohonanSaya,
     draftPermohonan,
     pembiayaanList,
     transaksiMap,
@@ -391,6 +416,8 @@ export const usePemohonStore = defineStore("pemohon", () => {
     logout,
     runEligibilityCheck,
     runEkyc,
+    setEkycResult,
+    addPermohonanSaya,
     saveDraft,
     loadDraft,
     clearDraft,

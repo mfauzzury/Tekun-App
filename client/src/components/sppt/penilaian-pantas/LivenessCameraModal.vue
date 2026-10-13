@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { Camera, CameraOff, ImageUp, Loader2, RotateCcw, Send, X } from "lucide-vue-next";
 
 import { verifyPenilaianPantasWajah } from "@/api/sppt";
+import { useLivenessCapture } from "@/composables/useLivenessCapture";
 import { useToast } from "@/composables/useToast";
 import type { PpFaceResult } from "@/types";
 import FaceResultCard from "./FaceResultCard.vue";
@@ -11,63 +12,29 @@ const props = defineProps<{ open: boolean; permohonanId: number }>();
 const emit = defineEmits<{ (e: "close"): void; (e: "verified", result: PpFaceResult): void }>();
 
 const toast = useToast();
+const {
+  CABARAN,
+  videoEl,
+  stream,
+  cameraError,
+  starting,
+  phase,
+  currentIdx,
+  countdown,
+  frames,
+  startCamera,
+  stopCamera,
+  reset: resetCapture,
+  runChallenges,
+  framesFromFiles,
+  payload,
+} = useLivenessCapture();
 
-const CABARAN = ["Pandang terus ke kamera", "Pusing kepala sedikit ke kiri", "Senyum"];
-const MAX_W = 640;
-
-type Frame = { base64: string; mime: string; arahan: string; preview: string; mirror: boolean };
-
-const videoEl = ref<HTMLVideoElement | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
-const stream = ref<MediaStream | null>(null);
-const cameraError = ref("");
-const starting = ref(false);
-const phase = ref<"sedia" | "cabaran" | "semak" | "hantar" | "keputusan">("sedia");
-const currentIdx = ref(0);
-const countdown = ref(0);
-const frames = ref<Frame[]>([]);
 const result = ref<PpFaceResult | null>(null);
-let cancelled = false;
-
-async function startCamera() {
-  cameraError.value = "";
-  if (!navigator.mediaDevices?.getUserMedia) {
-    cameraError.value = "Pelayar ini tidak menyokong akses kamera. Gunakan muat naik gambar.";
-    return;
-  }
-  starting.value = true;
-  try {
-    stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    });
-    await nextTick();
-    if (videoEl.value) {
-      videoEl.value.srcObject = stream.value;
-      await videoEl.value.play().catch(() => undefined);
-    }
-  } catch (e: unknown) {
-    cameraError.value =
-      e instanceof Error && e.name === "NotAllowedError"
-        ? "Akses kamera ditolak. Benarkan kamera pada pelayar atau gunakan muat naik gambar."
-        : "Kamera tidak dapat dibuka. Gunakan muat naik gambar sebagai alternatif.";
-  } finally {
-    starting.value = false;
-  }
-}
-
-function stopCamera() {
-  stream.value?.getTracks().forEach((t) => t.stop());
-  stream.value = null;
-  if (videoEl.value) videoEl.value.srcObject = null;
-}
 
 function reset() {
-  cancelled = true;
-  phase.value = "sedia";
-  currentIdx.value = 0;
-  countdown.value = 0;
-  frames.value = [];
+  resetCapture();
   result.value = null;
 }
 
@@ -89,46 +56,6 @@ watch(
   },
   { immediate: true },
 );
-onBeforeUnmount(() => {
-  cancelled = true;
-  stopCamera();
-});
-
-function drawToJpeg(source: CanvasImageSource, w: number, h: number): string {
-  const scale = Math.min(1, MAX_W / Math.max(1, w));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(w * scale);
-  canvas.height = Math.round(h * scale);
-  canvas.getContext("2d")?.drawImage(source, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.8);
-}
-
-function toFrame(dataUrl: string, arahan: string, mirror: boolean): Frame {
-  return { base64: dataUrl.replace(/^data:image\/\w+;base64,/, ""), mime: "image/jpeg", arahan, preview: dataUrl, mirror };
-}
-
-const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
-
-async function runChallenges() {
-  const video = videoEl.value;
-  if (!video || !stream.value) return;
-  cancelled = false;
-  frames.value = [];
-  phase.value = "cabaran";
-  for (let i = 0; i < CABARAN.length; i++) {
-    currentIdx.value = i;
-    for (let c = 3; c > 0; c--) {
-      if (cancelled) return;
-      countdown.value = c;
-      await wait(1000);
-    }
-    if (cancelled) return;
-    countdown.value = 0;
-    frames.value.push(toFrame(drawToJpeg(video, video.videoWidth || 640, video.videoHeight || 480), CABARAN[i], true));
-    await wait(350);
-  }
-  phase.value = "semak";
-}
 
 function pickFiles() {
   fileInput.value?.click();
@@ -136,24 +63,11 @@ function pickFiles() {
 
 async function onFiles(ev: Event) {
   const input = ev.target as HTMLInputElement;
-  const files = Array.from(input.files ?? []).slice(0, 3);
+  const files = Array.from(input.files ?? []);
   input.value = "";
   if (!files.length) return;
   try {
-    const out: Frame[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const url = URL.createObjectURL(files[i]);
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Imej tidak sah"));
-        img.src = url;
-      });
-      out.push(toFrame(drawToJpeg(img, img.naturalWidth, img.naturalHeight), CABARAN[i] ?? `Gambar ${i + 1}`, false));
-      URL.revokeObjectURL(url);
-    }
-    frames.value = out;
-    phase.value = "semak";
+    await framesFromFiles(files);
   } catch {
     toast.error("Gambar tidak dapat dibaca", "Sila pilih fail JPG atau PNG.");
   }
@@ -163,10 +77,7 @@ async function submit() {
   if (!frames.value.length) return;
   phase.value = "hantar";
   try {
-    const res = await verifyPenilaianPantasWajah(
-      props.permohonanId,
-      frames.value.map(({ base64, mime, arahan }) => ({ base64, mime, arahan })),
-    );
+    const res = await verifyPenilaianPantasWajah(props.permohonanId, payload());
     result.value = res?.data ?? null;
     phase.value = "keputusan";
     stopCamera();

@@ -69,6 +69,13 @@ Route::prefix('public')->group(function () {
         Route::post('/permohonan/dokumen/classify', [PemohonPermohonanController::class, 'classifyDocument']);
         Route::post('/permohonan/dokumen/verify', [PemohonPermohonanController::class, 'verifyDocument']);
         Route::post('/permohonan/{permohonan}/penilaian-pantas', [PemohonPermohonanController::class, 'penilaianPantas']);
+        Route::get('/permohonan/{permohonan}/penilaian-pantas', [PemohonPermohonanController::class, 'penilaianPantasStatus']);
+        Route::put('/permohonan/{permohonan}/data-alternatif', [PemohonPermohonanController::class, 'saveDataAlternatif']);
+        Route::middleware('throttle:20,1')->group(function () {
+            Route::post('/permohonan/{permohonan}/ekyc/mykad', [PemohonPermohonanController::class, 'scanMyKad']);
+            Route::post('/permohonan/{permohonan}/ekyc/wajah', [PemohonPermohonanController::class, 'verifyFace']);
+            Route::post('/permohonan/{permohonan}/data-alternatif/ekstrak', [PemohonPermohonanController::class, 'extractPenyata']);
+        });
     });
 });
 

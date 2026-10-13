@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PemohonDataAlternatifRequest;
+use App\Http\Requests\PemohonEkstrakPenyataRequest;
+use App\Http\Requests\PemohonEkycWajahRequest;
 use App\Http\Requests\StartPemohonPenilaianPantasRequest;
 use App\Http\Requests\ClassifyPemohonPermohonanDocumentRequest;
 use App\Http\Requests\StorePemohonPermohonanDocumentRequest;
@@ -13,7 +16,9 @@ use App\Http\Requests\VerifyPemohonPermohonanDocumentRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\PenilaianPantas;
 use App\Models\Permohonan;
+use App\Services\AlternativeCreditScoringService;
 use App\Services\DocumentClassificationService;
+use App\Services\EkycService;
 use App\Services\MyKadVerificationService;
 use App\Services\PenilaianPantasService;
 use App\Services\PermohonanReferenceService;
@@ -38,6 +43,8 @@ class PemohonPermohonanController extends Controller
         protected DocumentClassificationService $documentClassification,
         protected PermohonanReferenceService $referenceService,
         protected PenilaianPantasService $penilaianPantas,
+        protected EkycService $ekyc,
+        protected AlternativeCreditScoringService $creditScoring,
     ) {}
 
     public function store(StorePemohonPermohonanRequest $request): JsonResponse
@@ -82,6 +89,10 @@ class PemohonPermohonanController extends Controller
 
         $existingDetails = is_array($record->details) ? $record->details : [];
         $incomingDetails = is_array($validated['details'] ?? null) ? $validated['details'] : [];
+        // Server-owned keys: written only by the e-KYC / data-alternatif endpoints and on Hantar.
+        foreach (['data_alternatif', 'ekyc_mykad', 'ekyc_wajah', 'dihantar_pada'] as $serverKey) {
+            unset($incomingDetails[$serverKey]);
+        }
         $details = array_merge($existingDetails, $incomingDetails);
         if (! array_key_exists('attachments', $incomingDetails) && ! empty($existingDetails['attachments'])) {
             $details['attachments'] = $existingDetails['attachments'];
@@ -353,15 +364,145 @@ class PemohonPermohonanController extends Controller
         }
         $run = $this->penilaianPantas->runAll($run);
 
-        return $this->sendOk([
+        return $this->sendOk($this->progressPayload($record->fresh(), $run));
+    }
+
+    /**
+     * Applicant view of the latest AI assessment run (progress and officer decision only).
+     */
+    public function penilaianPantasStatus(Request $request, int $permohonan): JsonResponse
+    {
+        $token = (string) ($request->input('access_token') ?? $request->query('accessToken', ''));
+        $record = $this->resolveOwned($permohonan, $token);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        $run = PenilaianPantas::where('permohonan_id', $record->id)->orderByDesc('id')->first();
+
+        return $this->sendOk($this->progressPayload($record, $run));
+    }
+
+    /**
+     * e-KYC step 1 — AI OCR of the uploaded MyKad front; the result can auto-fill the form.
+     */
+    public function scanMyKad(StartPemohonPenilaianPantasRequest $request, int $permohonan): JsonResponse
+    {
+        $record = $this->resolveOwned($permohonan, $request->validated()['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        $mykad = $this->penilaianPantas->myKadFront($record);
+        if ($mykad === null) {
+            return $this->sendError(422, 'VALIDATION_ERROR', 'Sila muat naik MyKad bahagian depan dahulu.', [
+                'mykad' => ['Sila muat naik MyKad bahagian depan dahulu.'],
+            ]);
+        }
+
+        $details = is_array($record->details) ? $record->details : [];
+        $ocr = $this->ekyc->ocrMyKad($mykad['path'], $mykad['mime']);
+        $ocrData = is_array($ocr['data'] ?? null) ? $ocr['data'] : [];
+        $result = [
+            'ocr' => $ocr,
+            'ic' => ($ocr['ok'] ?? false) && ! empty($ocrData['no_ic']) ? $this->ekyc->validateIc((string) $ocrData['no_ic']) : null,
+            'padanan' => ($ocr['ok'] ?? false) && ! empty($details['nama']) ? $this->ekyc->compareWithApplication($ocrData, $details) : null,
+            'disemak_pada' => now()->toIso8601String(),
+        ];
+
+        $details['ekyc_mykad'] = $result;
+        $record->update(['details' => $details]);
+
+        return $this->sendOk($result);
+    }
+
+    /**
+     * e-KYC step 2 — live liveness challenge + face match against the MyKad photo.
+     */
+    public function verifyFace(PemohonEkycWajahRequest $request, int $permohonan): JsonResponse
+    {
+        $validated = $request->validated();
+        $record = $this->resolveOwned($permohonan, $validated['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        return $this->sendOk($this->penilaianPantas->verifyFace($record, $validated['frames']));
+    }
+
+    public function saveDataAlternatif(PemohonDataAlternatifRequest $request, int $permohonan): JsonResponse
+    {
+        $validated = $request->validated();
+        $record = $this->resolveOwned($permohonan, $validated['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        unset($validated['access_token']);
+        $details = is_array($record->details) ? $record->details : [];
+        $details['data_alternatif'] = $validated;
+        $record->update(['details' => $details]);
+
+        return $this->sendOk($validated);
+    }
+
+    public function extractPenyata(PemohonEkstrakPenyataRequest $request, int $permohonan): JsonResponse
+    {
+        $validated = $request->validated();
+        $record = $this->resolveOwned($permohonan, $validated['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+
+        $file = $request->file('file');
+
+        return $this->sendOk($this->creditScoring->extractFromStatement(
+            (string) $file->getRealPath(),
+            (string) $file->getMimeType(),
+            $validated['jenis'],
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function progressPayload(Permohonan $record, ?PenilaianPantas $run): array
+    {
+        $keputusan = match ($record->status) {
+            'Diluluskan' => 'lulus',
+            'Ditolak' => 'tolak',
+            default => null,
+        };
+
+        if ($run === null) {
+            return [
+                'status' => 'tiada',
+                'langkah' => [],
+                'jumlah_ms' => null,
+                'hujung_ke_hujung_ms' => null,
+                'status_permohonan' => $record->status,
+                'keputusan' => $keputusan,
+                'mesej' => 'Penilaian AI belum bermula.',
+            ];
+        }
+
+        return [
             'status' => $run->status,
             'langkah' => collect($run->langkah ?? [])
                 ->map(fn (array $l) => ['kod' => $l['kod'], 'label' => $l['label'], 'status' => $l['status'], 'ms' => $l['ms'] ?? null])
                 ->values(),
-            'mesej' => $run->status === 'selesai'
-                ? 'Permohonan anda telah dinilai dan dihantar kepada pegawai untuk keputusan.'
-                : 'Penilaian awal tidak lengkap. Pegawai akan menyemak permohonan anda.',
-        ]);
+            'jumlah_ms' => $run->jumlah_ms,
+            'hujung_ke_hujung_ms' => $run->hujung_ke_hujung_ms,
+            'siap_pada' => $run->siap_pada?->toIso8601String(),
+            'status_permohonan' => $record->status,
+            'keputusan' => $keputusan,
+            'mesej' => match (true) {
+                $keputusan === 'lulus' => 'Tahniah! Permohonan anda telah diluluskan.',
+                $keputusan === 'tolak' => 'Permohonan anda tidak berjaya kali ini. Pegawai akan menghubungi anda.',
+                $run->status === 'selesai' => 'Permohonan anda telah dinilai dan dihantar kepada pegawai untuk keputusan.',
+                default => 'Permohonan anda sedang dinilai.',
+            },
+        ];
     }
 
     /**

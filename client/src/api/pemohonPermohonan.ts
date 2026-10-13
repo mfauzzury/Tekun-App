@@ -1,6 +1,12 @@
 import { API_BASE_URL } from "@/env";
 import { apiRequest, ensureCsrfCookie } from "./client";
 import type {
+  PemohonAiProgress,
+  PemohonMyKadScan,
+  PpDataAlternatif,
+  PpDataAlternatifJenis,
+  PpEkstrakResult,
+  PpFaceResult,
   DocumentClassification,
   DocumentVerification,
   PemohonPermohonan,
@@ -126,10 +132,57 @@ export function pemohonPermohonanDocumentViewUrl(attachmentUrl: string) {
 /** POC 1 — runs the AI fast-assessment pipeline after Hantar. Returns progress only (no scores). */
 export async function startPemohonPenilaianPantas(id: number, accessToken: string) {
   await ensureCsrfCookie();
-  return apiRequest<{
-    data: { status: string; langkah: { kod: string; label: string; status: string; ms: number | null }[]; mesej: string };
-  }>(`/api/public/pemohon/permohonan/${id}/penilaian-pantas`, {
+  return apiRequest<{ data: PemohonAiProgress }>(`/api/public/pemohon/permohonan/${id}/penilaian-pantas`, {
     method: "POST",
     body: JSON.stringify({ accessToken }),
+  });
+}
+
+export async function getPemohonPenilaianPantas(id: number, accessToken: string) {
+  return apiRequest<{ data: PemohonAiProgress }>(
+    `/api/public/pemohon/permohonan/${id}/penilaian-pantas?accessToken=${encodeURIComponent(accessToken)}`,
+  );
+}
+
+/** e-KYC: AI OCR of the uploaded MyKad front (upload it first with class ic_pemohon_depan). */
+export async function scanPemohonMyKad(id: number, accessToken: string) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PemohonMyKadScan }>(`/api/public/pemohon/permohonan/${id}/ekyc/mykad`, {
+    method: "POST",
+    body: JSON.stringify({ accessToken }),
+  });
+}
+
+/** e-KYC: liveness challenge frames (base64 JPEG, no data: prefix) + face match against the MyKad photo. */
+export async function verifyPemohonWajah(
+  id: number,
+  accessToken: string,
+  frames: { base64: string; mime: string; arahan: string }[],
+) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpFaceResult }>(`/api/public/pemohon/permohonan/${id}/ekyc/wajah`, {
+    method: "POST",
+    body: JSON.stringify({ accessToken, frames }),
+  });
+}
+
+export async function savePemohonDataAlternatif(id: number, accessToken: string, input: PpDataAlternatif) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpDataAlternatif }>(`/api/public/pemohon/permohonan/${id}/data-alternatif`, {
+    method: "PUT",
+    body: JSON.stringify({ ...input, accessToken }),
+  });
+}
+
+/** AI reads an e-wallet / QR / utility / platform statement (image, PDF or CSV) into monthly figures. */
+export async function extractPemohonPenyata(id: number, accessToken: string, jenis: PpDataAlternatifJenis, file: File) {
+  await ensureCsrfCookie();
+  const formData = new FormData();
+  formData.append("accessToken", accessToken);
+  formData.append("jenis", jenis);
+  formData.append("file", file, file.name);
+  return apiRequest<{ data: PpEkstrakResult }>(`/api/public/pemohon/permohonan/${id}/data-alternatif/ekstrak`, {
+    method: "POST",
+    body: formData,
   });
 }

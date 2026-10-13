@@ -1230,3 +1230,17 @@ export type PpKeadilan = {
   nota?: string | null;
   dijanaPada?: string | null;
 };
+
+// Portal Pemohon — real application journey (e-KYC, data alternatif, AI progress)
+export type PemohonMyKadScan = Pick<PpEkycHasil, "ic" | "ocr" | "padanan"> & { disemakPada?: string | null };
+
+export type PemohonAiProgress = {
+  status: "tiada" | "berjalan" | "selesai";
+  langkah: { kod: PpLangkahKod; label: string; status: "menunggu" | "selesai" | "ralat"; ms: number | null }[];
+  jumlahMs: number | null;
+  hujungKeHujungMs: number | null;
+  siapPada?: string | null;
+  statusPermohonan: string;
+  keputusan: "lulus" | "tolak" | null;
+  mesej: string;
+};

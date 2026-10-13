@@ -15,6 +15,30 @@
   --color-blue-800: #1d4381;
   --color-blue-900: #1b396a;
   --color-blue-950: #122544;
+
+  /* Portal Pemohon — TEKUN brand red (primary actions) and navy ink (headings, dark surfaces). */
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fde3e3;
+  --color-brand-200: #fbcaca;
+  --color-brand-300: #f7a3a4;
+  --color-brand-400: #ef6c6f;
+  --color-brand-500: #e43b40;
+  --color-brand-600: #d6202a;
+  --color-brand-700: #b3171f;
+  --color-brand-800: #93181e;
+  --color-brand-900: #7a1a1f;
+
+  --color-ink-50: #f4f6fa;
+  --color-ink-100: #e7ebf3;
+  --color-ink-200: #cfd6e4;
+  --color-ink-300: #a8b3ca;
+  --color-ink-400: #7684a3;
+  --color-ink-500: #536182;
+  --color-ink-600: #3d4a69;
+  --color-ink-700: #2f3a55;
+  --color-ink-800: #1f2940;
+  --color-ink-900: #141b2e;
+  --color-ink-950: #0b1120;
 }
 
 :root {
