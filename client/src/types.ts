@@ -862,3 +862,40 @@ export type ChatFavoriteItem = {
   session: ChatSession | null;
   createdAt: string;
 };
+
+// Integrasi AI — Penyedia AI
+export type AiProviderModel = {
+  id: string;
+  label: string;
+  tier: string;
+};
+
+export type AiProviderStatus = {
+  provider: "anthropic";
+  name: string;
+  keyConfigured: boolean;
+  keySource: "database" | "env" | "none";
+  keyHint: string | null;
+  keyUnreadable: boolean;
+  model: string;
+  chatModel: string;
+  timeout: number;
+  models: AiProviderModel[];
+};
+
+export type AiProviderInput = {
+  apiKey?: string | null;
+  clearApiKey?: boolean;
+  model: string;
+  chatModel: string;
+  timeout: number;
+};
+
+export type AiProviderTestResult = {
+  ok: boolean;
+  status: number | null;
+  latencyMs: number;
+  model: string;
+  displayName: string | null;
+  message: string;
+};

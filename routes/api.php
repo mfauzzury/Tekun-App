@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Permission;
+use App\Http\Controllers\Api\AiProviderController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
@@ -124,6 +125,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/developers-guide', [DevelopersGuideController::class, 'show']);
     Route::put('/developers-guide', [DevelopersGuideController::class, 'update']);
+
+    // Integrasi AI — Penyedia AI (Anthropic Claude)
+    Route::get('/platform/ai/providers', [AiProviderController::class, 'show'])->middleware('permission:settings.view');
+    Route::put('/platform/ai/providers', [AiProviderController::class, 'update'])->middleware('permission:settings.edit');
+    Route::post('/platform/ai/providers/test', [AiProviderController::class, 'test'])
+        ->middleware(['permission:settings.edit', 'throttle:10,1']);
 
     // SPPT — Pengurusan Pembiayaan
     Route::prefix('sppt')->middleware('permission:sppt.view')->group(function () {

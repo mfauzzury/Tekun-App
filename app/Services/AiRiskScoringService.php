@@ -349,8 +349,7 @@ PROMPT;
                 ['role' => 'user', 'content' => $prompt],
             ],
             'max_tokens' => 2048,
-            'temperature' => 0.2,
-        ]);
+        ] + AiProviderService::samplingParams($model, 0.2));
 
         if (! $response->successful()) {
             $error = $response->json('error.message') ?? $response->body();
