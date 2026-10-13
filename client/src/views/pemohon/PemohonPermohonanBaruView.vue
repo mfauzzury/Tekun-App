@@ -224,13 +224,19 @@ async function submit() {
     return;
   }
 
-  const identityMismatch = attachments.value.some((item) => {
-    const v = item.verification;
-    if (!v || (v.documentType !== "ic_front" && v.documentType !== "ic_combined")) return false;
-    return v.identityMatched === false || v.status === "failed";
-  });
+  // When the AI has read the MyKad it is authoritative (the server checks the same way); the image
+  // fingerprint check ran at upload time, possibly before the form had a name/IC, so it is only a fallback.
+  const digits = (v: string | null | undefined) => (v ?? "").replace(/\D/g, "");
+  const aiIc = ekycMyKad.value?.ocr?.ok ? digits(ekycMyKad.value.ocr.data?.noIc) : "";
+  const identityMismatch = aiIc
+    ? aiIc.length === 12 && digits(form.noIcBaru).length === 12 && aiIc !== digits(form.noIcBaru)
+    : attachments.value.some((item) => {
+        const v = item.verification;
+        if (!v || (v.documentType !== "ic_front" && v.documentType !== "ic_combined")) return false;
+        return v.identityMatched === false || v.status === "failed";
+      });
   if (identityMismatch) {
-    toast.error("MyKad depan tidak sepadan dengan nama atau No. Kad Pengenalan pemohon.");
+    toast.error("MyKad depan tidak sepadan dengan No. Kad Pengenalan dalam borang.");
     goTo(LAST);
     return;
   }

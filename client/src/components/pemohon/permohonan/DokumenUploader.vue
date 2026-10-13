@@ -143,6 +143,9 @@ async function removeAttachment(item: AttachmentRow) {
 function fmtSize(bytes: number) {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
+
+/** The applicant's own MyKad is checked by the AI reading in step 2; the old image check is not shown for it. */
+const AI_READ_CLASSES = ["ic_pemohon_depan", "ic_pemohon_belakang", "ic_pemohon_combined"];
 </script>
 
 <template>
@@ -176,7 +179,7 @@ function fmtSize(bytes: number) {
             <PBadge :tone="item.documentClass ? 'info' : 'neutral'">{{ documentClassLabel(item.documentClass, item.documentClassOther) }}</PBadge>
             <span v-if="item.verifying" class="inline-flex items-center gap-1 text-xs text-slate-500"><Loader2 class="h-3 w-3 animate-spin" /> Mengesahkan…</span>
             <PBadge v-else-if="item.verification?.status === 'verified'" tone="success"><ShieldCheck class="h-3 w-3" /> Disahkan</PBadge>
-            <PBadge v-else-if="item.verification?.status === 'failed'" tone="danger"><XCircle class="h-3 w-3" /> {{ item.verification.message || "Gagal disahkan" }}</PBadge>
+            <PBadge v-else-if="item.verification?.status === 'failed' && !AI_READ_CLASSES.includes(item.documentClass ?? '')" tone="danger"><XCircle class="h-3 w-3" /> {{ item.verification.message || "Gagal disahkan" }}</PBadge>
             <span v-if="item.size" class="text-xs text-slate-400">{{ fmtSize(item.size) }}</span>
           </div>
         </div>
