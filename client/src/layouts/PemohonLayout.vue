@@ -61,23 +61,9 @@ function logout() {
       <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-4 sm:px-6">
         <router-link to="/pemohon/dashboard" class="flex shrink-0 items-center gap-3">
           <img src="/logo_tekun.png" alt="TEKUN Nasional" class="h-8 w-auto" />
-          <span class="hidden h-6 w-px bg-slate-200 lg:block" />
-          <span class="hidden text-sm font-semibold text-ink-700 lg:block">Portal Usahawan</span>
+          <span class="hidden h-6 w-px bg-slate-200 sm:block" />
+          <span class="hidden text-sm font-semibold text-ink-700 sm:block">Portal Usahawan</span>
         </router-link>
-
-        <nav class="hidden flex-1 items-center gap-1 md:flex" aria-label="Navigasi utama">
-          <router-link
-            v-for="item in desktopNav"
-            :key="item.to"
-            :to="item.to"
-            class="relative flex h-16 items-center gap-2 px-3 text-sm font-medium transition-colors"
-            :class="isActive(item.to) ? 'text-ink-900' : 'text-slate-500 hover:text-ink-900'"
-          >
-            <component :is="item.icon" class="h-4 w-4" />
-            {{ item.label }}
-            <span v-if="isActive(item.to)" class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600" />
-          </router-link>
-        </nav>
 
         <div class="ml-auto flex items-center gap-2">
           <AppToastRegion />
@@ -133,6 +119,23 @@ function logout() {
             </transition>
           </div>
         </div>
+      </div>
+
+      <!-- Desktop menu bar, below the top bar -->
+      <div class="hidden border-t border-slate-200/70 md:block">
+        <nav class="mx-auto flex h-12 w-full max-w-6xl items-center gap-1 px-4 sm:px-6" aria-label="Navigasi utama">
+          <router-link
+            v-for="item in desktopNav"
+            :key="item.to"
+            :to="item.to"
+            class="relative flex h-12 items-center gap-2 px-3 text-sm font-medium transition-colors"
+            :class="isActive(item.to) ? 'text-brand-700' : 'text-slate-500 hover:text-ink-900'"
+          >
+            <component :is="item.icon" class="h-4 w-4" />
+            {{ item.label }}
+            <span v-if="isActive(item.to)" class="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-brand-600" />
+          </router-link>
+        </nav>
       </div>
     </header>
 
