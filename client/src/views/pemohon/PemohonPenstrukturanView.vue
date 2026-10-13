@@ -46,7 +46,7 @@ async function submit() {
 <template>
   <PemohonLayout>
     <div v-if="!akaun" class="mx-auto max-w-2xl pt-6">
-      <div class="rounded-2xl border border-slate-200/80 bg-white">
+      <div class="rounded-3xl border border-slate-200 bg-white">
         <PEmptyState :icon="Wallet" title="Akaun pembiayaan tidak dijumpai" description="Akaun ini mungkin telah ditutup atau pautan tidak sah.">
           <PButton variant="outline" to="/pemohon/pembiayaan">Kembali ke Pembiayaan Saya</PButton>
         </PEmptyState>
@@ -133,7 +133,7 @@ async function submit() {
         </PField>
       </PCard>
 
-      <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <div class="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
         <p>Penstrukturan sebenar tertakluk kepada kelulusan TEKUN Nasional. Paparan ini adalah simulasi untuk tujuan demonstrasi.</p>
       </div>

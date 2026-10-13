@@ -87,7 +87,7 @@ async function pay() {
 <template>
   <PemohonLayout>
     <div v-if="!akaun" class="mx-auto max-w-2xl pt-6">
-      <div class="rounded-2xl border border-slate-200/80 bg-white">
+      <div class="rounded-3xl border border-slate-200 bg-white">
         <PEmptyState :icon="Wallet" title="Akaun pembiayaan tidak dijumpai" description="Akaun ini mungkin telah ditutup atau pautan tidak sah.">
           <PButton variant="outline" to="/pemohon/pembiayaan">Kembali ke Pembiayaan Saya</PButton>
         </PEmptyState>

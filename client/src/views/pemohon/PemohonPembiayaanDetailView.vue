@@ -67,7 +67,7 @@ function jadualStatusLabel(status: string) {
 <template>
   <PemohonLayout>
     <div v-if="!akaun" class="pt-6">
-      <div class="rounded-2xl border border-slate-200/80 bg-white">
+      <div class="rounded-3xl border border-slate-200 bg-white">
         <PEmptyState :icon="Wallet" title="Akaun pembiayaan tidak dijumpai" description="Akaun ini mungkin telah ditutup atau pautan tidak sah.">
           <PButton variant="outline" to="/pemohon/pembiayaan">Kembali ke Pembiayaan Saya</PButton>
         </PEmptyState>
@@ -133,7 +133,7 @@ function jadualStatusLabel(status: string) {
             </PButton>
           </div>
         </PCard>
-        <div v-else class="flex flex-col items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+        <div v-else class="flex flex-col items-center justify-center rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">
           <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
             <CheckCircle2 class="h-6 w-6" />
           </span>
