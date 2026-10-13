@@ -47,10 +47,10 @@ const onboardingIncomplete = computed(
             <span class="truncate">{{ pemohon.profil.perniagaan }}</span>
           </p>
         </div>
-        <PButton v-if="hasDraft" to="/pemohon/permohonan/baru" size="lg" class="w-full sm:w-auto">
+        <PButton v-if="hasDraft" to="/pemohon/permohonan/baru">
           <PenLine class="h-4 w-4" aria-hidden="true" /> Sambung draf
         </PButton>
-        <PButton v-else to="/pemohon/permohonan/baru" size="lg" class="w-full sm:w-auto">
+        <PButton v-else to="/pemohon/permohonan/baru">
           <Plus class="h-4 w-4" aria-hidden="true" /> Mohon pembiayaan
         </PButton>
       </header>
