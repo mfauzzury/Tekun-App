@@ -74,6 +74,7 @@ export const DEFAULT_MENU: MenuGroupDef[] = [
         icon: ClipboardList,
         children: [
           { id: "permohonan-daftar", label: "Pendaftaran Permohonan", to: "/admin/permohonan" },
+          { id: "permohonan-penilaian-pantas", label: "Penilaian Pantas AI", to: "/admin/permohonan/penilaian-pantas" },
           { id: "permohonan-semakan", label: "Semakan", to: "/admin/permohonan/semakan" },
           { id: "permohonan-sokongan", label: "Sokongan", to: "/admin/permohonan/sokongan" },
           { id: "permohonan-kelulusan", label: "Kelulusan", to: "/admin/permohonan/kelulusan" },

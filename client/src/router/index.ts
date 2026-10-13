@@ -29,6 +29,7 @@ import PermohonanListView from "@/views/sppt/PermohonanListView.vue";
 import PermohonanBaruView from "@/views/sppt/PermohonanBaruView.vue";
 import PermohonanDetailView from "@/views/sppt/PermohonanDetailView.vue";
 import PermohonanWorkflowView from "@/views/sppt/PermohonanWorkflowView.vue";
+import PenilaianPantasView from "@/views/sppt/PenilaianPantasView.vue";
 import RekodUsahawanView from "@/views/sppt/RekodUsahawanView.vue";
 import DaftarUsahawanBaruView from "@/views/sppt/DaftarUsahawanBaruView.vue";
 import PenilaianKelulusanView from "@/views/sppt/PenilaianKelulusanView.vue";
@@ -204,6 +205,7 @@ const router = createRouter({
     { path: "/admin/permohonan/usahawan", name: "rekod-usahawan", component: RekodUsahawanView, meta: { requiresAuth: true, title: "Rekod Usahawan" } },
     { path: "/admin/permohonan/semakan", name: "permohonan-semakan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Semakan Permohonan" } },
     { path: "/admin/permohonan/sokongan", name: "permohonan-sokongan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Sokongan Permohonan" } },
+    { path: "/admin/permohonan/penilaian-pantas", name: "permohonan-penilaian-pantas", component: PenilaianPantasView, meta: { requiresAuth: true, title: "Penilaian Pantas AI" } },
     { path: "/admin/permohonan/kelulusan", name: "permohonan-kelulusan", component: PermohonanWorkflowView, meta: { requiresAuth: true, title: "Kelulusan Permohonan" } },
     { path: "/admin/permohonan/:id", name: "permohonan-detail", component: PermohonanDetailView, meta: { requiresAuth: true, title: "Butiran Permohonan" } },
     { path: "/admin/pembiayaan/penilaian", name: "penilaian-kelulusan", component: PenilaianKelulusanView, meta: { requiresAuth: true, title: "Penilaian & Kelulusan" } },

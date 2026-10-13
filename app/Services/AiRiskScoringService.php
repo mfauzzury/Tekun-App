@@ -356,7 +356,7 @@ PROMPT;
             throw new \RuntimeException('AI Risk Scoring gagal: '.Str::limit((string) $error, 500));
         }
 
-        $content = $response->json('content.0.text');
+        $content = AiProviderService::textFromResponse((array) $response->json());
         if (! is_string($content) || trim($content) === '') {
             throw new \RuntimeException('AI Risk Scoring tidak mengembalikan data.');
         }

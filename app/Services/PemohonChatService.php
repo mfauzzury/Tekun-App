@@ -41,7 +41,7 @@ class PemohonChatService
             throw new \RuntimeException('Pembantu AI gagal membalas: '.Str::limit((string) $error, 500));
         }
 
-        $reply = $response->json('content.0.text');
+        $reply = AiProviderService::textFromResponse((array) $response->json());
         if (! is_string($reply) || trim($reply) === '') {
             throw new \RuntimeException('Pembantu AI tidak mengembalikan jawapan.');
         }

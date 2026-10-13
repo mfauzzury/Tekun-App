@@ -122,3 +122,14 @@ export async function deletePemohonPermohonanDocument(id: number, accessToken: s
 export function pemohonPermohonanDocumentViewUrl(attachmentUrl: string) {
   return `${API_BASE_URL}${attachmentUrl}`;
 }
+
+/** POC 1 — runs the AI fast-assessment pipeline after Hantar. Returns progress only (no scores). */
+export async function startPemohonPenilaianPantas(id: number, accessToken: string) {
+  await ensureCsrfCookie();
+  return apiRequest<{
+    data: { status: string; langkah: { kod: string; label: string; status: string; ms: number | null }[]; mesej: string };
+  }>(`/api/public/pemohon/permohonan/${id}/penilaian-pantas`, {
+    method: "POST",
+    body: JSON.stringify({ accessToken }),
+  });
+}

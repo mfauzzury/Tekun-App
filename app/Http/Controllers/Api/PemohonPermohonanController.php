@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StartPemohonPenilaianPantasRequest;
 use App\Http\Requests\ClassifyPemohonPermohonanDocumentRequest;
 use App\Http\Requests\StorePemohonPermohonanDocumentRequest;
 use App\Http\Requests\StorePemohonPermohonanRequest;
@@ -10,9 +11,11 @@ use App\Http\Requests\UpdatePemohonPermohonanDocumentClassRequest;
 use App\Http\Requests\UpdatePemohonPermohonanRequest;
 use App\Http\Requests\VerifyPemohonPermohonanDocumentRequest;
 use App\Http\Traits\ApiResponse;
+use App\Models\PenilaianPantas;
 use App\Models\Permohonan;
 use App\Services\DocumentClassificationService;
 use App\Services\MyKadVerificationService;
+use App\Services\PenilaianPantasService;
 use App\Services\PermohonanReferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +37,7 @@ class PemohonPermohonanController extends Controller
         protected MyKadVerificationService $myKadVerification,
         protected DocumentClassificationService $documentClassification,
         protected PermohonanReferenceService $referenceService,
+        protected PenilaianPantasService $penilaianPantas,
     ) {}
 
     public function store(StorePemohonPermohonanRequest $request): JsonResponse
@@ -131,6 +135,10 @@ class PemohonPermohonanController extends Controller
             }
 
             $details['attachments'] = $attachments;
+            // Start of the POC 1 end-to-end timer (Hantar → AI recommendation); never client-supplied.
+            $details['dihantar_pada'] = $record->status === 'Draf'
+                ? now()->toIso8601String()
+                : ($existingDetails['dihantar_pada'] ?? now()->toIso8601String());
             $validated['tarikh_permohonan'] = $record->tarikh_permohonan?->toDateString() ?? now()->toDateString();
         }
 
@@ -320,6 +328,40 @@ class PemohonPermohonanController extends Controller
         $record->update(['details' => $details]);
 
         return $this->sendOk(['success' => true]);
+    }
+
+    /**
+     * POC 1 — runs the fast assessment pipeline right after Hantar. The applicant only sees progress;
+     * scores, fraud signals and the recommendation are visible to officers only.
+     */
+    public function penilaianPantas(StartPemohonPenilaianPantasRequest $request, int $permohonan): JsonResponse
+    {
+        $record = $this->resolveOwned($permohonan, $request->validated()['access_token']);
+        if (! $record) {
+            return $this->sendError(404, 'NOT_FOUND', 'Permohonan not found');
+        }
+        if ($record->status === 'Draf') {
+            return $this->sendError(409, 'CONFLICT', 'Permohonan belum dihantar.');
+        }
+
+        ignore_user_abort(true);
+        set_time_limit(400);
+
+        $run = PenilaianPantas::where('permohonan_id', $record->id)->orderByDesc('id')->first();
+        if (! $run || $run->status === 'selesai') {
+            $run = $this->penilaianPantas->start($record, null, 'pemohon');
+        }
+        $run = $this->penilaianPantas->runAll($run);
+
+        return $this->sendOk([
+            'status' => $run->status,
+            'langkah' => collect($run->langkah ?? [])
+                ->map(fn (array $l) => ['kod' => $l['kod'], 'label' => $l['label'], 'status' => $l['status'], 'ms' => $l['ms'] ?? null])
+                ->values(),
+            'mesej' => $run->status === 'selesai'
+                ? 'Permohonan anda telah dinilai dan dihantar kepada pegawai untuk keputusan.'
+                : 'Penilaian awal tidak lengkap. Pegawai akan menyemak permohonan anda.',
+        ]);
     }
 
     /**

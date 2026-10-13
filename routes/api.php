@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Sppt\PermohonanController;
 use App\Http\Controllers\Api\Sppt\SpptDashboardController;
 use App\Http\Controllers\Api\Sppt\SpptDatasetController;
 use App\Http\Controllers\Api\Sppt\SpptReferenceDataController;
+use App\Http\Controllers\Api\Sppt\PenilaianPantasController;
 use App\Http\Controllers\Api\Sppt\SpptSetupController;
 use App\Http\Controllers\Api\Sppt\UsahawanController;
 use App\Http\Controllers\Api\UserChatController;
@@ -67,6 +68,7 @@ Route::prefix('public')->group(function () {
         Route::delete('/permohonan/{permohonan}/dokumen/{attachmentId}', [PemohonPermohonanController::class, 'deleteDocument']);
         Route::post('/permohonan/dokumen/classify', [PemohonPermohonanController::class, 'classifyDocument']);
         Route::post('/permohonan/dokumen/verify', [PemohonPermohonanController::class, 'verifyDocument']);
+        Route::post('/permohonan/{permohonan}/penilaian-pantas', [PemohonPermohonanController::class, 'penilaianPantas']);
     });
 });
 
@@ -147,6 +149,27 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middlewareFor('destroy', 'permission:sppt.delete');
         Route::get('/datasets/{module}/{key}', [SpptDatasetController::class, 'show']);
         Route::get('/datasets/{module}', [SpptDatasetController::class, 'module']);
+
+        // POC 1 — Enjin Penilaian Pantas (C1–C4)
+        Route::prefix('penilaian-pantas')->group(function () {
+            Route::get('/', [PenilaianPantasController::class, 'index']);
+            Route::get('/keadilan', [PenilaianPantasController::class, 'fairness']);
+            Route::get('/permohonan/{permohonan}', [PenilaianPantasController::class, 'show']);
+            Route::get('/permohonan/{permohonan}/semakan-pengeluaran', [PenilaianPantasController::class, 'disbursementCheck']);
+            Route::get('/run/{run}', [PenilaianPantasController::class, 'run']);
+            Route::middleware('permission:sppt.edit')->group(function () {
+                Route::post('/permohonan/{permohonan}/mula', [PenilaianPantasController::class, 'start']);
+                Route::post('/run/{run}/langkah/{kod}', [PenilaianPantasController::class, 'step']);
+                Route::put('/permohonan/{permohonan}/data-alternatif', [PenilaianPantasController::class, 'updateDataAlternatif']);
+                Route::middleware('throttle:30,1')->group(function () {
+                    Route::post('/permohonan/{permohonan}/wajah', [PenilaianPantasController::class, 'verifyFace']);
+                    Route::post('/permohonan/{permohonan}/data-alternatif/ekstrak', [PenilaianPantasController::class, 'extractDataAlternatif']);
+                    Route::post('/permohonan/{permohonan}/dokumen-jualan', [PenilaianPantasController::class, 'analyzeSalesDocument']);
+                });
+            });
+            Route::post('/run/{run}/keputusan', [PenilaianPantasController::class, 'decide'])
+                ->middleware('permission:sppt.kelulusan');
+        });
 
         Route::get('/permohonan/summary', [PermohonanController::class, 'summary']);
         Route::post('/permohonan/{permohonan}/workflow', [PermohonanController::class, 'processWorkflow'])

@@ -59,6 +59,32 @@ class AiProviderService
     }
 
     /**
+     * Effort params for models that support output_config.effort (the 5.x generation).
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function effortParams(string $model, string $effort): array
+    {
+        return in_array($model, self::SAMPLING_MODELS, true) ? [] : ['output_config' => ['effort' => $effort]];
+    }
+
+    /**
+     * First text block of a Messages API response. Newer models may return thinking blocks before it.
+     *
+     * @param  array<string, mixed>  $response
+     */
+    public static function textFromResponse(array $response): ?string
+    {
+        foreach ((array) ($response['content'] ?? []) as $block) {
+            if (is_array($block) && ($block['type'] ?? null) === 'text' && trim((string) ($block['text'] ?? '')) !== '') {
+                return (string) $block['text'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Overlay saved settings onto config('services.anthropic.*').
      */
     public function applyToConfig(): void

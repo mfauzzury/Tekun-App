@@ -899,3 +899,334 @@ export type AiProviderTestResult = {
   displayName: string | null;
   message: string;
 };
+
+// ─── POC 1 — Enjin Penilaian Pantas AI (C1–C4) ───────────────────────────────
+
+export type PpLaluan = "pantas" | "semakan_pegawai" | "cadang_tolak";
+export type PpKeputusanLangkah = "lulus" | "semak" | "gagal";
+export type PpKeputusanPegawai = "lulus" | "tolak" | "rujuk";
+export type PpTahap = "rendah" | "sederhana" | "tinggi";
+/** URL / value codes (snake_case values are never converted). */
+export type PpLangkahKod = "ekyc" | "peraturan" | "penipuan" | "skor_kredit" | "cadangan";
+
+export type PpFaceResult = {
+  ok?: boolean;
+  padananWajah?: number | null;
+  liveness?: number | null;
+  tandaDeepfake?: string[];
+  cabaran?: { arahan?: string; lulus?: boolean; catatan?: string | null }[];
+  keputusan?: PpKeputusanLangkah;
+  ringkasan?: string | null;
+  latencyMs?: number | null;
+  message?: string | null;
+  disemakPada?: string | null;
+};
+
+export type PpEkycHasil = {
+  ic?: {
+    valid?: boolean;
+    noIc?: string | null;
+    tarikhLahir?: string | null;
+    umur?: number | null;
+    jantina?: string | null;
+    kodNegeri?: string | null;
+    negeriLahir?: string | null;
+    isu?: string[];
+  } | null;
+  ocr?: {
+    ok?: boolean;
+    sumber?: string | null;
+    data?: {
+      noIc?: string | null;
+      nama?: string | null;
+      alamat?: string | null;
+      warganegara?: string | null;
+      agama?: string | null;
+      jantina?: string | null;
+    } | null;
+    kualiti?: { skor?: number | null; isu?: string[] } | null;
+    tandaPalsu?: string[];
+    adalahMykad?: boolean;
+    latencyMs?: number | null;
+    message?: string | null;
+  } | null;
+  padanan?: {
+    padanan?: {
+      medan?: string;
+      label?: string;
+      nilaiBorang?: string | null;
+      nilaiMykad?: string | null;
+      padan?: boolean;
+      skor?: number | null;
+    }[];
+    skorKeseluruhan?: number | null;
+  } | null;
+  wajah?: PpFaceResult | null;
+  isu?: string[];
+};
+
+export type PpPeraturanHasil = {
+  eligible?: boolean;
+  autoReject?: boolean;
+  reasons?: string[];
+  failedRules?: string[];
+};
+
+export type PpGraphNode = {
+  id: string | number;
+  jenis: "pemohon" | "telefon" | "alamat" | "ic" | "emel" | "akaun_bank" | string;
+  label?: string | null;
+  utama?: boolean;
+  risiko?: PpTahap | string | null;
+  permohonanId?: number | null;
+  status?: string | null;
+};
+
+export type PpGraphEdge = { dari: string | number; ke: string | number; label?: string | null };
+
+export type PpIsyaratPenipuan = {
+  kod?: string;
+  tahap?: PpTahap | string;
+  tajuk?: string;
+  penerangan?: string;
+  bukti?: string[];
+};
+
+export type PpFraudResult = {
+  skorRisiko?: number | null;
+  tahap?: PpTahap | string | null;
+  amaran?: boolean;
+  isyarat?: PpIsyaratPenipuan[];
+  rangkaian?: { nodes?: PpGraphNode[]; edges?: PpGraphEdge[] } | null;
+  kluster?: {
+    saiz?: number | null;
+    permohonanBerkaitan?: { id: number; noRujukan?: string | null; nama?: string | null; status?: string | null; kaitan?: string[] }[];
+  } | null;
+  cadanganTindakan?: string[];
+  dianalisisPada?: string | null;
+};
+
+export type PpSkorKreditHasil = {
+  skor?: number | null;
+  gred?: string | null;
+  tahapRisiko?: string | null;
+  keyakinan?: number | null;
+  failNipis?: boolean;
+  sumberData?: { kod?: string; label?: string; tersedia?: boolean; nilaiRingkas?: string | null }[];
+  faktor?: {
+    kod?: string;
+    label?: string;
+    nilai?: string | number | null;
+    sumbangan?: number | null;
+    arah?: "naik" | "turun" | "neutral";
+    penerangan?: string | null;
+  }[];
+  skorAsas?: number | null;
+  pendapatanDisahkanBulanan?: number | null;
+  ansuranDicadang?: number | null;
+  nisbahKhidmatHutang?: number | null;
+  cadanganHad?: number | null;
+  model?: { nama?: string; jenis?: string; ciriUtama?: string[]; versiData?: string | null } | null;
+  bias?: {
+    atributDikecualikan?: ({ kod?: string; label?: string } | string)[];
+    ujianKontrafaktual?: {
+      atribut?: string;
+      nilaiAsal?: string | null;
+      nilaiUji?: string | null;
+      skorAsal?: number | null;
+      skorUji?: number | null;
+      beza?: number | null;
+    }[];
+    lulus?: boolean;
+    nota?: string | null;
+  } | null;
+  penjelasanAi?: string | null;
+  penjelasanSumber?: "ai" | "templat" | string | null;
+  latencyMs?: number | null;
+  dinilaiPada?: string | null;
+};
+
+export type PpCadangan = {
+  laluan?: PpLaluan | null;
+  label?: string | null;
+  tahapRisiko?: string | null;
+  skorKredit?: number | null;
+  gred?: string | null;
+  jumlahDipohon?: number | null;
+  jumlahDicadang?: number | null;
+  ansuranDicadang?: number | null;
+  tempohBulan?: number | null;
+  sebab?: string[];
+  syarat?: string[];
+  amaranPenipuan?: boolean;
+  notaHitl?: string | null;
+};
+
+export type PpStep = {
+  kod: PpLangkahKod | string;
+  label?: string;
+  status: "menunggu" | "berjalan" | "selesai" | "ralat";
+  keputusan?: PpKeputusanLangkah | null;
+  ringkasan?: string | null;
+  hasil?: any;
+  mulaPada?: string | null;
+  ms?: number | null;
+};
+
+export type PpRun = {
+  id: number;
+  permohonanId: number;
+  status: "berjalan" | "selesai";
+  laluan: PpLaluan | null;
+  tahapRisiko?: string | null;
+  skorKredit: number | null;
+  /** Keys are camelCased by CamelCaseMiddleware: ekyc, peraturan, penipuan, skorKredit, cadangan. */
+  langkah?: Record<string, PpStep> | null;
+  cadangan: PpCadangan | null;
+  dihantarPada?: string | null;
+  mulaPada?: string | null;
+  siapPada?: string | null;
+  jumlahMs?: number | null;
+  hujungKeHujungMs?: number | null;
+  sumber?: "pegawai" | "pemohon" | string;
+  keputusanPegawai: PpKeputusanPegawai | null;
+  keputusanPada?: string | null;
+  catatanPegawai?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PpRunSummary = {
+  id: number;
+  permohonanId: number;
+  status: "berjalan" | "selesai";
+  laluan: PpLaluan | null;
+  tahapRisiko?: string | null;
+  skorKredit?: number | null;
+  hujungKeHujungMs?: number | null;
+  keputusanPegawai?: PpKeputusanPegawai | null;
+  createdAt?: string;
+};
+
+export type PpPermohonanRow = {
+  id: number;
+  noRujukan?: string | null;
+  nama?: string | null;
+  status?: string | null;
+  jumlahPermohonan?: number | string | null;
+  cawangan?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  penilaianTerkini?: PpRunSummary | null;
+};
+
+export type PpDataAlternatif = {
+  ewallet?: {
+    penyedia?: string | null;
+    purataMasukBulanan?: number | null;
+    bilanganTransaksiBulanan?: number | null;
+    bulanAktif?: number | null;
+  } | null;
+  duitnowQr?: {
+    purataJualanBulanan?: number | null;
+    bilanganTransaksiBulanan?: number | null;
+    bulanAktif?: number | null;
+    trendPertumbuhanPeratus?: number | null;
+  } | null;
+  bilUtiliti?: { bulanDibayarTepat?: number | null; bulanDinilai?: number | null } | null;
+  platform?: {
+    nama?: string | null;
+    purataJualanBulanan?: number | null;
+    penarafan?: number | null;
+    bulanAktif?: number | null;
+  } | null;
+  ccrisTersedia?: boolean;
+  penyataBankTersedia?: boolean;
+};
+
+export type PpDataAlternatifJenis = "ewallet" | "duitnow_qr" | "bil_utiliti" | "platform";
+
+export type PpEkstrakResult = {
+  ok?: boolean;
+  jenis?: string;
+  data?: Record<string, any> | null;
+  bulanDikesan?: string[];
+  catatan?: string | null;
+  latencyMs?: number | null;
+  message?: string | null;
+};
+
+export type PpDokumenJualanResult = {
+  ok?: boolean;
+  skorKeaslian?: number | null;
+  tandaPalsu?: string[];
+  semakanAritmetik?: { lulus?: boolean; catatan?: string | null } | null;
+  keputusan?: "asli" | "meragukan" | "palsu" | string;
+  ringkasan?: string | null;
+  latencyMs?: number | null;
+  message?: string | null;
+};
+
+export type PpDisbursementCheck = {
+  bolehSalur?: boolean;
+  amaran?: boolean;
+  tahap?: PpTahap | string | null;
+  sebab?: string[];
+  analisis?: PpFraudResult | null;
+  disemakPada?: string | null;
+};
+
+export type PpPermohonanDetail = {
+  permohonan: {
+    id: number;
+    noRujukan?: string | null;
+    nama?: string | null;
+    status?: string | null;
+    jumlahPermohonan?: number | null;
+    cawangan?: string | null;
+    noIc?: string | null;
+    namaPerniagaan?: string | null;
+    tempohPembiayaan?: number | string | null;
+    dihantarPada?: string | null;
+    adaMykad?: boolean;
+  };
+  dataAlternatif: PpDataAlternatif | null;
+  ekycWajah: PpFaceResult | null;
+  penilaian: PpRun | null;
+  langkah?: Record<string, string>;
+  sasaranMs?: number;
+};
+
+export type PpKeputusanInput = {
+  keputusan: PpKeputusanPegawai;
+  jumlahDiluluskan?: number;
+  catatan?: string;
+  akuiAmaran?: boolean;
+};
+
+export type PpKeputusanResult = {
+  penilaian: PpRun;
+  akaun: Record<string, any> | null;
+  semakanPengeluaran: PpDisbursementCheck | null;
+};
+
+export type PpKeadilan = {
+  kumpulan?: {
+    atribut?: string;
+    nilai?: string;
+    bilangan?: number;
+    purataSkor?: number | null;
+    kadarRisikoRendah?: number | null;
+  }[];
+  nisbahImpakBuruk?: {
+    atribut?: string;
+    kumpulanTerendah?: string | null;
+    kumpulanTertinggi?: string | null;
+    nisbah?: number | null;
+    lulusPeraturan45?: boolean;
+    lulusPeraturan_4_5?: boolean;
+  }[];
+  jumlahPermohonan?: number;
+  nota?: string | null;
+  dijanaPada?: string | null;
+};

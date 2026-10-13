@@ -36,6 +36,19 @@ import type {
   SpptSetupStatusItem,
   Usahawan,
   UsahawanInput,
+  PpDataAlternatif,
+  PpDataAlternatifJenis,
+  PpDisbursementCheck,
+  PpDokumenJualanResult,
+  PpEkstrakResult,
+  PpFaceResult,
+  PpKeadilan,
+  PpKeputusanInput,
+  PpKeputusanResult,
+  PpLangkahKod,
+  PpPermohonanDetail,
+  PpPermohonanRow,
+  PpRun,
 } from "@/types";
 
 function query(params: Record<string, string | number | undefined>) {
@@ -493,4 +506,85 @@ export async function processDunning() {
 
 export function notisKutipanPdfUrl(dbId: number) {
   return `${API_BASE_URL}/api/sppt/koleksi/notis/${dbId}/pdf`;
+}
+
+// ─── POC 1 — Enjin Penilaian Pantas AI ───────────────────────────────────────
+
+const PP_BASE = "/api/sppt/penilaian-pantas";
+
+export async function listPenilaianPantas(params: Record<string, string | number | undefined> = {}) {
+  return apiRequest<{ data: PpPermohonanRow[]; meta?: Record<string, unknown> }>(`${PP_BASE}${query(params)}`);
+}
+
+export async function getPenilaianPantasPermohonan(permohonanId: number) {
+  return apiRequest<{ data: PpPermohonanDetail }>(`${PP_BASE}/permohonan/${permohonanId}`);
+}
+
+export async function startPenilaianPantas(permohonanId: number) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpRun }>(`${PP_BASE}/permohonan/${permohonanId}/mula`, { method: "POST", body: JSON.stringify({}) });
+}
+
+export async function runPenilaianPantasStep(runId: number, kod: PpLangkahKod) {
+  return apiRequest<{ data: PpRun }>(`${PP_BASE}/run/${runId}/langkah/${kod}`, { method: "POST", body: JSON.stringify({}) });
+}
+
+export async function getPenilaianPantasRun(runId: number) {
+  return apiRequest<{ data: PpRun }>(`${PP_BASE}/run/${runId}`);
+}
+
+export async function decidePenilaianPantas(runId: number, input: PpKeputusanInput) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpKeputusanResult }>(`${PP_BASE}/run/${runId}/keputusan`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function verifyPenilaianPantasWajah(
+  permohonanId: number,
+  frames: { base64: string; mime: string; arahan: string }[],
+) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpFaceResult }>(`${PP_BASE}/permohonan/${permohonanId}/wajah`, {
+    method: "POST",
+    body: JSON.stringify({ frames }),
+  });
+}
+
+export async function updatePenilaianPantasDataAlternatif(permohonanId: number, input: PpDataAlternatif) {
+  await ensureCsrfCookie();
+  return apiRequest<{ data: PpDataAlternatif }>(`${PP_BASE}/permohonan/${permohonanId}/data-alternatif`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function extractPenilaianPantasDataAlternatif(permohonanId: number, file: File, jenis: PpDataAlternatifJenis) {
+  await ensureCsrfCookie();
+  const form = new FormData();
+  form.append("file", file);
+  form.append("jenis", jenis);
+  return apiRequest<{ data: PpEkstrakResult }>(`${PP_BASE}/permohonan/${permohonanId}/data-alternatif/ekstrak`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+export async function analyzePenilaianPantasDokumenJualan(permohonanId: number, file: File) {
+  await ensureCsrfCookie();
+  const form = new FormData();
+  form.append("file", file);
+  return apiRequest<{ data: PpDokumenJualanResult }>(`${PP_BASE}/permohonan/${permohonanId}/dokumen-jualan`, {
+    method: "POST",
+    body: form,
+  });
+}
+
+export async function getPenilaianPantasSemakanPengeluaran(permohonanId: number) {
+  return apiRequest<{ data: PpDisbursementCheck }>(`${PP_BASE}/permohonan/${permohonanId}/semakan-pengeluaran`);
+}
+
+export async function getPenilaianPantasKeadilan() {
+  return apiRequest<{ data: PpKeadilan }>(`${PP_BASE}/keadilan`);
 }

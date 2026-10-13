@@ -17,6 +17,7 @@ import {
   classifyPemohonPermohonanDocument,
   verifyPemohonPermohonanDocument,
   deletePemohonPermohonanDocument,
+  startPemohonPenilaianPantas,
 } from "@/api/pemohonPermohonan";
 import type { PermohonanAttachment } from "@/types";
 import { parseMalaysianIcBirthDate } from "@/utils/malaysianIc";
@@ -482,6 +483,10 @@ async function submit() {
     pemohon.createPermohonan({ produk: produkLabel, jumlah: form.jumlahPermohonan });
     pemohon.clearDraft();
     toast.success("Permohonan Dihantar", `Rujukan permohonan anda: ${res.data.noRujukan}`);
+    // Penilaian AI bermula serta-merta selepas Hantar; tidak menyekat navigasi pemohon.
+    startPemohonPenilaianPantas(record.id, record.token)
+      .then((r) => toast.info("Penilaian awal selesai", r.data.mesej))
+      .catch(() => undefined);
     router.push({ name: "pemohon-permohonan" });
   } catch (e) {
     toast.error("Gagal menghantar permohonan", e instanceof Error ? e.message : undefined);

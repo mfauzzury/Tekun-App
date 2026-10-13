@@ -58,7 +58,7 @@ class AinaChatService
             return ['error' => (string) $error];
         }
 
-        $text = $response->json('content.0.text');
+        $text = AiProviderService::textFromResponse((array) $response->json());
         if (! is_string($text) || trim($text) === '') {
             return ['error' => 'Claude tidak mengembalikan jawapan.'];
         }
